@@ -1,0 +1,5 @@
+syntax: glob
+
+wnd_gui.xml
+playground
+main.cpp
