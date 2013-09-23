@@ -1,6 +1,7 @@
 // Code is under the zlib license (same as Irrlicht)
 // Written by Michael Zeilfelder
 // 
+// Testing the GUIFileOpenDialog.
 
 #include <irrlicht.h>
 #include <iostream>
