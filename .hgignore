@@ -1,5 +1,8 @@
 syntax: glob
 
+messageboxes.gui
 wnd_gui.xml
+xmlspeedtest.xml
 playground
 main.cpp
+gmon.out
