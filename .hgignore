@@ -3,6 +3,7 @@ syntax: glob
 messageboxes.gui
 wnd_gui.xml
 xmlspeedtest.xml
+gui_all_elements.xml
 playground
 main.cpp
 gmon.out
