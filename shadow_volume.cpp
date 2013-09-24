@@ -36,10 +36,13 @@ int main()
 	scene::ISceneNode* node = 0;
 	node = smgr->addAnimatedMeshSceneNode(mesh);
 
-	// create light
-	node = smgr->addLightSceneNode(0, core::vector3df(0,0,0),
-		video::SColorf(1.0f, 0.6f, 0.7f, 1.0f), 800.0f);
+	// create light(s)
+	node = smgr->addLightSceneNode(0, core::vector3df(0,0,0), video::SColorf(1.0f, 0.6f, 0.7f, 1.0f)
+				, 800.0f);	// TODO: shadows work bad with short radius and should ignore lights probably when the object is not illuminated by them anyway
 	node->setPosition( core::vector3df(-150, 150, 0) );
+	//node = smgr->addLightSceneNode(0, core::vector3df(0,0,0),	video::SColorf(1.0f, 0.6f, 0.7f, 1.0f), 800.0f);
+	//node->setPosition( core::vector3df(-150, 0, 0) );
+
 	scene::ISceneNodeAnimator* anim = 0;
 	//anim = smgr->createFlyCircleAnimator (core::vector3df(0,150,0),250.0f);
 	//node->addAnimator(anim);
@@ -121,6 +124,7 @@ int main()
 //	scene::ICameraSceneNode* camera = smgr->addCameraSceneNode();
 	camera->setPosition(core::vector3df(-200,200,-100));
 	camera->updateAbsolutePosition();
+	camera->setFarValue( 1000 );	// default is 3000
 //	camera->setTarget(anode->getPosition());
 
 	while(device->run())
@@ -142,4 +146,3 @@ int main()
 
 	return 0;
 }
-
