@@ -24,6 +24,10 @@ enum
 	GUI_ID_CHECKBOX_ENABLED_PARENT,
 	GUI_ID_CHECKBOX_ENABLED_ELEMENTS,
 	GUI_ID_TRANSPARENCY_SCROLL_BAR,
+	GUI_ID_BUTTON_CLEAR,
+	GUI_ID_BUTTON_SAVE,
+	GUI_ID_BUTTON_LOAD,
+	GUI_ID_BUTTON_CREATE_ELEMENTS
 };
 
 
@@ -35,75 +39,13 @@ struct SAppContext
 };
 
 
-class MyEventReceiver : public IEventReceiver
+void ClearAllTestGuiElements(SAppContext & context)
 {
-public:
-	MyEventReceiver(SAppContext & context) : Context(context) { }
-
-	virtual bool OnEvent(const SEvent& event)
-	{
-		if (event.EventType == EET_GUI_EVENT)
-		{
-			s32 id = event.GUIEvent.Caller->getID();
-			switch(event.GUIEvent.EventType)
-			{
-				case EGET_CHECKBOX_CHANGED:
-				{
-					IGUICheckBox *cb = static_cast<IGUICheckBox *>(event.GUIEvent.Caller);
-					switch ( id )
-					{
-						case GUI_ID_CHECKBOX_VISIBLE_PARENT:
-							Context.mGuiParent->setVisible( cb->isChecked() );
-							break;
-						case GUI_ID_CHECKBOX_VISIBLE_ELEMENTS:
-							for ( u32 i=0; i < Context.mGuiElements.size(); ++i )
-							{
-								Context.mGuiElements[i]->setVisible( cb->isChecked() );
-							}
-							break;
-						case GUI_ID_CHECKBOX_ENABLED_PARENT:
-							Context.mGuiParent->setEnabled( cb->isChecked() );
-							break;
-						case GUI_ID_CHECKBOX_ENABLED_ELEMENTS:
-							for ( u32 i=0; i < Context.mGuiElements.size(); ++i )
-							{
-								Context.mGuiElements[i]->setEnabled( cb->isChecked() );
-							}
-							break;
-					default:
-						break;
-					}
-					break;
-				}
-				case EGET_SCROLL_BAR_CHANGED:
-				{
-					if (id == GUI_ID_TRANSPARENCY_SCROLL_BAR)
-					{
-						s32 pos = ((IGUIScrollBar*)event.GUIEvent.Caller)->getPos();
-						
-						for (u32 i=0; i<EGDC_COUNT ; ++i)
-						{
-							IGUIEnvironment * env = Context.device->getGUIEnvironment();
-							SColor col = env->getSkin()->getColor((EGUI_DEFAULT_COLOR)i);
-							col.setAlpha(pos);
-							env->getSkin()->setColor((EGUI_DEFAULT_COLOR)i, col);
-						}
-						
-					}
-					break;
-				}
-			default:
-				break;
-			}
-		}
-
-		return false;
-	}
-
-private:
-	SAppContext & Context;
-};
-
+	const core::list<IGUIElement*>& children = context.mGuiParent->getChildren();
+	while (!children.empty())
+		(*children.getLast())->remove();
+	context.mGuiElements.clear();
+}
 
 void SetTabStopsForAllElements(SAppContext & context)
 {
@@ -270,7 +212,136 @@ void AddControlElements(IGUIEnvironment* env, IGUIElement * parent)
 	IGUIScrollBar* scrollbar = env->addScrollBar(true, rect<s32>(510, 250, 620, 270), 0, GUI_ID_TRANSPARENCY_SCROLL_BAR);
 	scrollbar->setMax(255);
 	scrollbar->setPos(env->getSkin()->getColor(EGDC_WINDOW).getAlpha());	// set scrollbar position to alpha value of an arbitrary element
+
+	env->addButton(rect<s32>(510, 280, 620, 300), parent, GUI_ID_BUTTON_CLEAR, L"clear", L"remove gui elements");
+	env->addButton(rect<s32>(510, 310, 620, 330), parent, GUI_ID_BUTTON_SAVE, L"save", L"save gui");
+	env->addButton(rect<s32>(510, 340, 620, 360), parent, GUI_ID_BUTTON_LOAD, L"load", L"clear & load gui");
+	env->addButton(rect<s32>(510, 370, 620, 390), parent, GUI_ID_BUTTON_CREATE_ELEMENTS, L"create elements", L"clear & create new");
 }
+
+// move the children from source to target
+void MoveChildren(irr::gui::IGUIElement* target, irr::gui::IGUIElement* source)
+{
+	core::list<IGUIElement*> children = source->getChildren();	// note - no reference, we need a copy here
+	for ( core::list<IGUIElement*>::Iterator it = children.begin(); it != children.end();  ++it )
+	{
+		target->addChild(*it);
+	}
+}
+
+void SaveTextGuiElements(SAppContext & context)
+{
+	// That line would save the complete gui (for testing to compare results)
+	// context.device->getGUIEnvironment()->saveGUI("gui_all_elements.xml");
+
+	context.device->getGUIEnvironment()->saveGUI("gui_all_elements.xml", context.mGuiParent);
+}
+
+void LoadTextGuiElements(SAppContext & context)
+{
+	context.device->getGUIEnvironment()->loadGUI("gui_all_elements.xml", context.mGuiParent);
+	if ( !context.mGuiParent->getChildren().empty() )
+	{
+		// Workaround because I can't load _into_ an element so far in Irrlicht. So I have now one more copy of 
+		// context.mGuiParent below context.mGuiParent which I have to remove again.
+		// Irrlicht might change that on loading some day with another paramter (can't easily change it on saving 
+		// without changing the format as xml-files need a single root).
+		// First element is our dummy, remove that from the hierarchy.
+		IGUIElement * dummy = *(context.mGuiParent->getChildren().begin());
+		MoveChildren(context.mGuiParent, dummy);
+		dummy->remove();
+	}
+}
+
+class MyEventReceiver : public IEventReceiver
+{
+public:
+	MyEventReceiver(SAppContext & context) : Context(context) { }
+
+	virtual bool OnEvent(const SEvent& event)
+	{
+		if (event.EventType == EET_GUI_EVENT)
+		{
+			s32 id = event.GUIEvent.Caller->getID();
+			switch(event.GUIEvent.EventType)
+			{
+				case EGET_BUTTON_CLICKED:
+				{
+					switch ( id )
+					{
+						case GUI_ID_BUTTON_CLEAR:
+							ClearAllTestGuiElements(Context);
+							break;
+						case GUI_ID_BUTTON_SAVE:
+							SaveTextGuiElements(Context);
+							break;
+						case GUI_ID_BUTTON_LOAD:
+							ClearAllTestGuiElements(Context);
+							LoadTextGuiElements(Context);
+							break;
+						case GUI_ID_BUTTON_CREATE_ELEMENTS:
+							ClearAllTestGuiElements(Context);
+							AddTestGuiElements(Context.device->getGUIEnvironment(), Context.mGuiParent, Context);
+							break;
+					}
+				}
+				break;
+				case EGET_CHECKBOX_CHANGED:
+				{
+					IGUICheckBox *cb = static_cast<IGUICheckBox *>(event.GUIEvent.Caller);
+					switch ( id )
+					{
+						case GUI_ID_CHECKBOX_VISIBLE_PARENT:
+							Context.mGuiParent->setVisible( cb->isChecked() );
+							break;
+						case GUI_ID_CHECKBOX_VISIBLE_ELEMENTS:
+							for ( u32 i=0; i < Context.mGuiElements.size(); ++i )
+							{
+								Context.mGuiElements[i]->setVisible( cb->isChecked() );
+							}
+							break;
+						case GUI_ID_CHECKBOX_ENABLED_PARENT:
+							Context.mGuiParent->setEnabled( cb->isChecked() );
+							break;
+						case GUI_ID_CHECKBOX_ENABLED_ELEMENTS:
+							for ( u32 i=0; i < Context.mGuiElements.size(); ++i )
+							{
+								Context.mGuiElements[i]->setEnabled( cb->isChecked() );
+							}
+							break;
+					default:
+						break;
+					}
+					break;
+				}
+				case EGET_SCROLL_BAR_CHANGED:
+				{
+					if (id == GUI_ID_TRANSPARENCY_SCROLL_BAR)
+					{
+						s32 pos = ((IGUIScrollBar*)event.GUIEvent.Caller)->getPos();
+						
+						for (u32 i=0; i<EGDC_COUNT ; ++i)
+						{
+							IGUIEnvironment * env = Context.device->getGUIEnvironment();
+							SColor col = env->getSkin()->getColor((EGUI_DEFAULT_COLOR)i);
+							col.setAlpha(pos);
+							env->getSkin()->setColor((EGUI_DEFAULT_COLOR)i, col);
+						}
+						
+					}
+					break;
+				}
+			default:
+				break;
+			}
+		}
+
+		return false;
+	}
+
+private:
+	SAppContext & Context;
+};
 
 int main()
 {
@@ -285,9 +356,11 @@ int main()
 	SAppContext context;
 	context.device = device;
 	
-	context.mGuiParent = env->addStaticText (L"", core::rect<s32>(10, 10, 500, 450), true, false, 0, -1,false);
+//	context.mGuiParent = env->addStaticText (L"", core::rect<s32>(10, 10, 500, 450), true, false, 0, -1,false);
+	context.mGuiParent = env->addWindow(irr::core::recti(0,0,500,450), false, L"sometext");
+
 	AddTestGuiElements(env, context.mGuiParent, context);
-    SetTabStopsForAllElements(context);
+	SetTabStopsForAllElements(context);
 	
 	MyEventReceiver receiver(context);
 	device->setEventReceiver(&receiver);
@@ -310,4 +383,3 @@ int main()
 
 	return 0;
 }
-
