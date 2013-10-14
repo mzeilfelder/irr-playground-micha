@@ -8,3 +8,13 @@ playground
 main.cpp
 gmon.out
 irrExport.dae
+*.suo
+*.sdf
+*.user
+*.opensdf
+*.ipch
+*.ilk
+*.exe
+Irrlicht.dll
+Debug\*
+Release\*
