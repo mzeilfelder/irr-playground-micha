@@ -31,9 +31,10 @@ int main(int argc, char* argv[])
 	scene::IMesh * mesh = aniMesh->getMesh (0);
 	if ( !mesh )
 		return 0;
+	mesh->setHardwareMappingHint(scene::EHM_STATIC);
 	
 	int nodesX = 10;
-	int nodesY = 2;
+	int nodesY = 3;
 	int nodesZ = 10;
 
 	if ( argc > 1 )
@@ -78,7 +79,7 @@ int main(int argc, char* argv[])
 	camera->updateAbsolutePosition();
 	camera->setTarget( vector3df(0,0,0) );
 	camera->updateAbsolutePosition();
-	camera->setPosition(irr::core::vector3df((nodesX+1)*extent.X, (nodesY+1)*extent.Y, (nodesZ+1)*extent.Z));
+	camera->setPosition(irr::core::vector3df(halfSizeX+extent.X, halfSizeY+extent.Y, halfSizeZ+extent.Z));
 	camera->updateAbsolutePosition();
 
 	while ( device->run() )
