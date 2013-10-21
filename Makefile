@@ -6,9 +6,15 @@ Sources = main.cpp
 
 # general compiler settings
 CPPFLAGS = -I../../include -I/usr/X11R6/include
-#CXXFLAGS = -O3
-#CXXFLAGS = -ffast-math
-CXXFLAGS = -g -p -Wall
+CXXFLAGS = -Wall -pipe -fno-exceptions -fno-rtti -fstrict-aliasing
+ifndef NDEBUG
+CXXFLAGS += -g -D_DEBUG
+else
+CXXFLAGS += -fexpensive-optimizations -O3
+endif
+ifdef PROFILE
+CXXFLAGS += -pg
+endif
 
 #default target is Linux
 all: all_linux
