@@ -18,3 +18,4 @@ irrExport.dae
 Irrlicht.dll
 Debug\*
 Release\*
+*.blend?
