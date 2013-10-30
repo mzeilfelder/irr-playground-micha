@@ -2,6 +2,7 @@
 // Written by Michael Zeilfelder
 // 
 // Figure out why the camera flips here.
+// Result: target and up vector are identical - which can't be so Irrlicht has to modify the up-vector itself in some way.
 // Thread discussion here: http://irrlicht.sourceforge.net/forum/viewtopic.php?f=4&t=49219&p=283869#p283869
 
 #include <irrlicht.h>
