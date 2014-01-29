@@ -15,6 +15,7 @@ endif
 ifdef PROFILE
 CXXFLAGS += -pg
 endif
+CXXFLAGS += -std=c++11
 
 #default target is Linux
 all: all_linux
