@@ -1,4 +1,7 @@
-// Test of ceil functions based based on http://randomascii.wordpress.com/2014/01/27/theres-only-four-billion-floatsso-test-them-all/
+// Code is maybe under the zlib license (same as Irrlicht) if that's possible when using partly code from the web.
+// Adapted to Irrlicht by Michael Zeilfelder but originally written by Bruce Dawson in this blog:
+// http://randomascii.wordpress.com/2014/01/27/theres-only-four-billion-floatsso-test-them-all/
+
 #define IRRLICHT_FAST_MATH 1
 #include <irrMath.h>
 #include <cstdio>
@@ -101,16 +104,13 @@ int main ()
                 "ceil");
     ExhaustiveTest(signBit, signBit | maxfloatasint.i, ceil32f, orig_ceil,
                 "ceilSignBit");	*/
-/*    ExhaustiveTest(0, (uint32_t)maxfloatasint.i, irr::core::round_, orig_round,
+    ExhaustiveTest(0, (uint32_t)maxfloatasint.i, irr::core::round_, orig_round,
                 "ceil");
     ExhaustiveTest(signBit, signBit | maxfloatasint.i, irr::core::round_, orig_round,
-                "ceilSignBit");			*/
+                "ceilSignBit");
 /*    ExhaustiveTest(0, (uint32_t)maxfloatasint.i, round32f, orig_round,
                 "ceil");
     ExhaustiveTest(signBit, signBit | maxfloatasint.i, round32f, orig_round,
-                "ceilSignBit");	*/
-	
-	std::cout << "15654123: " << irr::core::round_(15654123);
-	
+                "ceilSignBit"); */
 	return 0;
 }
