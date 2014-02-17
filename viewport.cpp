@@ -1,7 +1,7 @@
 // Code is under the zlib license (same as Irrlicht)
 // Written by Michael Zeilfelder
 // 
-// Check the viewport behavior
+// Check the viewport and resize behavior
 
 #include <irrlicht.h>
 
@@ -20,6 +20,8 @@ struct SAppContext
 	
 	IrrlichtDevice * device;
 	irr::gui::IGUIStaticText * infoStatic;
+	irr::gui::IGUIListBox* listBoxScreenSize;
+	irr::core::array<irr::core::dimension2du> screenSizes;
 	irr::gui::IGUIListBox* listBoxViewPort;
 	irr::core::array<core::recti> viewPorts;
 };
@@ -66,6 +68,11 @@ public:
 						OnViewPortSelected();
 						return true;
 					}
+					else if ( event.GUIEvent.Caller == Context.listBoxScreenSize )
+					{
+						OnWindowSizeSelected();
+						return true;
+					}
 					
 				break;
 				default:
@@ -81,6 +88,15 @@ public:
 		}
 
 		return false;
+	}
+
+	void OnWindowSizeSelected()
+	{
+		s32 selected = Context.listBoxScreenSize->getSelected();
+		if ( selected < 0 )
+			return;
+		
+		Context.device->setWindowSize(Context.screenSizes[selected]);
 	}
 	
 	void OnViewPortSelected()
@@ -132,6 +148,20 @@ int main()
 	context.viewPorts.push_back(core::recti(0,0,800,600));
 	context.listBoxViewPort->addItem(L"0,0,1024,768");
 	context.viewPorts.push_back(core::recti(0,0,1024,768));
+	
+	context.listBoxScreenSize = env->addListBox (core::rect<s32>(110,200,200, 320));
+	context.listBoxScreenSize->addItem(L"640x480");
+	context.screenSizes.push_back( core::dimension2d<u32>(640, 480) );
+	context.listBoxScreenSize->addItem(L"800x600");
+	context.screenSizes.push_back( core::dimension2d<u32>(800, 600) );
+	context.listBoxScreenSize->addItem(L"1024x768");
+	context.screenSizes.push_back( core::dimension2d<u32>(1024, 768) );
+	context.listBoxScreenSize->addItem(L"1280x800");
+	context.screenSizes.push_back( core::dimension2d<u32>(1280, 800) );
+	context.listBoxScreenSize->addItem(L"1600x900");
+	context.screenSizes.push_back( core::dimension2d<u32>(1600, 900) );
+	context.listBoxScreenSize->addItem(L"1920x1080");
+	context.screenSizes.push_back( core::dimension2d<u32>(1920, 1080) );
 	
 	video::ITexture *image64x64 = driver->getTexture("media_foo/64x64.jpg");
 	env->addImage (image64x64, core::position2d<s32>(220, 10));
