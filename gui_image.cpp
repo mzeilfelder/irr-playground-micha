@@ -1,7 +1,7 @@
 // Code is under the zlib license (same as Irrlicht)
 // Written by Michael Zeilfelder
 // 
-// Template for minimal Irrlicht gui-code.
+// Test for IGUIImages
 
 #include <irrlicht.h>
 #include <iostream>
