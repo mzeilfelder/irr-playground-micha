@@ -34,6 +34,7 @@ int main()
 		skin->setFont(font);	
 	
 	env->addStaticText(L"The quick brown fox jumps over the lazy dog", core::rect<s32>(10,10, 400, 200), true, true);
+	env->addEditBox (L"", recti(10,210, 400, 250) );
 
 	while(device->run() && driver)
 	{
