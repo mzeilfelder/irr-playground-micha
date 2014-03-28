@@ -14,6 +14,52 @@
 // Include <locale.h> or the non-standard X substitutesdepending on the X_LOCALE compilation flag
 #include <X11/Xlocale.h>
 
+/*
+ * This function chooses the "more desirable" of two input styles.  The
+ * style with the more complicated Preedit style is returned, and if the
+ * styles have the same Preedit styles, then the style with the more
+ * complicated Status style is returned.  There is no "official" way to
+ * order interaction styles.  This one makes the most sense to me.
+ * This is a long procedure for a simple heuristic.
+ */
+XIMStyle ChooseBetterStyle(XIMStyle style1, XIMStyle style2)
+{
+	XIMStyle s,t;
+	XIMStyle preedit = XIMPreeditArea | XIMPreeditCallbacks |
+                       XIMPreeditPosition | XIMPreeditNothing | XIMPreeditNone;
+	XIMStyle status = XIMStatusArea | XIMStatusCallbacks |
+                      XIMStatusNothing | XIMStatusNone;
+	if (style1 == 0) return style2;
+	if (style2 == 0) return style1;
+	if ((style1 & (preedit | status)) == (style2 & (preedit | status)))
+		return style1;
+	s = style1 & preedit;
+	t = style2 & preedit;
+	if (s != t) 
+	{
+		if (s | t | XIMPreeditCallbacks)
+			return (s == XIMPreeditCallbacks)?style1:style2;
+		else if (s | t | XIMPreeditPosition)
+			return (s == XIMPreeditPosition)?style1:style2;
+		else if (s | t | XIMPreeditArea)
+			return (s == XIMPreeditArea)?style1:style2;
+		else if (s | t | XIMPreeditNothing)
+			return (s == XIMPreeditNothing)?style1:style2;
+	}
+	else 
+	{ /* if preedit flags are the same, compare status flags */
+		s = style1 & status;
+		t = style2 & status;
+		if (s | t | XIMStatusCallbacks)
+			return (s == XIMStatusCallbacks)?style1:style2;
+		else if (s | t | XIMStatusArea)
+			return (s == XIMStatusArea)?style1:style2;
+		else if (s | t | XIMStatusNothing)
+			return (s == XIMStatusNothing)?style1:style2;
+	}
+}
+
+
 int main(int argc, char *argv[])
 {
 	if (setlocale(LC_ALL, "") == NULL) // rather important or switching to another language might not work at all
@@ -76,8 +122,8 @@ int main(int argc, char *argv[])
 	}
 
 	// Flags we want (keep it simple for now)
-	XIMStyle app_supported_styles = XIMPreeditNone; // | XIMPreeditNothing | XIMPreeditArea;
-	app_supported_styles |= XIMStatusNone; //  | XIMStatusNothing | XIMStatusArea;
+	XIMStyle app_supported_styles = XIMPreeditNone | XIMPreeditNothing | XIMPreeditArea;
+	app_supported_styles |= XIMStatusNone | XIMStatusNothing | XIMStatusArea;
 
 	// Check what we can get
 	XIMStyles *im_supported_styles;
@@ -88,8 +134,9 @@ int main(int argc, char *argv[])
 		XIMStyle style = im_supported_styles->supported_styles[i];
 		if ((style & app_supported_styles) == style) // we can handle it?
 		{
-			best_style = style;	// (could check if there are even better ones)
-			break;
+			best_style = ChooseBetterStyle(style, best_style);
+//			best_style = style;
+//			break;
 		}
 	}
 	if (best_style == 0)
