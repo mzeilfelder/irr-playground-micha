@@ -2,7 +2,7 @@
 // http://menehune.opt.wfu.edu/Kokua/Irix_6.5.21_doc_cd/usr/share/Insight/library/SGI_bookshelves/SGI_Developer/books/XLib_PG/sgi_html/ch11.html
 // Changes by Michael Zeilfelder:
 // - Make it compile on modern compilers
-// - kick out an outdated workaround which prevented it from working on a modern X11.
+// - kick out an outdated XSI workaround which prevented it from working on a modern X11.
 // - reduce code to the minimal core of stuff necessary
 // - use some c++ feature (comments, variable declaration no longer at the start)
 
