@@ -43,6 +43,7 @@ public:
 			str += event.KeyInput.Shift ? L"S" : L" ";
 			str += event.KeyInput.Control ? L"C " : L"  ";
 			str += core::stringw( keyName.get(event.KeyInput.Key) );
+			std::cout << "0x" << std::hex << event.KeyInput.Key << "\n";
 			Context.listBoxEvents->insertItem(0, str.c_str(), 0);
 		}
 
@@ -75,9 +76,9 @@ int main()
 	if (font)
 		skin->setFont(font);	
 	
-	env->addStaticText(L"The quick brown fox jumps over the lazy dog", recti(10,10, 400, 200), true, true);
-	env->addEditBox (L"", recti(10,210, 400, 250) );
-	context.listBoxEvents = env->addListBox (recti(10, 260, 400, 450), 0, -1, true);
+	env->addStaticText(L"The quick brown fox jumps over the lazy dog", recti(10,10, 400, 100), true, true);
+	env->addEditBox (L"", recti(10,110, 400, 150) );
+	context.listBoxEvents = env->addListBox (recti(10, 160, 400, 450), 0, -1, true);
 
 	while(device->run() && driver)
 	{
