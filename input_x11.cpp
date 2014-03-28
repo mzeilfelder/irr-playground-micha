@@ -16,14 +16,13 @@
 
 int main(int argc, char *argv[])
 {
-    Display *dpy;
-
 	if (setlocale(LC_ALL, "") == NULL) // rather important or switching to another language might not work at all
 	{
         fprintf(stderr, "cannot set locale. \n");
         return 1;
     }
-    if ((dpy = XOpenDisplay(NULL)) == NULL) 
+    Display *dpy = 	XOpenDisplay(NULL);
+    if (!dpy) 
 	{
         fprintf(stderr, "cannot open Display. \n");
         return 1;
@@ -33,10 +32,10 @@ int main(int argc, char *argv[])
         fprintf(stderr, "X does not support locale %s. \n", setlocale(LC_ALL, NULL));
         return 1;
     }
-    if (XSetLocaleModifiers("") == NULL) // (no troubles when not setting it, guess default locale is fine as well)
+	if (XSetLocaleModifiers("") == NULL) // (no troubles when not setting it, guess default locale is fine as well)
 	{
-        fprintf(stderr, "Warning: cannot set locale modifiers. \n");
-    }
+		fprintf(stderr, "Warning: cannot set locale modifiers. \n");
+	}
 
     // Create a fontset (in Debian it's in package: ttf-xfree86-nonfree)
     char **missing_charsets;
@@ -55,7 +54,7 @@ int main(int argc, char *argv[])
         for(int i=0; i < num_missing_charsets; i++)
             fprintf(stderr, "%s\n", missing_charsets[i]);
         XFreeStringList(missing_charsets);
-        fprintf(stderr, "Follwing string will be used instead of characters from those sets: %s\n", default_string);
+        fprintf(stderr, "Following string will be used instead of characters from those sets: %s\n", default_string);
     }
 	
 	// setup a window
@@ -76,7 +75,7 @@ int main(int argc, char *argv[])
         return 1;
     }
 	
-    // Flags we want
+    // Flags we want (keep it simple for now)
     XIMStyle app_supported_styles = XIMPreeditNone; // | XIMPreeditNothing | XIMPreeditArea;
     app_supported_styles |= XIMStatusNone; //  | XIMStatusNothing | XIMStatusArea;
 	
@@ -115,10 +114,9 @@ int main(int argc, char *argv[])
         fprintf(stderr, "Couldn't create input context\n");
         return 1;
     }
-    long im_event_mask;	
+    long im_event_mask = 0;	
     XGetICValues(ic, XNFilterEvents, &im_event_mask, NULL);
-    XSelectInput(dpy,win, ExposureMask | KeyPressMask
-                 | StructureNotifyMask | im_event_mask);
+    XSelectInput(dpy,win, ExposureMask | KeyPressMask | im_event_mask);
     XSetICFocus(ic);
 	
     wchar_t string[2000];
@@ -145,7 +143,8 @@ int main(int argc, char *argv[])
 				int len = XwcLookupString(ic, &event.xkey, buffer, buf_len,
 									  &keysym, &status);
 
-				if (status == XBufferOverflow) {
+				if (status == XBufferOverflow) 
+				{
 					buf_len = len;
 					buffer = (wchar_t *)realloc((char *)buffer,
 												buf_len * sizeof(wchar_t));
@@ -155,8 +154,21 @@ int main(int argc, char *argv[])
 				bool redraw = false;
 				switch (status) 
 				{
+					case XLookupNone: 		
+						printf("XLookupNone\n"); 
+					break;
+					case XLookupKeySym: 	
+						printf("XLookupKeySym: %d\n", (int)keysym); 
+					break;
+					case XBufferOverflow:	
+						printf("XBufferOverflow\n"); 
+					break;
 					case XLookupBoth:
+						printf("XLookupBoth: %d\n", (int)keysym);
+						// fallthrough 
 					case XLookupChars:
+						if ( len == 0 )
+							printf("len is 0\n");
 						for(int i=0; i < len; i++)
 							string[str_len++] = buffer[i];
 						redraw = true;

@@ -20,6 +20,8 @@ using namespace gui;
 
 int main()
 {
+	setlocale(LC_ALL, "");
+	
 	video::E_DRIVER_TYPE driverType = video::EDT_OPENGL;
 	IrrlichtDevice * device = createDevice(driverType, core::dimension2d<u32>(640, 480));
 	if (device == 0)
