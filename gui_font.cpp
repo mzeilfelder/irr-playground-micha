@@ -36,7 +36,7 @@ public:
 			IrrKeyName keyName;
 			irr::core::stringw str(L"Char: ");
 			str += event.KeyInput.Char;
-			str += L"Code: ";
+			str += L" Code: ";
 			str += core::stringw((int)event.KeyInput.Key);
 			str += event.KeyInput.PressedDown ? L" D" : L" U";
 			str += event.KeyInput.Shift ? L"S" : L" ";
@@ -55,12 +55,12 @@ private:
 int main()
 {
 //	setlocale(LC_ALL, "");
-	
+
 	video::E_DRIVER_TYPE driverType = video::EDT_OPENGL;
 	IrrlichtDevice * device = createDevice(driverType, core::dimension2d<u32>(640, 480));
 	if (device == 0)
 		return 1; // could not create selected driver.
-	
+
 	SAppContext context;
 	context.device = device;
 	MyEventReceiver receiver(context);
@@ -76,7 +76,7 @@ int main()
 	
 	env->addStaticText(L"The quick brown fox jumps over the lazy dog", recti(10,10, 400, 200), true, true);
 	env->addEditBox (L"", recti(10,210, 400, 250) );
-	context.listBoxEvents = env->addListBox (recti(10, 410, 400, 500), 0, -1, true);
+	context.listBoxEvents = env->addListBox (recti(10, 260, 400, 450), 0, -1, true);
 
 	while(device->run() && driver)
 	{
