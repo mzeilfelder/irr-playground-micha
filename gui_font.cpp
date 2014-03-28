@@ -5,6 +5,7 @@
 
 #include <irrlicht.h>
 #include <iostream>
+#include "irr_key_names.h"
 
 using namespace irr;
 using namespace core;
@@ -17,15 +18,53 @@ using namespace gui;
 #pragma comment(lib, "Irrlicht.lib")
 #endif
 
+struct SAppContext
+{
+	IrrlichtDevice * device;
+	irr::gui::IGUIListBox * listBoxEvents;
+};
+
+class MyEventReceiver : public IEventReceiver
+{
+public:
+	MyEventReceiver(SAppContext & context) : Context(context) { }
+
+	virtual bool OnEvent(const SEvent& event)
+	{
+		if (event.EventType == EET_KEY_INPUT_EVENT)
+		{
+			IrrKeyName keyName;
+			irr::core::stringw str(L"Char: ");
+			str += event.KeyInput.Char;
+			str += L"Code: ";
+			str += core::stringw((int)event.KeyInput.Key);
+			str += event.KeyInput.PressedDown ? L" D" : L" U";
+			str += event.KeyInput.Shift ? L"S" : L" ";
+			str += event.KeyInput.Control ? L"C " : L"  ";
+			str += core::stringw( keyName.get(event.KeyInput.Key) );
+			Context.listBoxEvents->insertItem(0, str.c_str(), 0);
+		}
+
+		return false;
+	}
+
+private:
+	SAppContext & Context;
+};
 
 int main()
 {
-	setlocale(LC_ALL, "");
+//	setlocale(LC_ALL, "");
 	
 	video::E_DRIVER_TYPE driverType = video::EDT_OPENGL;
 	IrrlichtDevice * device = createDevice(driverType, core::dimension2d<u32>(640, 480));
 	if (device == 0)
 		return 1; // could not create selected driver.
+	
+	SAppContext context;
+	context.device = device;
+	MyEventReceiver receiver(context);
+	device->setEventReceiver(&receiver);
 
 	video::IVideoDriver* driver = device->getVideoDriver();
 	IGUIEnvironment* env = device->getGUIEnvironment();
@@ -35,8 +74,9 @@ int main()
 	if (font)
 		skin->setFont(font);	
 	
-	env->addStaticText(L"The quick brown fox jumps over the lazy dog", core::rect<s32>(10,10, 400, 200), true, true);
+	env->addStaticText(L"The quick brown fox jumps over the lazy dog", recti(10,10, 400, 200), true, true);
 	env->addEditBox (L"", recti(10,210, 400, 250) );
+	context.listBoxEvents = env->addListBox (recti(10, 410, 400, 500), 0, -1, true);
 
 	while(device->run() && driver)
 	{
