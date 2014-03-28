@@ -35,7 +35,8 @@ public:
 		{
 			IrrKeyName keyName;
 			irr::core::stringw str(L"Char: ");
-			str += event.KeyInput.Char;
+			if ( event.KeyInput.Char != 0 )
+				str += event.KeyInput.Char;
 			str += L" Code: ";
 			str += core::stringw((int)event.KeyInput.Key);
 			str += event.KeyInput.PressedDown ? L" D" : L" U";
