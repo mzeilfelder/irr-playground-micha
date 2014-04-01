@@ -1,7 +1,7 @@
 // Code is under the zlib license (same as Irrlicht)
 // Written by Michael Zeilfelder
 // 
-// Testing resizing and finding out what size-values actually mean in windowed mode (ake client vs. window-size stuff).
+// Testing resizing and finding out what size-values actually mean in windowed mode (aka client vs. window-size stuff).
 
 #include <irrlicht.h>
 #include <iostream>
