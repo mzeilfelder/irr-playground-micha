@@ -163,7 +163,7 @@ int main()
 	context.listBoxScreenSize->addItem(L"1920x1080");
 	context.screenSizes.push_back( core::dimension2d<u32>(1920, 1080) );
 	
-	video::ITexture *image64x64 = driver->getTexture("media_foo/64x64.jpg");
+	video::ITexture *image64x64 = driver->getTexture("my_media/64x64.jpg");
 	env->addImage (image64x64, core::position2d<s32>(220, 10));
 	for ( s32 i=0; i < 30; ++i )
 	{

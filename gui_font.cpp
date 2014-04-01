@@ -70,7 +70,7 @@ int main()
 	IGUIEnvironment* env = device->getGUIEnvironment();
 	
 	IGUISkin* skin = env->getSkin();
-	IGUIFont* font = env->getFont("media_foo/fonts/droid_sans12.xml");
+	IGUIFont* font = env->getFont("my_media/fonts/droid_sans12.xml");
 	if (font)
 		skin->setFont(font);	
 	
