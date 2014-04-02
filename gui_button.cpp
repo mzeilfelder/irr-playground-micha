@@ -148,6 +148,10 @@ int main()
 	btn = env->addButton(recti(140, top, 268, top+32), 0, -1, L"image");
 	btn->setImage( driver->getTexture("my_media/btn_up.png") );
 	
+	btn = env->addButton(recti(270, top, 398, top+32), 0, -1, L"rect");
+	btn->setImage( driver->getTexture("my_media/btn_up.png"), recti(0,0,64,16) );
+	btn->setPressedImage( driver->getTexture("my_media/btn_down.png"), recti(0,0,64,16) );
+	
 	// create the buttons with images (old style) - larger than textures
 	top += 40;
 	btn = env->addButton(recti(10, top, 266, top+64), 0, -1, L"image+pressed");
@@ -157,6 +161,10 @@ int main()
 	btn = env->addButton(recti(300, top, 556, top+64), 0, -1, L"image");
 	btn->setImage( driver->getTexture("my_media/btn_up.png") );
 	
+	btn = env->addButton(recti(560, top, 816, top+64), 0, -1, L"rect");
+	btn->setImage( driver->getTexture("my_media/btn_up.png"), recti(0,0,64,16) );
+	btn->setPressedImage( driver->getTexture("my_media/btn_down.png"), recti(0,0,64,16) );
+	
 	// create the buttons with images (old style) - smaller than textures
 	top += 70;
 	btn = env->addButton(recti(10, top, 70, top+20), 0, -1, L"image+pressed");
@@ -165,6 +173,10 @@ int main()
 	
 	btn = env->addButton(recti(80, top, 160, top+20), 0, -1, L"image");
 	btn->setImage( driver->getTexture("my_media/btn_up.png") );	
+	
+	btn = env->addButton(recti(170, top, 230, top+20), 0, -1, L"rect");
+	btn->setImage( driver->getTexture("my_media/btn_up.png"), recti(0,0,64,16) );
+	btn->setPressedImage( driver->getTexture("my_media/btn_down.png"), recti(0,0,64,16) );
 
 	// create the buttons with sprites
 	top += 30;
@@ -223,7 +235,42 @@ int main()
 	btn->setSprite(EGBS_BUTTON_UP, 0);
 	btn->setSprite(EGBS_BUTTON_FOCUSED, 4);	
 	
+	// create the buttons with images (old style) and sprites - all kind of sizes
+	top += 30;
+	btn = env->addButton(recti(10, top, 138, top+32), 0, -1, L"all states");
+	btn->setImage( driver->getTexture("my_media/btn_up.png") );
+	btn->setPressedImage( driver->getTexture("my_media/btn_down.png") );
+	btn->setSprite(EGBS_BUTTON_UP, 0);
+	btn->setSprite(EGBS_BUTTON_DOWN, 1);
+	btn->setSprite(EGBS_BUTTON_MOUSE_OVER, 2);
+	btn->setSprite(EGBS_BUTTON_MOUSE_OFF, 3);
+	btn->setSprite(EGBS_BUTTON_FOCUSED, 4);
+	btn->setSprite(EGBS_BUTTON_NOT_FOCUSED, 5);
+	btn->setSprite(EGBS_BUTTON_DISABLED, 6);
 
+	btn = env->addButton(recti(140, top, 396, top+64), 0, -1, L"all states");
+	btn->setImage( driver->getTexture("my_media/btn_up.png") );
+	btn->setPressedImage( driver->getTexture("my_media/btn_down.png") );
+	btn->setSprite(EGBS_BUTTON_UP, 0);
+	btn->setSprite(EGBS_BUTTON_DOWN, 1);
+	btn->setSprite(EGBS_BUTTON_MOUSE_OVER, 2);
+	btn->setSprite(EGBS_BUTTON_MOUSE_OFF, 3);
+	btn->setSprite(EGBS_BUTTON_FOCUSED, 4);
+	btn->setSprite(EGBS_BUTTON_NOT_FOCUSED, 5);
+	btn->setSprite(EGBS_BUTTON_DISABLED, 6);
+
+	btn = env->addButton(recti(410, top, 470, top+20), 0, -1, L"all states");
+	btn->setImage( driver->getTexture("my_media/btn_up.png") );
+	btn->setPressedImage( driver->getTexture("my_media/btn_down.png") );
+	btn->setSprite(EGBS_BUTTON_UP, 0);
+	btn->setSprite(EGBS_BUTTON_DOWN, 1);
+	btn->setSprite(EGBS_BUTTON_MOUSE_OVER, 2);
+	btn->setSprite(EGBS_BUTTON_MOUSE_OFF, 3);
+	btn->setSprite(EGBS_BUTTON_FOCUSED, 4);
+	btn->setSprite(EGBS_BUTTON_NOT_FOCUSED, 5);
+	btn->setSprite(EGBS_BUTTON_DISABLED, 6);
+
+	
 
 	// get all IGUIButtons and set the spritebank
 	const auto& rootChildren = env->getRootGUIElement ()->getChildren();
