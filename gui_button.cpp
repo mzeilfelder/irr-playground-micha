@@ -20,11 +20,12 @@ using namespace gui;
 struct SAppContext
 {
 	IrrlichtDevice * Device;
-	IGUICheckBox * CbScale;
+	IGUICheckBox * CbScaleImage;
 	IGUICheckBox * CbAlpha;
 	IGUICheckBox * CbBorder;
 	IGUICheckBox * CbPushButton;
 	IGUICheckBox * CbEnabled;
+	IGUICheckBox * CbScaleSprite;
 	array<IGUIButton*> Buttons;
 };
 
@@ -41,11 +42,11 @@ public:
 			{
 				case EGET_CHECKBOX_CHANGED :
 				{
-					if ( event.GUIEvent.Caller == Context.CbScale )
+					if ( event.GUIEvent.Caller == Context.CbScaleImage )
 					{
 						for ( u32 i=0; i< Context.Buttons.size(); ++i )
 						{
-							Context.Buttons[i]->setScaleImage( Context.CbScale->isChecked() );
+							Context.Buttons[i]->setScaleImage( Context.CbScaleImage->isChecked() );
 						}
 					}
 					else if ( event.GUIEvent.Caller == Context.CbAlpha )
@@ -76,7 +77,20 @@ public:
 							Context.Buttons[i]->setEnabled( Context.CbEnabled->isChecked() );
 						}
 					}
-					
+					else if ( event.GUIEvent.Caller == Context.CbScaleSprite )
+					{
+						for ( u32 i=0; i< Context.Buttons.size(); ++i )
+						{
+							for ( u32 s=0; s < (u32)EGBS_COUNT; ++s )
+							{
+								Context.Buttons[i]->setSprite( (EGUI_BUTTON_STATE)s,
+									Context.Buttons[i]->getSpriteIndex((EGUI_BUTTON_STATE)s),
+									Context.Buttons[i]->getSpriteColor((EGUI_BUTTON_STATE)s),
+									Context.Buttons[i]->getSpriteLoop((EGUI_BUTTON_STATE)s),
+									Context.CbScaleSprite->isChecked() );
+							}
+						}
+					}
 				}
 				break;
 			default:
@@ -110,13 +124,16 @@ int main()
 	skin->setSize(EGDS_BUTTON_PRESSED_IMAGE_OFFSET_Y, 1 );
 	skin->setSize(EGDS_BUTTON_PRESSED_TEXT_OFFSET_X, 5 );
 	skin->setSize(EGDS_BUTTON_PRESSED_TEXT_OFFSET_Y, 10 );
+	skin->setSize(EGDS_BUTTON_PRESSED_SPRITE_OFFSET_X, 1);
+	skin->setSize(EGDS_BUTTON_PRESSED_SPRITE_OFFSET_Y, 1);
 	
 	// dynamic options
-	context.CbScale = env->addCheckBox (false, recti(10, 10, 100, 30), 0, -1, L"scale");
+	context.CbScaleImage = env->addCheckBox (false, recti(10, 10, 100, 30), 0, -1, L"scale image");
 	context.CbAlpha = env->addCheckBox (false, recti(110, 10, 200, 30), 0, -1, L"alpha");
 	context.CbBorder = env->addCheckBox (true, recti(210, 10, 300, 30), 0, -1, L"border");
 	context.CbPushButton = env->addCheckBox (false, recti(310, 10, 400, 30), 0, -1, L"pushbutton");
 	context.CbEnabled = env->addCheckBox (true, recti(410, 10, 500, 30), 0, -1, L"enabled");
+	context.CbScaleSprite = env->addCheckBox (false, recti(510, 10, 600, 30), 0, -1, L"scale sprite");
 	
 	// create a spritebank
 	gui::IGUISpriteBank * buttonSpriteBank = env->addEmptySpriteBank(io::path("buttons"));
@@ -269,6 +286,29 @@ int main()
 	btn->setSprite(EGBS_BUTTON_FOCUSED, 4);
 	btn->setSprite(EGBS_BUTTON_NOT_FOCUSED, 5);
 	btn->setSprite(EGBS_BUTTON_DISABLED, 6);
+	
+	// create buttons with images (new style) - larger
+	top += 70;
+	btn = env->addButton(recti(10, top, 160, top+50), 0, -1, L"all images");
+	btn->setImage(EGBIS_IMAGE_UP, driver->getTexture("my_media/btn_up.png") );
+	btn->setImage(EGBIS_IMAGE_UP_MOUSEOVER, driver->getTexture("my_media/btn_up_over.png") );
+	btn->setImage(EGBIS_IMAGE_UP_FOCUSED, driver->getTexture("my_media/btn_up_focused.png") );
+	btn->setImage(EGBIS_IMAGE_UP_FOCUSED_MOUSEOVER, driver->getTexture("my_media/btn_up_focused_over.png") );
+	btn->setImage(EGBIS_IMAGE_DOWN, driver->getTexture("my_media/btn_down.png") );
+	btn->setImage(EGBIS_IMAGE_DOWN_MOUSEOVER, driver->getTexture("my_media/btn_down_over.png") );
+	btn->setImage(EGBIS_IMAGE_DOWN_FOCUSED, driver->getTexture("my_media/btn_down_focused.png") );
+	btn->setImage(EGBIS_IMAGE_DOWN_FOCUSED_MOUSEOVER, driver->getTexture("my_media/btn_down_focused_over.png") );
+	btn->setImage(EGBIS_IMAGE_DISABLED, driver->getTexture("my_media/btn_disabled.png") );
+	
+	btn = env->addButton(recti(170, top, 320, top+50), 0, -1, L"img  up/down/disabled/down_focused_over");
+	btn->setImage(EGBIS_IMAGE_UP, driver->getTexture("my_media/btn_up.png") );
+	btn->setImage(EGBIS_IMAGE_DOWN, driver->getTexture("my_media/btn_down.png") );
+	btn->setImage(EGBIS_IMAGE_DOWN_FOCUSED_MOUSEOVER, driver->getTexture("my_media/btn_down_focused_over.png") );
+	btn->setImage(EGBIS_IMAGE_DISABLED, driver->getTexture("my_media/btn_disabled.png") );
+	
+	btn = env->addButton(recti(330, top, 480, top+50), 0, -1, L"img up + rect");
+	btn->setImage(EGBIS_IMAGE_UP, driver->getTexture("my_media/btn_up.png"), recti(0,0,64,16) );
+
 
 	
 
