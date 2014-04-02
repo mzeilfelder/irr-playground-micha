@@ -158,10 +158,10 @@ int main()
 	btn->setImage( driver->getTexture("my_media/btn_up.png") );
 	btn->setPressedImage( driver->getTexture("my_media/btn_down.png") );
 	
-	btn = env->addButton(recti(300, top, 556, top+64), 0, -1, L"image");
+	btn = env->addButton(recti(270, top, 526, top+64), 0, -1, L"image");
 	btn->setImage( driver->getTexture("my_media/btn_up.png") );
 	
-	btn = env->addButton(recti(560, top, 816, top+64), 0, -1, L"rect");
+	btn = env->addButton(recti(530, top, 786, top+64), 0, -1, L"rect");
 	btn->setImage( driver->getTexture("my_media/btn_up.png"), recti(0,0,64,16) );
 	btn->setPressedImage( driver->getTexture("my_media/btn_down.png"), recti(0,0,64,16) );
 	
@@ -212,7 +212,7 @@ int main()
 	btn->setSprite(EGBS_BUTTON_UP, 0);
 	btn->setSprite(EGBS_BUTTON_FOCUSED, 4);
 	
-	btn = env->addButton(recti(530, top, 756, top+64), 0, -1, L"only button up");
+	btn = env->addButton(recti(530, top, 786, top+64), 0, -1, L"only button up");
 	btn->setSprite(EGBS_BUTTON_UP, 0);
 	btn->setSprite(EGBS_BUTTON_FOCUSED, 4);	
 	
