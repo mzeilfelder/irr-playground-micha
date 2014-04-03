@@ -155,12 +155,13 @@ void AddTestGuiElements(IGUIEnvironment* env, IGUIElement * parent, SAppContext 
 	context.mGuiElements.push_back( tabctrl );
 	
 	rect.UpperLeftCorner.Y = rect.LowerRightCorner.Y + default_gap;
-	rect.LowerRightCorner.Y = rect.UpperLeftCorner.Y + default_height*3;	
+	rect.LowerRightCorner.Y = rect.UpperLeftCorner.Y + default_height*5;	
 	IGUITable * table = env->addTable (rect, parent, /*s32 id=*/-1, /*bool drawBackground=*/true);
 	table->addColumn(L"col1");
 	table->addColumn(L"col2");
-	table->addRow(0);
-	table->addRow(1);
+	table->addColumn(L"col3");
+	for ( int i=0; i<10; ++i )
+		table->addRow(i);
 	table->setCellText(/*u32 rowIndex*/1, /*u32 columnIndex*/1, /*const wchar_t *text*/L"text");
 	table->setToolTipText(L"tooltip"); 
 	context.mGuiElements.push_back(table );
