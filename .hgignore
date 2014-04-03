@@ -8,6 +8,7 @@ playground
 main.cpp
 gmon.out
 irrExport.dae
+*.depend
 *.suo
 *.sdf
 *.user
