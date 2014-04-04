@@ -1,7 +1,7 @@
 // Code is under the zlib license (same as Irrlicht)
 // Written by Michael Zeilfelder
 //
-// Tests with pretty much all Irrlicht gui elements.
+// Testing focus behavior
 
 #include <irrlicht.h>
 #include <iostream>
@@ -194,10 +194,10 @@ void AddTestGuiElements(IGUIEnvironment* env, IGUIElement * parent, SAppContext 
     bool treeScrollBarHorizontal=true;
     IGUITreeView * tree = env->addTreeView(rect, parent, -1, treeViewBackground, treeScrollBarVertical, treeScrollBarHorizontal);
     IGUITreeViewNode * treeNode = tree->getRoot();
-    for ( int i=0; i < 1; ++i )
+    for ( int i=0; i < 5; ++i )
         treeNode->addChildBack(L"child");
 	IGUITreeViewNode * branchNode = treeNode;
-    for ( int i=0; i < 2; ++i )
+    for ( int i=0; i < 5; ++i )
     {
         branchNode = branchNode->addChildBack(L"branch");
         branchNode->setExpanded(true);
