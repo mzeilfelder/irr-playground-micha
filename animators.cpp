@@ -21,7 +21,6 @@ public:
 	: Device(0)
 	, Camera(0)
 	, MeshSceneNode(0)
-	, CheckBoxUsePauses(0)
 	, ButtonEnableCircle(0)
 	, ButtonEnableStraight(0)
 	, ButtonEnableSpline(0)
@@ -233,7 +232,6 @@ private:
 	IrrlichtDevice * 			Device;
 	scene::ICameraSceneNode *	Camera;
 	scene::IMeshSceneNode*	 	MeshSceneNode;
-	gui::IGUICheckBox * CheckBoxUsePauses;
 	gui::IGUIButton * ButtonEnableCircle;
 	gui::IGUIButton * ButtonEnableStraight;
 	gui::IGUIButton * ButtonEnableSpline;
