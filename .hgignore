@@ -8,6 +8,7 @@ playground
 main.cpp
 gmon.out
 irrExport.dae
+*.layout
 *.depend
 *.suo
 *.sdf
@@ -16,6 +17,7 @@ irrExport.dae
 *.ipch
 *.ilk
 *.exe
+*.o
 Irrlicht.dll
 Debug\*
 Release\*
