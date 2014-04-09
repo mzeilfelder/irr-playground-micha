@@ -70,6 +70,8 @@ public:
 	, ListBoxEmitters(0)
 	, ButtonParticlesVisibility(0)
 	, ButtonClearParticles(0)
+	, ButtonGlobalParticles(0)
+	, SpinBoxSleep(0)
 	, ButtonUpdateAttributes(0)
 	, ActiveAttributes(0)
 	, ActiveAttributeObject(0)
@@ -111,6 +113,10 @@ public:
 				else if ( event.GUIEvent.Caller == ButtonClearParticles )
 				{
 					ParticleSceneNode->clearParticles();
+				}
+				else if ( event.GUIEvent.Caller == ButtonGlobalParticles )
+				{
+					ParticleSceneNode->setParticlesAreGlobal( ButtonGlobalParticles->isPressed() );
 				}
 				else if ( event.GUIEvent.Caller == ButtonUpdateAttributes )
 				{
@@ -222,13 +228,23 @@ protected:
 			AffectorButtons.push_back(button);
 			top += 30;
 		}
+		ButtonUpdateAttributes = guiEnv->addButton(core::rect<s32>(60, 140, 120, 160), 0, -1, L"Set attributes");
 
 		ButtonParticlesVisibility = guiEnv->addButton(core::rect<s32>(310, 20, 400, 40), 0, -1, L"Visible");
 		ButtonParticlesVisibility->setPressed(true);
 		ButtonParticlesVisibility->setIsPushButton(true);
 
 		ButtonClearParticles = guiEnv->addButton(core::rect<s32>(310, 50, 400, 70), 0, -1, L"Clear particles");
-		ButtonUpdateAttributes = guiEnv->addButton(core::rect<s32>(60, 140, 120, 160), 0, -1, L"Set attributes");
+
+		ButtonGlobalParticles = guiEnv->addButton(core::rect<s32>(310, 80, 400, 100), 0, -1, L"Global particles");
+		ButtonGlobalParticles->setPressed(true);
+		ButtonGlobalParticles->setIsPushButton(true);
+
+		guiEnv->addStaticText(L"sleep (reduce FPS)", core::rect<s32>(310,110,400,130));
+		SpinBoxSleep = guiEnv->addSpinBox(L"10", core::rect<s32>(310,130,400,150));
+		SpinBoxSleep->setRange(0.f, 10000.f);
+		SpinBoxSleep->setStepSize(10.f);
+		SpinBoxSleep->setDecimalPlaces(0);
 
 		return true;
 	}
@@ -257,8 +273,7 @@ protected:
 				videoDriver->endScene();
 			}
 
-
-			Device->sleep( 5 );
+			Device->sleep( (u32)SpinBoxSleep->getValue() );
 		}
 	}
 
@@ -494,7 +509,9 @@ private:
 	std::vector<gui::IGUIButton *> AffectorButtons;
 	gui::IGUIButton * ButtonParticlesVisibility;
 	gui::IGUIButton * ButtonClearParticles;
+	gui::IGUIButton * ButtonGlobalParticles;
 	gui::IGUIButton * ButtonUpdateAttributes;
+	gui::IGUISpinBox * SpinBoxSleep;
 
 	IrrPtr<scene::ISceneNodeAnimator> AnimatorCircle;
 	IrrPtr<scene::ISceneNodeAnimator> AnimatorStraight;
