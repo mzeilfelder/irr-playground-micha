@@ -193,6 +193,8 @@ protected:
 		ParticleSceneNode = smgr->addParticleSystemSceneNode(withDefaultEmitter, MeshSceneNode, -1, particleNodePosition, particleNodeRotation, particleNodeScale);
 		createEmitters(ParticleSceneNode);
 		createAffectors(ParticleSceneNode);
+		// too lazy to create a gui for this - just change and re-compile for testing.
+		ParticleSceneNode->setInvisibleBehavior(scene::EPI_STOP_EMITTERS|scene::EPI_STOP_AFFECTORS|scene::EPI_STOP_ANIMATING|scene::EPI_CLEAR_ON_INVISIBLE);
 
 		// light + billboard to show it's position
 		scene::ISceneNode * lightNode = smgr->addLightSceneNode(0, core::vector3df(0, 0, 0),
