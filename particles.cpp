@@ -39,6 +39,20 @@ struct Affector
 	IrrPtr<scene::IParticleAffector> IrrAffector;
 };
 
+struct GuiAttribute
+{
+	void remove()
+	{
+		if ( StaticText )
+			StaticText->remove();
+		if ( EditBox )
+			EditBox->remove();
+	}
+
+	IrrPtr<gui::IGUIStaticText> StaticText;
+	IrrPtr<gui::IGUIEditBox> EditBox;
+};
+
 class CApp : public IEventReceiver
 {
     friend int main(int argc, char *argv[]);
@@ -56,6 +70,9 @@ public:
 	, ListBoxEmitters(0)
 	, ButtonParticlesVisibility(0)
 	, ButtonClearParticles(0)
+	, ButtonUpdateAttributes(0)
+	, ActiveAttributes(0)
+	, ActiveAttributeObject(0)
 	{
 	}
 
@@ -70,18 +87,22 @@ public:
 				if ( event.GUIEvent.Caller == ButtonEnableCircle )
 				{
 					AnimatorCircle->setEnabled( ButtonEnableCircle->isPressed(), currentTime );
+					showAttributeValues(AnimatorCircle.get());
 				}
 				else if ( event.GUIEvent.Caller == ButtonEnableStraight )
 				{
 					AnimatorStraight->setEnabled( ButtonEnableStraight->isPressed(), currentTime );
+					showAttributeValues(AnimatorStraight.get());
 				}
 				else if ( event.GUIEvent.Caller == ButtonEnableSpline )
 				{
 					AnimatorSpline->setEnabled( ButtonEnableSpline->isPressed(), currentTime );
+					showAttributeValues(AnimatorSpline.get());
 				}
 				else if ( event.GUIEvent.Caller == ButtonEnableRotate )
 				{
 					AnimatorRotate->setEnabled( ButtonEnableRotate->isPressed(), currentTime );
+					showAttributeValues(AnimatorRotate.get());
 				}
 				else if ( event.GUIEvent.Caller == ButtonParticlesVisibility )
 				{
@@ -91,6 +112,10 @@ public:
 				{
 					ParticleSceneNode->clearParticles();
 				}
+				else if ( event.GUIEvent.Caller == ButtonUpdateAttributes )
+				{
+					updateAttributeObject();
+				}
 				else
 				{
 					for ( size_t i=0; i < AffectorButtons.size(); ++i )
@@ -98,6 +123,7 @@ public:
 						if ( event.GUIEvent.Caller == AffectorButtons[i] )
 						{
 							updateAffectors(ParticleSceneNode);
+							showAttributeValues(Affectors[i].IrrAffector.get());
 							break;
 						}
 					}
@@ -112,6 +138,7 @@ public:
 					if ( selected >= 0 )
 					{
 						ParticleSceneNode->setEmitter( Emitters[selected].IrrEmitter.get() );
+						showAttributeValues(Emitters[selected].IrrEmitter.get());
 					}
 					else
 					{
@@ -131,32 +158,46 @@ protected:
 		if (!Device)
 			return false;
 
+		video::IVideoDriver* driver =  Device->getVideoDriver();
 		Device->setEventReceiver(this);
 		scene::ISceneManager* smgr = Device->getSceneManager();
+		io::IFileSystem * fs = Device->getFileSystem();
 
-		core::vector3df camPos = core::vector3df(0, 150, -300);
+		ActiveAttributes = fs->createEmptyAttributes();
+
 		core::vector3df camLookAt = core::vector3df(0, 0, 0);
-		Camera = smgr->addCameraSceneNode (0, camPos, camLookAt, -1);
+		f32 camRotateSpeed = -1500.f;
+		f32 camZoomSpeed = 200.f;
+		f32 camTranslationSpeed = 1500.f;
+		f32 camDistance = 300.f;
+		Camera = smgr->addCameraSceneNodeMaya(0, camRotateSpeed, camZoomSpeed, camTranslationSpeed, -1, camDistance);
+		Camera->updateAbsolutePosition();
+		Camera->setTarget(camLookAt);
 
-		MeshSceneNode = smgr->addCubeSceneNode (10.0f, 0, -1,
+		MeshSceneNode = smgr->addCubeSceneNode (5.0f, 0, -1,
 		                                   core::vector3df(0, 0, 0),		// position
 		                                   core::vector3df(0, 0, 0),			// rotation
 		                                   core::vector3df(1.0f, 1.0f, 1.0f));	// scale
 		createAnimators(MeshSceneNode);
 
 		bool withDefaultEmitter=false;
-		core::vector3df particleNodePosition=core::vector3df(0, 10, 0);	// slightly on top of the cube
+		core::vector3df particleNodePosition=core::vector3df(0, 0, 0);	// exactly at cube
 		core::vector3df particleNodeRotation=core::vector3df(0, 0, 0);
 		core::vector3df particleNodeScale=core::vector3df(1.0f, 1.0f, 1.0f);
 		ParticleSceneNode = smgr->addParticleSystemSceneNode(withDefaultEmitter, MeshSceneNode, -1, particleNodePosition, particleNodeRotation, particleNodeScale);
 		createEmitters(ParticleSceneNode);
 		createAffectors(ParticleSceneNode);
 
-		smgr->addLightSceneNode(0, core::vector3df(0, 0, 0),
-		                        video::SColorf(1.0f, 1.0f, 1.0f),
-								300.0f);	// radius
+		// light + billboard to show it's position
+		scene::ISceneNode * lightNode = smgr->addLightSceneNode(0, core::vector3df(0, 0, 0),
+		                                                         video::SColorf(1.0f, 1.0f, 1.0f),
+															     300.0f); // radius
+		scene::ISceneNode * lightBillboard = smgr->addBillboardSceneNode(lightNode, core::dimension2d<f32>(30, 30));
+		lightBillboard->setMaterialFlag(video::EMF_LIGHTING, false);
+		lightBillboard->setMaterialType(video::EMT_TRANSPARENT_ADD_COLOR);
+		lightBillboard->setMaterialTexture(0, driver->getTexture("../../media/particlewhite.bmp"));
 
-
+		// GUI
 		gui::IGUIEnvironment* guiEnv = Device->getGUIEnvironment();
 		ButtonEnableCircle = guiEnv->addButton(core::rect<s32>(10, 20, 100, 40), 0, -1, L"circle");
 		ButtonEnableCircle->setIsPushButton(true);
@@ -187,6 +228,7 @@ protected:
 		ButtonParticlesVisibility->setIsPushButton(true);
 
 		ButtonClearParticles = guiEnv->addButton(core::rect<s32>(310, 50, 400, 70), 0, -1, L"Clear particles");
+		ButtonUpdateAttributes = guiEnv->addButton(core::rect<s32>(60, 140, 120, 160), 0, -1, L"Set attributes");
 
 		return true;
 	}
@@ -222,6 +264,11 @@ protected:
 
     void quit()
 	{
+		if ( ActiveAttributes )
+		{
+			ActiveAttributes->drop();
+			ActiveAttributes = NULL;
+		}
 		dropAnimators();
 		dropAffectors();
 		dropEmitters();
@@ -260,8 +307,8 @@ protected:
 
 		u32 currentTime = Device->getTimer ()->getTime();
 		core::array< core::vector3df > points;
-		points.push_back( MeshSceneNode->getPosition() );
-		points.push_back( points[0] + core::vector3df(150, 0,0) );
+		points.push_back( core::vector3df(0, 0, 0) );
+		points.push_back( points[0] + core::vector3df(150, 0, 0) );
 		points.push_back( points[0] + core::vector3df(150, 150, 0) );
 		points.push_back( points[0] + core::vector3df(0, 0, 150) );
 		f32 speed = 1.0f;
@@ -389,6 +436,51 @@ protected:
 		Affectors.clear();
 	}
 
+	void showAttributeValues(io::IAttributeExchangingObject * attribObj)
+	{
+		ActiveAttributeObject = attribObj;
+		if ( !ActiveAttributeObject || !ActiveAttributes )
+			return;
+
+		for ( size_t i=0; i < GuiAttributes.size(); ++i )
+			GuiAttributes[i].remove();
+		GuiAttributes.clear();
+		ActiveAttributes->clear();
+
+		ActiveAttributeObject->serializeAttributes(ActiveAttributes);
+
+		gui::IGUIEnvironment* guiEnv = Device->getGUIEnvironment();
+		s32 left = 10;
+		s32 top = 170;
+		for ( s32 i=0; i< (s32)ActiveAttributes->getAttributeCount(); ++i )
+		{
+			GuiAttribute guiAttribute;
+			core::stringw name(ActiveAttributes->getAttributeName(i));
+			core::stringw value(ActiveAttributes->getAttributeAsString(i));
+
+			guiAttribute.StaticText.set( guiEnv->addStaticText( name.c_str(), core::rect<s32> (left, top, left+60, top+20), true, false ));
+			guiAttribute.EditBox.set( guiEnv->addEditBox( value.c_str(), core::rect<s32>(left+65, top, left+200, top+20) ));
+			top += 25;
+
+			GuiAttributes.push_back(guiAttribute);
+		}
+	}
+
+	void updateAttributeObject()
+	{
+		if ( !ActiveAttributeObject || !ActiveAttributes )
+			return;
+
+		for ( s32 i=0; i< (s32)ActiveAttributes->getAttributeCount(); ++i )
+		{
+			core::stringc value( GuiAttributes[i].EditBox->getText() );
+			ActiveAttributes->setAttribute(i, value.c_str() );
+		}
+
+		ActiveAttributeObject->deserializeAttributes(ActiveAttributes);
+	}
+
+
 private:
 	IrrlichtDevice * Device;
 	scene::ICameraSceneNode * Camera;
@@ -402,6 +494,7 @@ private:
 	std::vector<gui::IGUIButton *> AffectorButtons;
 	gui::IGUIButton * ButtonParticlesVisibility;
 	gui::IGUIButton * ButtonClearParticles;
+	gui::IGUIButton * ButtonUpdateAttributes;
 
 	IrrPtr<scene::ISceneNodeAnimator> AnimatorCircle;
 	IrrPtr<scene::ISceneNodeAnimator> AnimatorStraight;
@@ -410,6 +503,10 @@ private:
 
 	std::vector<Emitter> Emitters;
 	std::vector<Affector> Affectors;
+
+	io::IAttributes* ActiveAttributes;
+	io::IAttributeExchangingObject * ActiveAttributeObject;
+	std::vector<GuiAttribute> GuiAttributes;
 };
 
 int main(int argc, char *argv[])
