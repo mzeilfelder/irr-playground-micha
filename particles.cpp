@@ -183,11 +183,11 @@ protected:
 		MeshSceneNode = smgr->addCubeSceneNode (5.0f, 0, -1,
 		                                   core::vector3df(0, 0, 0),		// position
 		                                   core::vector3df(0, 0, 0),			// rotation
-		                                   core::vector3df(1.0f, 1.0f, 1.0f));	// scale
+		                                   core::vector3df(0.33f, 2.f, 1.f));	// scale
 		createAnimators(MeshSceneNode);
 
 		bool withDefaultEmitter=false;
-		core::vector3df particleNodePosition=core::vector3df(0, 0, 0);	// exactly at cube
+		core::vector3df particleNodePosition=core::vector3df(0, 10, 0);	// relative to cube
 		core::vector3df particleNodeRotation=core::vector3df(0, 0, 0);
 		core::vector3df particleNodeScale=core::vector3df(1.0f, 1.0f, 1.0f);
 		ParticleSceneNode = smgr->addParticleSystemSceneNode(withDefaultEmitter, MeshSceneNode, -1, particleNodePosition, particleNodeRotation, particleNodeScale);
@@ -475,8 +475,8 @@ protected:
 			core::stringw name(ActiveAttributes->getAttributeName(i));
 			core::stringw value(ActiveAttributes->getAttributeAsString(i));
 
-			guiAttribute.StaticText.set( guiEnv->addStaticText( name.c_str(), core::rect<s32> (left, top, left+60, top+20), true, false ));
-			guiAttribute.EditBox.set( guiEnv->addEditBox( value.c_str(), core::rect<s32>(left+65, top, left+200, top+20) ));
+			guiAttribute.StaticText.set( guiEnv->addStaticText( name.c_str(), core::rect<s32> (left, top, left+60, top+20), true, false ), true);
+			guiAttribute.EditBox.set( guiEnv->addEditBox( value.c_str(), core::rect<s32>(left+65, top, left+200, top+20) ), true);
 			top += 25;
 
 			GuiAttributes.push_back(guiAttribute);

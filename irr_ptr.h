@@ -22,9 +22,9 @@ public:
     //! constructor
     /** \param ptr A reference counted pointer
         \param grab When true the reference count for the pointer is increased.
-                    When false it is expected that the ptr has already an increased reference counter, for example because
-                    it was returned by one of the Irrlicht create functions */
-    explicit IrrPtr(T * ptr, bool grab=true)
+                    When false it is expected that the ptr has already an increased reference counter, for example
+					Irrlicht pointers create with new start with a ref-count of 1. */
+    explicit IrrPtr(T * ptr, bool grab)
     : mRefCounted(ptr)
     {
         if ( mRefCounted && grab )
@@ -51,7 +51,7 @@ public:
         if ( this == &other )   // currently not needed due to set implementation, I just feel bad removing it.
             return *this;
 
-        set(other.mRefCounted);
+        set(other.mRefCounted, true);
 
         return *this;
     }
@@ -102,16 +102,17 @@ public:
         If old and new pointer are identical then nothing is done.
         \param ptr A reference counted pointer
         \param grab When true the reference count for the pointer is increased.
-                    When false it is expected that the ptr has already an increased reference counter, for example because
-                    it was returned by one of the Irrlicht create functions */
-    void set(T * ptr, bool grab=true)
+                    When false it is expected that the ptr has already an increased reference counter, for example
+					Irrlicht pointers create with new start with a ref-count of 1.
+	*/
+    void set(T * ptr, bool grab)
     {
         if ( mRefCounted != ptr )
         {
             if ( mRefCounted )
                 mRefCounted->drop();
             mRefCounted = ptr;
-            if ( mRefCounted )
+            if ( mRefCounted && grab)
                 mRefCounted->grab();
         }
     }
