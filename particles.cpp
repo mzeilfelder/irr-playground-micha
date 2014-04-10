@@ -63,15 +63,21 @@ public:
 	, Camera(0)
 	, MeshSceneNode(0)
 	, ParticleSceneNode(0)
-	, ButtonEnableCircle(0)
-	, ButtonEnableStraight(0)
-	, ButtonEnableSpline(0)
-	, ButtonEnableRotate(0)
+	, CheckBoxEnableCircle(0)
+	, CheckBoxEnableStraight(0)
+	, CheckBoxEnableSpline(0)
+	, CheckBoxEnableRotate(0)
 	, ListBoxEmitters(0)
-	, ButtonParticlesVisibility(0)
+	, CheckBoxParticlesVisibility(0)
 	, ButtonClearParticles(0)
-	, ButtonGlobalParticles(0)
+	, CheckBoxGlobalParticles(0)
 	, SpinBoxSleep(0)
+	, CheckBoxInvisibleEmitting(0)
+	, CheckBoxInvisibleAffecting(0)
+	, CheckBoxInvisibleAnimating(0)
+	, CheckBoxClearOnInvisible(0)
+	, CheckBoxEmitterIgnoreRotation(0)
+	, CheckBoxEmitterFrameInterpolation(0)
 	, ButtonUpdateAttributes(0)
 	, ActiveAttributes(0)
 	, ActiveAttributeObject(0)
@@ -84,49 +90,73 @@ public:
 		{
 			if ( event.GUIEvent.EventType == gui::EGET_BUTTON_CLICKED  )
 			{
-				u32 currentTime = Device->getTimer()->getTime();
-
-				if ( event.GUIEvent.Caller == ButtonEnableCircle )
-				{
-					AnimatorCircle->setEnabled( ButtonEnableCircle->isPressed(), currentTime );
-					showAttributeValues(AnimatorCircle.get());
-				}
-				else if ( event.GUIEvent.Caller == ButtonEnableStraight )
-				{
-					AnimatorStraight->setEnabled( ButtonEnableStraight->isPressed(), currentTime );
-					showAttributeValues(AnimatorStraight.get());
-				}
-				else if ( event.GUIEvent.Caller == ButtonEnableSpline )
-				{
-					AnimatorSpline->setEnabled( ButtonEnableSpline->isPressed(), currentTime );
-					showAttributeValues(AnimatorSpline.get());
-				}
-				else if ( event.GUIEvent.Caller == ButtonEnableRotate )
-				{
-					AnimatorRotate->setEnabled( ButtonEnableRotate->isPressed(), currentTime );
-					showAttributeValues(AnimatorRotate.get());
-				}
-				else if ( event.GUIEvent.Caller == ButtonParticlesVisibility )
-				{
-					ParticleSceneNode->setVisible( ButtonParticlesVisibility->isPressed() );
-				}
-				else if ( event.GUIEvent.Caller == ButtonClearParticles )
+				if ( event.GUIEvent.Caller == ButtonClearParticles )
 				{
 					ParticleSceneNode->clearParticles();
-				}
-				else if ( event.GUIEvent.Caller == ButtonGlobalParticles )
-				{
-					ParticleSceneNode->setParticlesAreGlobal( ButtonGlobalParticles->isPressed() );
 				}
 				else if ( event.GUIEvent.Caller == ButtonUpdateAttributes )
 				{
 					updateAttributeObject();
 				}
+			}
+			else if ( event.GUIEvent.EventType == gui::EGET_CHECKBOX_CHANGED )
+			{
+				u32 currentTime = Device->getTimer()->getTime();
+				if ( event.GUIEvent.Caller == CheckBoxEnableCircle )
+				{
+					AnimatorCircle->setEnabled( CheckBoxEnableCircle->isChecked(), currentTime );
+					showAttributeValues(AnimatorCircle.get());
+				}
+				else if ( event.GUIEvent.Caller == CheckBoxEnableStraight )
+				{
+					AnimatorStraight->setEnabled( CheckBoxEnableStraight->isChecked(), currentTime );
+					showAttributeValues(AnimatorStraight.get());
+				}
+				else if ( event.GUIEvent.Caller == CheckBoxEnableSpline )
+				{
+					AnimatorSpline->setEnabled( CheckBoxEnableSpline->isChecked(), currentTime );
+					showAttributeValues(AnimatorSpline.get());
+				}
+				else if ( event.GUIEvent.Caller == CheckBoxEnableRotate )
+				{
+					AnimatorRotate->setEnabled( CheckBoxEnableRotate->isChecked(), currentTime );
+					showAttributeValues(AnimatorRotate.get());
+				}
+				else if ( event.GUIEvent.Caller == CheckBoxParticlesVisibility )
+				{
+					ParticleSceneNode->setVisible( CheckBoxParticlesVisibility->isChecked() );
+				}
+				else if ( event.GUIEvent.Caller == CheckBoxGlobalParticles )
+				{
+					ParticleSceneNode->setParticlesAreGlobal( CheckBoxGlobalParticles->isChecked() );
+				}
+				else if ( event.GUIEvent.Caller == CheckBoxInvisibleEmitting
+						|| event.GUIEvent.Caller == CheckBoxInvisibleAffecting
+						|| event.GUIEvent.Caller == CheckBoxInvisibleAnimating
+						|| event.GUIEvent.Caller == CheckBoxClearOnInvisible
+						|| event.GUIEvent.Caller == CheckBoxEmitterIgnoreRotation
+						|| event.GUIEvent.Caller == CheckBoxEmitterFrameInterpolation )
+				{
+					u32 behavior = 0;
+					if ( CheckBoxInvisibleEmitting->isChecked()  )
+						behavior |= scene::EPB_INVISIBLE_EMITTING;
+					if ( CheckBoxInvisibleAffecting->isChecked()  )
+						behavior |= scene::EPB_INVISIBLE_AFFECTING;
+					if ( CheckBoxInvisibleAnimating->isChecked()  )
+						behavior |= scene::EPB_INVISIBLE_ANIMATING;
+					if ( CheckBoxClearOnInvisible->isChecked()  )
+						behavior |= scene::EPB_CLEAR_ON_INVISIBLE;
+					if ( CheckBoxEmitterIgnoreRotation->isChecked()  )
+						behavior |= scene::EPB_EMITTER_VECTOR_IGNORE_ROTATION;
+					if ( CheckBoxEmitterFrameInterpolation->isChecked()  )
+						behavior |= scene::EPB_EMITTER_FRAME_INTERPOLATION;
+					ParticleSceneNode->setParticleBehavior(behavior);
+				}
 				else
 				{
-					for ( size_t i=0; i < AffectorButtons.size(); ++i )
+					for ( size_t i=0; i < AffectorCheckBoxes.size(); ++i )
 					{
-						if ( event.GUIEvent.Caller == AffectorButtons[i] )
+						if ( event.GUIEvent.Caller == AffectorCheckBoxes[i] )
 						{
 							updateAffectors(ParticleSceneNode);
 							showAttributeValues(Affectors[i].IrrAffector.get());
@@ -180,6 +210,16 @@ protected:
 		Camera->updateAbsolutePosition();
 		Camera->setTarget(camLookAt);
 
+		// add a skybox to get a better sense of current camera rotation.
+		smgr->addSkyBoxSceneNode(
+				driver->getTexture("../../media/irrlicht2_up.jpg"),
+				driver->getTexture("../../media/irrlicht2_dn.jpg"),
+				driver->getTexture("../../media/irrlicht2_lf.jpg"),
+				driver->getTexture("../../media/irrlicht2_rt.jpg"),
+				driver->getTexture("../../media/irrlicht2_ft.jpg"),
+				driver->getTexture("../../media/irrlicht2_bk.jpg"));
+
+
 		MeshSceneNode = smgr->addCubeSceneNode (5.0f, 0, -1,
 		                                   core::vector3df(0, 0, 0),		// position
 		                                   core::vector3df(0, 0, 0),			// rotation
@@ -194,7 +234,7 @@ protected:
 		createEmitters(ParticleSceneNode);
 		createAffectors(ParticleSceneNode);
 		// too lazy to create a gui for this - just change and re-compile for testing.
-		ParticleSceneNode->setInvisibleBehavior(scene::EPI_STOP_EMITTERS|scene::EPI_STOP_AFFECTORS|scene::EPI_STOP_ANIMATING|scene::EPI_CLEAR_ON_INVISIBLE);
+		ParticleSceneNode->setParticleBehavior(0);
 
 		// light + billboard to show it's position
 		scene::ISceneNode * lightNode = smgr->addLightSceneNode(0, core::vector3df(0, 0, 0),
@@ -207,14 +247,13 @@ protected:
 
 		// GUI
 		gui::IGUIEnvironment* guiEnv = Device->getGUIEnvironment();
-		ButtonEnableCircle = guiEnv->addButton(core::rect<s32>(10, 20, 100, 40), 0, -1, L"circle");
-		ButtonEnableCircle->setIsPushButton(true);
-		ButtonEnableStraight = guiEnv->addButton(core::rect<s32>(10, 50, 100, 70), 0, -1, L"straight");
-		ButtonEnableStraight->setIsPushButton(true);
-		ButtonEnableSpline = guiEnv->addButton(core::rect<s32>(10, 80, 100, 100), 0, -1, L"spline");
-		ButtonEnableSpline->setIsPushButton(true);
-		ButtonEnableRotate = guiEnv->addButton(core::rect<s32>(10, 110, 100, 130), 0, -1, L"rotate");
-		ButtonEnableRotate->setIsPushButton(true);
+		guiEnv->getSkin()->setColor(gui::EGDC_3D_FACE, video::SColor(20,110,210,210));
+		guiEnv->getSkin()->setColor(gui::EGDC_3D_DARK_SHADOW, video::SColor(20,0,50,50));
+
+		CheckBoxEnableCircle = guiEnv->addCheckBox(false, core::rect<s32>(10, 20, 100, 40), 0, -1, L"circle");
+		CheckBoxEnableStraight = guiEnv->addCheckBox(false, core::rect<s32>(10, 50, 100, 70), 0, -1, L"straight");
+		CheckBoxEnableSpline = guiEnv->addCheckBox(false, core::rect<s32>(10, 80, 100, 100), 0, -1, L"spline");
+		CheckBoxEnableRotate = guiEnv->addCheckBox(false, core::rect<s32>(10, 110, 100, 130), 0, -1, L"rotate");
 
 		ListBoxEmitters = guiEnv->addListBox(core::rect<s32>(110, 20, 200, 130), 0, -1, true);
 		for ( size_t i=0; i<Emitters.size(); ++i )
@@ -225,28 +264,29 @@ protected:
 		s32 top = 20;
 		for ( size_t i=0; i<Affectors.size(); ++i )
 		{
-			gui::IGUIButton * button = guiEnv->addButton(core::rect<s32>(210, top, 300, top+20), 0, -1, Affectors[i].Name.c_str());
-			button->setIsPushButton(true);
-			AffectorButtons.push_back(button);
+			AffectorCheckBoxes.push_back( guiEnv->addCheckBox(false, core::rect<s32>(210, top, 300, top+20), 0, -1, Affectors[i].Name.c_str()) );
 			top += 30;
 		}
 		ButtonUpdateAttributes = guiEnv->addButton(core::rect<s32>(60, 140, 120, 160), 0, -1, L"Set attributes");
 
-		ButtonParticlesVisibility = guiEnv->addButton(core::rect<s32>(310, 20, 400, 40), 0, -1, L"Visible");
-		ButtonParticlesVisibility->setPressed(true);
-		ButtonParticlesVisibility->setIsPushButton(true);
+		CheckBoxParticlesVisibility = guiEnv->addCheckBox(true, core::rect<s32>(310, 20, 400, 40), 0, -1, L"Visible");
 
 		ButtonClearParticles = guiEnv->addButton(core::rect<s32>(310, 50, 400, 70), 0, -1, L"Clear particles");
 
-		ButtonGlobalParticles = guiEnv->addButton(core::rect<s32>(310, 80, 400, 100), 0, -1, L"Global particles");
-		ButtonGlobalParticles->setPressed(true);
-		ButtonGlobalParticles->setIsPushButton(true);
+		CheckBoxGlobalParticles = guiEnv->addCheckBox(true, core::rect<s32>(310, 80, 400, 100), 0, -1, L"Global particles");
 
 		guiEnv->addStaticText(L"sleep (reduce FPS)", core::rect<s32>(310,110,400,130));
 		SpinBoxSleep = guiEnv->addSpinBox(L"10", core::rect<s32>(310,130,400,150));
 		SpinBoxSleep->setRange(0.f, 10000.f);
 		SpinBoxSleep->setStepSize(10.f);
 		SpinBoxSleep->setDecimalPlaces(0);
+
+		CheckBoxInvisibleEmitting = guiEnv->addCheckBox(false, core::rect<s32>(410, 20, 500, 40), 0, -1, L"invisible emitting");
+		CheckBoxInvisibleAffecting = guiEnv->addCheckBox(false, core::rect<s32>(410, 50, 500, 70), 0, -1, L"invisible affecting");
+		CheckBoxInvisibleAnimating = guiEnv->addCheckBox(false, core::rect<s32>(410, 80, 500, 100), 0, -1, L"invisible animating");
+		CheckBoxClearOnInvisible = guiEnv->addCheckBox(false, core::rect<s32>(410, 110, 500, 130), 0, -1, L"clear on invisible");
+		CheckBoxEmitterIgnoreRotation = guiEnv->addCheckBox(false, core::rect<s32>(410, 140, 500, 160), 0, -1, L"emitter ignore rotation");
+		CheckBoxEmitterFrameInterpolation = guiEnv->addCheckBox(false, core::rect<s32>(410, 170, 500, 190), 0, -1, L"frame interpolation");
 
 		return true;
 	}
@@ -441,9 +481,9 @@ protected:
 	void updateAffectors(scene::IParticleSystemSceneNode * particleNode)
 	{
 		particleNode->removeAllAffectors();
-		for ( size_t i=0; i < AffectorButtons.size(); ++i )
+		for ( size_t i=0; i < AffectorCheckBoxes.size(); ++i )
 		{
-			if ( AffectorButtons[i]->isPressed() )
+			if ( AffectorCheckBoxes[i]->isChecked() )
 				ParticleSceneNode->addAffector( Affectors[i].IrrAffector.get() );
 		}
 	}
@@ -503,17 +543,25 @@ private:
 	scene::ICameraSceneNode * Camera;
 	scene::IMeshSceneNode* MeshSceneNode;
 	scene::IParticleSystemSceneNode * ParticleSceneNode;
-	gui::IGUIButton * ButtonEnableCircle;
-	gui::IGUIButton * ButtonEnableStraight;
-	gui::IGUIButton * ButtonEnableSpline;
-	gui::IGUIButton * ButtonEnableRotate;
+
+	gui::IGUICheckBox * CheckBoxEnableCircle;
+	gui::IGUICheckBox * CheckBoxEnableStraight;
+	gui::IGUICheckBox * CheckBoxEnableSpline;
+	gui::IGUICheckBox * CheckBoxEnableRotate;
 	gui::IGUIListBox * ListBoxEmitters;
-	std::vector<gui::IGUIButton *> AffectorButtons;
-	gui::IGUIButton * ButtonParticlesVisibility;
+	std::vector<gui::IGUICheckBox*> AffectorCheckBoxes;
+	gui::IGUICheckBox * CheckBoxParticlesVisibility;
 	gui::IGUIButton * ButtonClearParticles;
-	gui::IGUIButton * ButtonGlobalParticles;
+	gui::IGUICheckBox * CheckBoxGlobalParticles;
 	gui::IGUIButton * ButtonUpdateAttributes;
 	gui::IGUISpinBox * SpinBoxSleep;
+
+	gui::IGUICheckBox * CheckBoxInvisibleEmitting;
+	gui::IGUICheckBox * CheckBoxInvisibleAffecting;
+	gui::IGUICheckBox * CheckBoxInvisibleAnimating;
+	gui::IGUICheckBox * CheckBoxClearOnInvisible;
+	gui::IGUICheckBox * CheckBoxEmitterIgnoreRotation;
+	gui::IGUICheckBox * CheckBoxEmitterFrameInterpolation;
 
 	IrrPtr<scene::ISceneNodeAnimator> AnimatorCircle;
 	IrrPtr<scene::ISceneNodeAnimator> AnimatorStraight;
