@@ -1,0 +1,153 @@
+Index: source/Irrlicht/CGUIStaticText.cpp
+===================================================================
+--- source/Irrlicht/CGUIStaticText.cpp	(revision 4766)
++++ source/Irrlicht/CGUIStaticText.cpp	(working copy)
+@@ -577,7 +577,26 @@
+ 	}
+ }
+ 
++//! Return the current number of used lines
++u32 CGUIStaticText::getLineCount() const
++{
++	return WordWrap ? BrokenText.size() : 1;
++}
+ 
++//! Return the text in the given line
++const wchar_t* CGUIStaticText::getLine(u32 lineIdx) const
++{
++	if (WordWrap)
++	{
++		if ( lineIdx < BrokenText.size() )
++			return BrokenText[lineIdx].c_str();
++		return NULL;
++	}
++
++	return Text.c_str();
++}
++
++
+ //! Writes attributes of the element.
+ //! Implement this to expose the attributes of your element for
+ //! scripting languages, editors, debuggers or xml serialization purposes.
+Index: source/Irrlicht/CGUIStaticText.h
+===================================================================
+--- source/Irrlicht/CGUIStaticText.h	(revision 4766)
++++ source/Irrlicht/CGUIStaticText.h	(working copy)
+@@ -109,6 +109,12 @@
+ 		//! Checks if the text should be interpreted as right-to-left text
+ 		virtual bool isRightToLeft() const _IRR_OVERRIDE_;
+ 
++		//! Return the current number of used lines
++		virtual u32 getLineCount() const _IRR_OVERRIDE_;
++
++		//! Return the text in the given line
++		virtual const wchar_t* getLine(u32 lineIdx) const _IRR_OVERRIDE_;
++
+ 		//! Writes attributes of the element.
+ 		virtual void serializeAttributes(io::IAttributes* out, io::SAttributeReadWriteOptions* options) const _IRR_OVERRIDE_;
+ 
+Index: source/Irrlicht/CGUIEditBox.h
+===================================================================
+--- source/Irrlicht/CGUIEditBox.h	(revision 4766)
++++ source/Irrlicht/CGUIEditBox.h	(working copy)
+@@ -139,6 +139,12 @@
+ 		//! Updates the absolute position, splits text if required
+ 		virtual void updateAbsolutePosition() _IRR_OVERRIDE_;
+ 
++		//! Return the current number of used lines
++		virtual u32 getLineCount() const _IRR_OVERRIDE_;
++
++		//! Return the text in the given line
++		virtual const wchar_t* getLine(u32 lineIdx) const _IRR_OVERRIDE_;
++
+ 		//! Writes attributes of the element.
+ 		virtual void serializeAttributes(io::IAttributes* out, io::SAttributeReadWriteOptions* options) const _IRR_OVERRIDE_;
+ 
+Index: source/Irrlicht/CGUIEditBox.cpp
+===================================================================
+--- source/Irrlicht/CGUIEditBox.cpp	(revision 4766)
++++ source/Irrlicht/CGUIEditBox.cpp	(working copy)
+@@ -177,7 +177,25 @@
+ 	}
+ }
+ 
++//! Return the current number of used lines
++u32 CGUIEditBox::getLineCount() const
++{
++	return (WordWrap || MultiLine) ? BrokenText.size() : 1;
++}
+ 
++//! Return the text in the given line
++const wchar_t* CGUIEditBox::getLine(u32 lineIdx) const
++{
++	if (WordWrap || MultiLine)
++	{
++		if ( lineIdx < BrokenText.size() )
++			return BrokenText[lineIdx].c_str();
++		return NULL;
++	}
++
++	return Text.c_str();
++}
++
+ //! Checks if word wrap is enabled
+ bool CGUIEditBox::isWordWrapEnabled() const
+ {
+@@ -1108,7 +1126,7 @@
+ {
+ 	IGUIFont* font = getActiveFont();
+ 
+-	const u32 lineCount = (WordWrap || MultiLine) ? BrokenText.size() : 1;
++	const u32 lineCount = getLineCount();
+ 
+ 	core::stringw *txtLine=0;
+ 	s32 startPos=0;
+@@ -1278,7 +1296,7 @@
+ 	core::dimension2du d;
+ 
+ 	// get text dimension
+-	const u32 lineCount = (WordWrap || MultiLine) ? BrokenText.size() : 1;
++	const u32 lineCount = getLineCount();
+ 	if (WordWrap || MultiLine)
+ 	{
+ 		d = font->getDimension(BrokenText[line].c_str());
+Index: include/IGUIEditBox.h
+===================================================================
+--- include/IGUIEditBox.h	(revision 4766)
++++ include/IGUIEditBox.h	(working copy)
+@@ -147,6 +147,15 @@
+ 
+ 		//! Get the cursor blinktime
+ 		virtual irr::u32 getCursorBlinkTime() const = 0;
++
++		//! Return the current number of used lines
++		/** \return Number of text lines. Will be at least 1. Empty lines also count. */
++		virtual u32 getLineCount() const = 0;
++
++		//! Return the text in the given line
++		/**	\param lineIdx Number of the line, indices starting with 0.
++		\return Text of a single line or NULL for an invalid lineIdx. */
++		virtual const wchar_t* getLine(u32 lineIdx) const = 0;
+ 	};
+ 
+ 
+Index: include/IGUIStaticText.h
+===================================================================
+--- include/IGUIStaticText.h	(revision 4766)
++++ include/IGUIStaticText.h	(working copy)
+@@ -125,6 +125,15 @@
+ 
+ 		//! Checks whether the text in this element should be interpreted as right-to-left
+ 		virtual bool isRightToLeft() const = 0;
++
++		//! Return the current number of used lines
++		/** \return Number of text lines. Will be at least 1. Empty lines also count. */
++		virtual u32 getLineCount() const = 0;
++
++		//! Return the text in the given line
++		/**	\param lineIdx Number of the line, indices starting with 0.
++		\return Text of a single line or NULL for an invalid lineIdx. */
++		virtual const wchar_t* getLine(u32 lineIdx) const = 0;
+ 	};
+ 
+ 
