@@ -71,6 +71,7 @@ public:
 	, CheckBoxParticlesVisibility(0)
 	, ButtonClearParticles(0)
 	, CheckBoxGlobalParticles(0)
+	, ButtonUpdateAttributes(0)
 	, SpinBoxSleep(0)
 	, CheckBoxInvisibleEmitting(0)
 	, CheckBoxInvisibleAffecting(0)
@@ -78,7 +79,6 @@ public:
 	, CheckBoxClearOnInvisible(0)
 	, CheckBoxEmitterIgnoreRotation(0)
 	, CheckBoxEmitterFrameInterpolation(0)
-	, ButtonUpdateAttributes(0)
 	, ActiveAttributes(0)
 	, ActiveAttributeObject(0)
 	{
@@ -341,7 +341,6 @@ protected:
 	void createAnimators(scene::IMeshSceneNode* node)
 	{
 		scene::ISceneManager * smgr = Device->getSceneManager();
-		video::IVideoDriver* driver =  Device->getVideoDriver();
 
 		core::vector3df circleCenter=core::vector3df(0.f, 0.f, 0.f);
 		f32 circleRadius=100.f;
@@ -394,11 +393,11 @@ protected:
 	{
 		IrrPtr<scene::IParticleEmitter> emitter;
 
-		bool useNormalDirection=true;	// using normals of the vertex it's emitted from in mesh-emitters
+		//bool useNormalDirection=true;	// using normals of the vertex it's emitted from in mesh-emitters
 		core::vector3df direction(0.0f, 0.03f, 0.0f);
-		f32 normalDirectionModifier=100.0f;	// when useNormalDirection the normals are divided by this factor
-		bool everyMeshVertex=false; // when true it will emit min-max particles for every vertex in the mesh each second
-		s32 meshBufferNumber=-1;	// -1 for all, otherwise use only a specific meshbuffer
+		//f32 normalDirectionModifier=100.0f;	// when useNormalDirection the normals are divided by this factor
+		//bool everyMeshVertex=false; // when true it will emit min-max particles for every vertex in the mesh each second
+		//s32 meshBufferNumber=-1;	// -1 for all, otherwise use only a specific meshbuffer
 		u32 minParticlesPerSecond=5;
 		u32 maxParticlesPerSecond=10;
 		video::SColor minStartColor(255, 0, 0, 0);
