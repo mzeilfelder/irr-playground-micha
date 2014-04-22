@@ -15,22 +15,22 @@
 
 namespace irr
 {
-struct ProfileData
+struct SProfileData
 {
-	friend class Profiler;
+	friend class CProfiler;
 
-    ProfileData()
+    SProfileData()
 	{
 		GroupIndex = -1;
 		reset();
 	}
 
-	bool operator<(const ProfileData& pd) const
+	bool operator<(const SProfileData& pd) const
 	{
 		return Id < pd.Id;
 	}
 
-	bool operator==(const ProfileData& pd) const
+	bool operator==(const SProfileData& pd) const
 	{
 		return Id == pd.Id;
 	}
@@ -74,9 +74,10 @@ struct ProfileData
 	#ifdef _MSC_VER
 	#pragma warning(disable:4996)	// 'sprintf' was declared deprecated
 	#endif
-			wchar_t dummy[1023];
-			swprintf(dummy, 1023, L"%-15.15s%-12u%-12u%-12u%-12u%-12u",
-				Name.c_str(), CountCalls, TimeSum,
+			// Can't use swprintf as it fails on some platforms (especially mobile platforms)
+			char dummy[1023];
+			sprintf(dummy, "%-15.15s%-12u%-12u%-12u%-12u%-12u",
+				core::stringc(Name).c_str(), CountCalls, TimeSum,
 				TimeSum / CountCalls, LongestTime,
 				(ShortestTime <= LongestTime ? ShortestTime : 0)
 				);
@@ -100,7 +101,7 @@ struct ProfileData
 	}
 
 private:
-	ProfileData(u32 id)	: Id(id) {}	// just to be used for searching
+	SProfileData(u32 id) : Id(id) {}	// just to be used for searching
 
 	void reset()
 	{
@@ -123,17 +124,24 @@ private:
     u32 LastTimeStarted;
 };
 
-class Profiler
+//! Code-profiler. Please check the example in the Irrlicht examples folder about how to use it.
+// The design is all about using the central start/stop mechanism with minimal overhead.
+// This is why this class works without a virtual functions interface contrary to the usual Irrlicht design.
+// And also why we work with id's instead of strings in the start/stop functions even if it makes using
+// the class slightly harder.
+// Also it comes without reference-counting as the profiler-class is never released.
+// But it's also _not_ a singleton (still to be discussed), but life-time is only guaranteed to be inside main.
+class CProfiler
 {
 public:
-    Profiler()
+    CProfiler()
 	: IrrTimer(0)
 	, NextAutoId(INT_MAX)
 	{
 		addGroup(L"overview");
 	}
 
-	~Profiler()
+	~CProfiler()
 	{
 		if ( IrrTimer )
 			IrrTimer->drop();
@@ -151,8 +159,7 @@ public:
 	\param id: Should be >= 0 as negative id's are reserved for Irrlicht. Also very large numbers (near INT_MAX) might
 	have been added automatically by the other add function.
 	\param name: Name for displaying profile data.
-	\param groupName: Each id belongs into a group - this helps on displaying profile data. L"Irrlicht" is used by the Irrlicht engine itself.
-	*/
+	\param groupName: Each id belongs into a group - this helps on displaying profile data. L"Irrlicht" is used by the Irrlicht engine itself. */
     void add(s32 id, const core::stringw &name, const core::stringw &groupName);
 
 	//! Add an automatically generated for the given name and group which can be used for profiling with start/stop.
@@ -170,7 +177,7 @@ public:
 
 	//! Get the profile data
 	/** \param index A value between 0 and getProfileDataCount()-1.	Indices can change when new id's are added.*/
-    const ProfileData& getProfileDataByIndex(u32 index) const
+    const SProfileData& getProfileDataByIndex(u32 index) const
     {
 		return ProfileGroups[index];
     }
@@ -178,9 +185,9 @@ public:
 	//! Get the profile data
 	/** \param id Same value as used in ::add
 	\return Profile data for the given id or 0 when it does not exist.	*/
-    const ProfileData* getProfileDataById(u32 id)
+    const SProfileData* getProfileDataById(u32 id)
     {
-		ProfileData data(id);
+		SProfileData data(id);
     	s32 idx = ProfileDatas.binary_search(data);
 		if ( idx >= 0 )
 			return &ProfileDatas[idx];
@@ -196,7 +203,7 @@ public:
 
     //! Get profile data for a group.
     /** NOTE: The first groups is always L"overview" which is an overview for all existing groups */
-    const ProfileData& getGroupData(u32 index) const
+    const SProfileData& getGroupData(u32 index) const
     {
 		return ProfileGroups[index];
     }
@@ -255,11 +262,11 @@ protected:
 private:
     irr::ITimer * IrrTimer;
     irr::s32 NextAutoId;	// for giving out id's automatically
-	core::array<ProfileData> ProfileDatas;
-    core::array<ProfileData> ProfileGroups;
+	core::array<SProfileData> ProfileDatas;
+    core::array<SProfileData> ProfileGroups;
 };
 
-s32 Profiler::add(const core::stringw &name, const core::stringw &groupName)
+s32 CProfiler::add(const core::stringw &name, const core::stringw &groupName)
 {
 	s32 index = getDataIndex(name);
 	if ( index >= 0 )
@@ -276,7 +283,7 @@ s32 Profiler::add(const core::stringw &name, const core::stringw &groupName)
 	}
 }
 
-void Profiler::add(s32 id, const core::stringw &name, const core::stringw &groupName)
+void CProfiler::add(s32 id, const core::stringw &name, const core::stringw &groupName)
 {
 	s32 groupIdx = getGroupIndex(groupName);
 	if ( groupIdx < 0 )
@@ -284,7 +291,7 @@ void Profiler::add(s32 id, const core::stringw &name, const core::stringw &group
 		groupIdx = addGroup(groupName);
 	}
 
-	ProfileData data;
+	SProfileData data;
 	data.Id = id;
     data.GroupIndex = groupIdx;
     data.Name = name;
@@ -301,31 +308,31 @@ void Profiler::add(s32 id, const core::stringw &name, const core::stringw &group
 	}
 }
 
-s32 Profiler::addGroup(const core::stringw &name)
+s32 CProfiler::addGroup(const core::stringw &name)
 {
-    ProfileData group;
+    SProfileData group;
 	group.Id = -1;
     group.Name = name;
     ProfileGroups.push_back(group);
     return (s32)(ProfileGroups.size()-1);
 }
 
-void Profiler::start(s32 id)
+void CProfiler::start(s32 id)
 {
-	s32 idx = ProfileDatas.binary_search(ProfileData(id));
+	s32 idx = ProfileDatas.binary_search(SProfileData(id));
 	if ( idx >= 0 && IrrTimer )
 	{
 		ProfileDatas[idx].LastTimeStarted = IrrTimer->getRealTime();
 	}
 }
 
-void Profiler::stop(s32 id)
+void CProfiler::stop(s32 id)
 {
 	u32 timeNow = IrrTimer->getRealTime();
-	s32 idx = ProfileDatas.binary_search(ProfileData(id));
+	s32 idx = ProfileDatas.binary_search(SProfileData(id));
 	if ( idx >= 0 && IrrTimer )
 	{
-		ProfileData &data = ProfileDatas[idx];
+		SProfileData &data = ProfileDatas[idx];
 		if ( data.LastTimeStarted == 0 )
 			return;
 
@@ -341,7 +348,7 @@ void Profiler::stop(s32 id)
 
 		if ( data.GroupIndex >= 0 )
 		{
-			ProfileData & group = ProfileGroups[data.GroupIndex];
+			SProfileData & group = ProfileGroups[data.GroupIndex];
 			++group.CountCalls;
 			group.TimeSum += diffTime;
 			if ( diffTime > group.LongestTime )
@@ -353,16 +360,16 @@ void Profiler::stop(s32 id)
 	}
 }
 
-void Profiler::reset(s32 id)
+void CProfiler::reset(s32 id)
 {
-	s32 idx = ProfileDatas.binary_search(ProfileData(id));
+	s32 idx = ProfileDatas.binary_search(SProfileData(id));
     if ( idx >= 0 )
     {
-		ProfileData &data = ProfileDatas[idx];
+		SProfileData &data = ProfileDatas[idx];
 
 		if ( data.GroupIndex >= 0 )
 		{
-			ProfileData & group = ProfileGroups[data.GroupIndex];
+			SProfileData & group = ProfileGroups[data.GroupIndex];
             group.CountCalls -= data.CountCalls;
             group.TimeSum -= data.TimeSum;
         }
@@ -371,7 +378,7 @@ void Profiler::reset(s32 id)
     }
 }
 
-void Profiler::resetAll()
+void CProfiler::resetAll()
 {
 	for ( u32 i=0; i<ProfileDatas.size(); ++i )
     {
@@ -384,14 +391,14 @@ void Profiler::resetAll()
     }
 }
 
-void Profiler::printAll(core::stringw &ostream, bool includeOverview, bool suppressUncalled) const
+void CProfiler::printAll(core::stringw &ostream, bool includeOverview, bool suppressUncalled) const
 {
 	if (!IrrTimer)
 	{
 		ostream += L"WARNING: Profiler is not initialized\n";
 	}
 
-    ostream += ProfileData::makeTitleString();
+    ostream += SProfileData::makeTitleString();
     ostream += L"\n";
 	for ( u32 i=includeOverview ?0:1; i<ProfileGroups.size(); ++i )
     {
@@ -399,7 +406,7 @@ void Profiler::printAll(core::stringw &ostream, bool includeOverview, bool suppr
     }
 }
 
-void Profiler::printGroup(core::stringw &ostream, s32 idxGroup, bool suppressUncalled) const
+void CProfiler::printGroup(core::stringw &ostream, s32 idxGroup, bool suppressUncalled) const
 {
     ostream += ProfileGroups[idxGroup].getAsString();
     ostream += L"\n";
@@ -431,12 +438,49 @@ void Profiler::printGroup(core::stringw &ostream, s32 idxGroup, bool suppressUnc
     }
 }
 
-IRRLICHT_API Profiler* IRRCALLCONV getProfiler();
+//! Class where the objects profile their own life-time.
+class CProfileScope
+{
+public:
+	CProfileScope(CProfiler& profiler, s32 id, const core::stringw &name, const core::stringw &groupName)
+	: Profiler(profiler), Id(id)
+	{
+		Profiler.add(Id, name, groupName);
+		Profiler.start(Id);
+	}
+
+	CProfileScope(CProfiler& profiler, const core::stringw &name, const core::stringw &groupName)
+	: Profiler(profiler)
+	{
+		Id = Profiler.add(name, groupName);
+		Profiler.start(Id);
+	}
+
+	~CProfileScope()
+	{
+		Profiler.stop(Id);
+	}
+
+protected:
+	CProfiler& Profiler;
+	s32 Id;
+};
+
+//! Access the Irrlicht profiler object.
+/** Existence is guaranteed from the start of main - but _not_ before the main() call
+(this is still up for discussion and might be extended at some point). Behavior before
+start of main is so far undefined and might eat your neighbors dog.
+
+If you want to get internal profiling information about the engine itself
+you will have to re-compile the engine with _IRR_COMPILE_WITH_PROFILING_ enabled.
+But you can use the profiler for profiling your own projects without that. */
+IRRLICHT_API CProfiler* IRRCALLCONV getProfiler();
 
 } // namespace irr
 
 //! Code inside IRR_PROFILE is only executed when _IRR_COMPILE_WITH_PROFILING_ is set
 //! This allows disabling all profiler code used inside Irrlicht.
+//! It might be useful to wrap all your profiler-calls in your own code with a similar macro.
 #ifdef _IRR_COMPILE_WITH_PROFILING_
 	#define IRR_PROFILE(X) X
 #else

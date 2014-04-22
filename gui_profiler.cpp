@@ -10,15 +10,16 @@
 namespace irr
 {
 
-	Profiler gPROFILER;
+	CProfiler gPROFILER;
 
-	IRRLICHT_API Profiler* IRRCALLCONV getProfiler()
+	IRRLICHT_API CProfiler* IRRCALLCONV getProfiler()
 	{
 		return &gPROFILER;
 	}
 } // namespace irr
 
 
+// Still rudimentary - should probably be a gui-element
 class ShowProfiler
 {
 public:
@@ -43,7 +44,7 @@ public:
 		// I had no table yet when programming this. Would probably be nicer.
 		DisplayList = env_->addListBox(DisplayRect, 0, -1, true);
 
-		irr::core::stringw wstrTitle(irr::ProfileData::makeTitleString());
+		irr::core::stringw wstrTitle(irr::SProfileData::makeTitleString());
 		DisplayList->addItem(wstrTitle.c_str());
 
 		irr::core::stringw wstrGroup(irr::getProfiler()->getGroupData(CurrentGroupIdx).getAsString());
@@ -61,7 +62,7 @@ public:
 		// show data for current group
 		else
 		{
-			const irr::ProfileData& data = irr::getProfiler()->getGroupData(CurrentGroupIdx);
+			const irr::SProfileData& data = irr::getProfiler()->getGroupData(CurrentGroupIdx);
 			irr::core::stringw wstrData(data.getAsString());
 			DisplayList->addItem(wstrData.c_str());
 		}
@@ -79,13 +80,13 @@ public:
 		}
 	}
 
-	void nextDisplayGroup()
+	void nextPage()
 	{
 		if ( ++CurrentGroupIdx >= irr::getProfiler()->getGroupCount() )
 			CurrentGroupIdx = 0;
 	}
 
-	void previousDisplayGroup()
+	void previousPage()
 	{
 		if ( CurrentGroupIdx > 0 )
 			--CurrentGroupIdx;
@@ -121,7 +122,8 @@ int main()
 	enum Profiles
 	{
 		EP_X,
-		EP_Y
+		EP_Y,
+		EP_SCOPE
 	};
 
 	video::E_DRIVER_TYPE driverType = video::EDT_OPENGL;
@@ -157,6 +159,9 @@ int main()
 	{
 		if (device->isWindowActive())
 		{
+			IRR_PROFILE(irr::CProfileScope p1(*irr::getProfiler(), EP_SCOPE, L"scope 1", L"group a"));
+			IRR_PROFILE(irr::CProfileScope p2(*irr::getProfiler(), L"scope 2", L"group a"));
+
 			showProfiler.show(env);
 
 			IRR_PROFILE(irr::getProfiler()->start(EP_Y));
