@@ -6,10 +6,10 @@
 #include <irrlicht.h>
 
 #include "profiler.h"
+#include "IGUIProfile.h"
 
 namespace irr
 {
-
 	CProfiler gPROFILER;
 
 	IRRLICHT_API CProfiler* IRRCALLCONV getProfiler()
@@ -17,94 +17,6 @@ namespace irr
 		return &gPROFILER;
 	}
 } // namespace irr
-
-
-// Still rudimentary - should probably be a gui-element
-class ShowProfiler
-{
-public:
-	ShowProfiler() : DisplayRect(20, 40, 600, 400), DisplayList(0), CurrentGroupIdx(0)
-	{
-	}
-
-    // set the rectangle used for the display listbox
-    void setDisplayRect(const irr::core::rect<irr::s32> &rect_)
-	{
-		DisplayRect = rect_;
-	}
-
-	// print current display group on screen
-	void show(irr::gui::IGUIEnvironment* env_)
-	{
-		if ( !env_)
-			return;
-
-		hide(env_);
-
-		// I had no table yet when programming this. Would probably be nicer.
-		DisplayList = env_->addListBox(DisplayRect, 0, -1, true);
-
-		irr::core::stringw wstrTitle(irr::SProfileData::makeTitleString());
-		DisplayList->addItem(wstrTitle.c_str());
-
-		irr::core::stringw wstrGroup(irr::getProfiler()->getGroupData(CurrentGroupIdx).getAsString());
-		DisplayList->addItem(wstrGroup.c_str());
-
-		// show overview over groups?
-		if ( CurrentGroupIdx == 0 )
-		{
-			for ( irr::u32 i=1; i<irr::getProfiler()->getGroupCount(); ++i )
-			{
-				irr::core::stringw wstrData(irr::getProfiler()->getGroupData(i).getAsString());
-				DisplayList->addItem(wstrData.c_str());
-			}
-		}
-		// show data for current group
-		else
-		{
-			const irr::SProfileData& data = irr::getProfiler()->getGroupData(CurrentGroupIdx);
-			irr::core::stringw wstrData(data.getAsString());
-			DisplayList->addItem(wstrData.c_str());
-		}
-	}
-
-	void hide(irr::gui::IGUIEnvironment* env_)
-	{
-		if ( !env_)
-			return;
-
-		if ( DisplayList )
-		{
-			DisplayList->remove();
-			DisplayList = 0;
-		}
-	}
-
-	void nextPage()
-	{
-		if ( ++CurrentGroupIdx >= irr::getProfiler()->getGroupCount() )
-			CurrentGroupIdx = 0;
-	}
-
-	void previousPage()
-	{
-		if ( CurrentGroupIdx > 0 )
-			--CurrentGroupIdx;
-		else
-			CurrentGroupIdx = irr::getProfiler()->getGroupCount()-1;
-	}
-
-	void firstDisplayGroup()
-	{
-		CurrentGroupIdx = 0;
-	}
-
-protected:
-    irr::core::rect<irr::s32> DisplayRect;
-	irr::gui::IGUIListBox* DisplayList;
-    irr::u32 CurrentGroupIdx;
-};
-
 
 using namespace irr;
 using namespace core;
@@ -151,9 +63,7 @@ int main()
 	IGUIStaticText * staticText = env->addStaticText(L"The quick\n\n brown fox\n jumps over the lazy dog", recti(10,10, 400, 100), true, true);
 	staticText->setWordWrap(false);
 
-	ShowProfiler showProfiler;
-	showProfiler.setDisplayRect(core::recti(20, 110, 600, 400));
-//	showProfiler.nextDisplayGroup();
+	IGUIProfile * guiProfile = new IGUIProfile(env, env->getRootGUIElement(), -1, core::recti(20, 110, 600, 400));
 
 	while(device->run() && driver)
 	{
@@ -161,8 +71,6 @@ int main()
 		{
 			IRR_PROFILE(irr::CProfileScope p1(*irr::getProfiler(), EP_SCOPE, L"scope 1", L"group a"));
 			IRR_PROFILE(irr::CProfileScope p2(*irr::getProfiler(), L"scope 2", L"group a"));
-
-			showProfiler.show(env);
 
 			IRR_PROFILE(irr::getProfiler()->start(EP_Y));
 			driver->beginScene(true, true, SColor(0,200,200,200));
