@@ -178,5 +178,9 @@ int main()
 
 	IRR_PROFILE(irr::getProfiler()->stop(EP_X));
 
+	core::stringw output;
+	irr::getProfiler()->printAll(output);
+	printf("%s", core::stringc(output).c_str() );
+
 	return 0;
 }

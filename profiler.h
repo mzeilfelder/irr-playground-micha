@@ -21,7 +21,7 @@ struct SProfileData
 
     SProfileData()
 	{
-		GroupIndex = -1;
+		GroupIndex = 0;
 		reset();
 	}
 
@@ -35,7 +35,7 @@ struct SProfileData
 		return Id == pd.Id;
 	}
 
-	s32 getGroupIndex() const
+	u32 getGroupIndex() const
 	{
 		return GroupIndex;
 	}
@@ -56,6 +56,7 @@ struct SProfileData
 		return LongestTime;
 	}
 
+	//! Will return UINT_MAX if it never got called
 	u32 getShortestTime() const
 	{
 		return ShortestTime;
@@ -113,7 +114,7 @@ private:
 	}
 
 	s32 Id;
-    s32 GroupIndex;
+    u32 GroupIndex;
 	core::stringw Name;
 
     u32 CountCalls;
@@ -224,52 +225,60 @@ public:
     void resetAll();
 
 	//! Write all profile-data into a string
-    void printAll(core::stringw &ostream, bool includeOverview=false,bool suppressUncalled_=true) const;
+	/** \param ostream Receives the result.
+	\param includeOverview When true a group-overview is attached first
+	\param suppressUncalled When true elements which got never called are not printed */
+    void printAll(core::stringw &ostream, bool includeOverview=false,bool suppressUncalled=true) const;
 
 	//! Write the profile data of one group into a string
-    void printGroup(core::stringw &ostream, s32 groupIndex_, bool suppressUncalled_) const;
+	/** \param ostream Receives the result.
+	\param groupIndex_
+	*/
+    void printGroup(core::stringw &ostream, u32 groupIndex, bool suppressUncalled) const;
 
 protected:
 
-    s32 getDataIndex(const core::stringw &name) const
+    bool getDataIndex(u32 & result, const core::stringw &name) const
     {
 		for ( u32 i=0; i < ProfileDatas.size(); ++i )
 		{
 			if ( ProfileDatas[i].Name == name )
 			{
-				return (s32)i;
+				result = i;
+				return true;
 			}
 		}
 
-		return -1;
+		return false;
     }
 
-	s32 getGroupIndex(const core::stringw &name) const
+	bool getGroupIndex(u32 & result, const core::stringw &name) const
 	{
 		for ( u32 i=0; i < ProfileGroups.size(); ++i )
 		{
 			if ( ProfileGroups[i].Name == name )
 			{
-				return (s32)i;
+				result = i;
+				return true;
 			}
 		}
 
-		return -1;
+		return false;
 	}
 
-    s32 addGroup(const core::stringw &name_);
+    u32 addGroup(const core::stringw &name);
 
 private:
-    irr::ITimer * IrrTimer;
-    irr::s32 NextAutoId;	// for giving out id's automatically
+    ITimer * IrrTimer;
+    s32 NextAutoId;	// for giving out id's automatically
 	core::array<SProfileData> ProfileDatas;
     core::array<SProfileData> ProfileGroups;
 };
 
 s32 CProfiler::add(const core::stringw &name, const core::stringw &groupName)
 {
-	s32 index = getDataIndex(name);
-	if ( index >= 0 )
+	u32 index;
+	if ( getDataIndex(index, name) )
 	{
 		add( ProfileDatas[index].Id, name, groupName );
 		return ProfileDatas[index].Id;
@@ -285,34 +294,40 @@ s32 CProfiler::add(const core::stringw &name, const core::stringw &groupName)
 
 void CProfiler::add(s32 id, const core::stringw &name, const core::stringw &groupName)
 {
-	s32 groupIdx = getGroupIndex(groupName);
-	if ( groupIdx < 0 )
+	u32 groupIdx;
+	if ( !getGroupIndex(groupIdx, groupName) )
 	{
 		groupIdx = addGroup(groupName);
 	}
 
-	SProfileData data;
-	data.Id = id;
-    data.GroupIndex = groupIdx;
-    data.Name = name;
-
+	SProfileData data(id);
 	s32 idx = ProfileDatas.binary_search(data);
 	if ( idx < 0 )
 	{
+		data.reset();
+		data.GroupIndex = groupIdx;
+		data.Name = name;
+
 		ProfileDatas.push_back(data);
 		ProfileDatas.sort();
 	}
 	else
 	{
-		ProfileDatas[idx] = data;
+		// only reset on group changes, otherwise we want to keep the data or coding CProfileScope would become tricky.
+		if ( groupIdx != ProfileDatas[idx].GroupIndex )
+		{
+			reset(id);
+			ProfileDatas[idx].GroupIndex = groupIdx;
+		}
+		ProfileDatas[idx].Name = name;
 	}
 }
 
-s32 CProfiler::addGroup(const core::stringw &name)
+u32 CProfiler::addGroup(const core::stringw &name)
 {
     SProfileData group;
-	group.Id = -1;
-    group.Name = name;
+	group.Id = -1;	// Id for groups doesn't matter so far
+	group.Name = name;
     ProfileGroups.push_back(group);
     return (s32)(ProfileGroups.size()-1);
 }
@@ -336,6 +351,7 @@ void CProfiler::stop(s32 id)
 		if ( data.LastTimeStarted == 0 )
 			return;
 
+		// update data for this id
 		++data.CountCalls;
 		u32 diffTime = timeNow - data.LastTimeStarted;
 		data.TimeSum += diffTime;
@@ -346,6 +362,7 @@ void CProfiler::stop(s32 id)
 		data.LastTimeStarted = 0;
 
 
+		// update data of it's group
 		if ( data.GroupIndex >= 0 )
 		{
 			SProfileData & group = ProfileGroups[data.GroupIndex];
@@ -402,11 +419,11 @@ void CProfiler::printAll(core::stringw &ostream, bool includeOverview, bool supp
     ostream += L"\n";
 	for ( u32 i=includeOverview ?0:1; i<ProfileGroups.size(); ++i )
     {
-        printGroup( ostream, ProfileGroups[i].Id, suppressUncalled );
+        printGroup( ostream, i, suppressUncalled );
     }
 }
 
-void CProfiler::printGroup(core::stringw &ostream, s32 idxGroup, bool suppressUncalled) const
+void CProfiler::printGroup(core::stringw &ostream, u32 idxGroup, bool suppressUncalled) const
 {
     ostream += ProfileGroups[idxGroup].getAsString();
     ostream += L"\n";
