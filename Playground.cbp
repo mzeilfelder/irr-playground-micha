@@ -44,6 +44,7 @@
 			<Add alias="All" targets="Windows;Linux;" />
 		</VirtualTargets>
 		<Compiler>
+			<Add option="-Wall" />
 			<Add option="-g" />
 			<Add directory="../../include" />
 		</Compiler>

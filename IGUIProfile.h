@@ -22,6 +22,10 @@ namespace gui
 			: IGUIElement((EGUI_ELEMENT_TYPE)EGUIET_PROFILE, environment, parent, id, rectangle)
 			, DisplayList(0), CurrentGroupIdx(0)
 		{
+			// TODO: put title into a static-text
+            // TODO: make sub-elements
+            // TODO: use a table
+
 			// I had no table yet when programming this. Would probably be nicer.
 			irr::core::recti r(0, 0, rectangle.getWidth(), rectangle.getHeight());
 			DisplayList = Environment->addListBox(r, this, -1, true);
