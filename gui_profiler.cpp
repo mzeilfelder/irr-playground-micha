@@ -1,58 +1,16 @@
-// This file is part of the "Irrlicht Engine".
-// For conditions of distribution and use, see copyright notice in irrlicht.h
+// Code is under the zlib license (same as Irrlicht)
 // Written by Michael Zeilfelder
+// 
+// Basically the same as example 30 in Irrlicht (example was based on this code)
 
-/** Example 030 Profiling
-
-Profiling is used to get runtime information about code code.
-
-There exist several indepent profiling tools.
-Examples for free profilers are "gprof" for the GNU toolchain and "very sleepy"
-from codersnotes for Windows. Proprietary tools are for example "VTune" from
-Intel or "AMD APP Profiler". Those tools work by sampling the running
-application regularly to get statistic information about the called functions.
-The way to use them is to compile your application with special flags
-to include profiling information (some also work with debug information). They
-also might allow to profile only certain parts of the code, although
-most can't do that. The sampling is usually rather time-consuming which means
-the application will be very slow when collecting the profiling data. It's often
-useful to start with one of those tools to get an overview over the bottlenecks
-in your application. Those tools have the advantage that they don't need any
-modifications inside the code.
-
-Once you need to dig deeper the Irrlicht profiler can help you. It works nearly
-like a stopwatch. You add start/stop blocks into the parts of your code which
-you need to check and the Irrlicht profiler will give you then the exact times
-of execution for those parts. And unlike general profiler tools you don't just
-get average information about the run-time but also worst-cases. Which tends
-to be information you really for a stable framerate. Also the Irrlicht profiler
-has a low overhead and affects only the areas which you want to time. So you
-can profile applications with nearly original speed.
-
-Irrlicht itself has such profiling information, which is useful to figure out
-where the runtime inside the engine is spend. To get that profilng data you
-need to recompile Irrlicht with _IRR_COMPILE_WITH_PROFILING_ enabled as
-collecting profiling information is disabled by default for speed reasons.
-*/
-
-/*
-	It's usually a good idea to wrap all your profile code with a define.
-	That way you don't have to worry too much about the runtime profiling
-	itself takes. You can remove the profiling code completely when you release
-	the software by removing a single define.Or sometimes you might want to
-	have several such defines for different areas of your application code.
-*/
-#define ENABLE_MY_PROFILE	// outcomment to remove the profiling code
+#define ENABLE_MY_PROFILE	
 #ifdef ENABLE_MY_PROFILE
-	// calls code X
 	#define MY_PROFILE(X) X
 #else
-	// removes the code for X in the pre-processor
 	#define MY_PROFILE(X)
 #endif // IRR_PROFILE
 
 #include <irrlicht.h>
-#include "driverChoice.h"
 
 #ifdef _IRR_WINDOWS_
 #pragma comment(lib, "Irrlicht.lib")
@@ -66,10 +24,6 @@ using namespace video;
 using namespace io;
 using namespace gui;
 
-/*
-	We have the choice between working with fixed and with automatic profling id's.
-	Here are some fixed ID's we will be using.
-*/
 enum EProfiles
 {
 	EP_APP_TIME_ONCE,
@@ -90,13 +44,6 @@ enum EScenes
     ES_COUNT	// counting how many scenes we have
 };
 
-/*
-    Controlling the profiling display is application specific behavior.
-	We use function keys in our case and play around with all the parameters.
-	In real applications you will likely only need something to make the
-	profiling-display visible/invisible and switch pages while the parameters
-	can be set to fixed values.
-*/
 class MyEventReceiver : public IEventReceiver
 {
 public:
@@ -109,9 +56,6 @@ public:
 		{
 			if ( event.KeyInput.PressedDown )
 			{
-				/*
-					Catching keys to control the profiling display and the profiler itself
-				*/
 				switch ( event.KeyInput.Key )
 				{
 					case KEY_F1:
@@ -179,9 +123,7 @@ public:
 		{
 			case ES_CUBE:
 			{
-				/*
-					Simple scene with cube and light.
-				*/
+				// Simple scene with cube and light.
 				MY_PROFILE(CProfileScope p(L"cube", L"scenes");)
 
 				SceneManager->addCameraSceneNode (0, core::vector3df(0, 0, 0),
@@ -200,9 +142,7 @@ public:
 			break;
 			case ES_QUAKE_MAP:
 			{
-				/*
-					Our typical Irrlicht example quake map.
-				*/
+				// Our typical Irrlicht example quake map.
 				MY_PROFILE(CProfileScope p(L"quake map", L"scenes");)
 
 				scene::IAnimatedMesh* mesh = SceneManager->getMesh("20kdm2.bsp");
@@ -217,9 +157,7 @@ public:
 			break;
 			case ES_DWARVES:
 			{
-				/*
-					Stress-test Irrlicht a little bit by creating many objects.
-				*/
+				// Stress-test Irrlicht a little bit by creating many objects.
 				MY_PROFILE(CProfileScope p(L"dwarfes", L"scenes");)
 
 				scene::IAnimatedMesh* aniMesh = SceneManager->getMesh( "../../media/dwarf.x" );
@@ -229,12 +167,10 @@ public:
 					if ( !mesh )
 						break;
 
-					/*
-						You can never have too many dwarves. So let's make some.
-					*/
-					const int nodesX = 30;
+					// You can never have too many dwarves. So let's make some.
+					const int nodesX = 20;
 					const int nodesY = 5;
-					const int nodesZ = 30;
+					const int nodesZ = 20;
 
 					aabbox3df bbox = mesh->getBoundingBox();
 					vector3df extent = bbox.getExtent();
@@ -281,33 +217,24 @@ public:
 
 int main()
 {
-	/*
-		Setup, nothing special here.
-	*/
-	video::E_DRIVER_TYPE driverType=driverChoiceConsole();
-	if (driverType==video::EDT_COUNT)
-		return 1;
-
+	video::E_DRIVER_TYPE driverType=video::EDT_OPENGL;
 	IrrlichtDevice * device = createDevice(driverType, core::dimension2d<u32>(640, 480));
 	if (device == 0)
+	{
 		return 1; // could not create selected driver.
+	}
 
 	video::IVideoDriver* driver = device->getVideoDriver();
 	IGUIEnvironment* env = device->getGUIEnvironment();
 	scene::ISceneManager* smgr = device->getSceneManager();
 
-	/*
-		A map we use for one of our test-scenes.
-	*/
+	// A map we use for one of our test-scenes.
 	device->getFileSystem()->addFileArchive("../../media/map-20kdm2.pk3");
 
 	MyEventReceiver receiver(smgr);
 	device->setEventReceiver(&receiver);
 	receiver.NextScene();
 
-	/*
-		Show some info about the controls used in this example
-	*/
 	IGUIStaticText * staticText = env->addStaticText(
 			L"F1 to show/hide the profiling display\n"
 			L"F2 to show the next page\n"
@@ -322,26 +249,12 @@ int main()
 			, recti(10,10, 250, 120), true, true, 0, -1, true);
 	staticText->setWordWrap(false);
 
-	/*
-		IGUIProfiler is can be used to show active profiling data at runtime.
-	*/
 	receiver.GuiProfiler = env->addProfilerDisplay(core::recti(40, 140, 600, 470));
 
-	/*
-		Get a monospaced font - it's nicer when working with rows of numbers.
-	 */
 	IGUIFont* font = env->getFont("../../media/fontcourier.bmp");
 	if (font)
 		receiver.GuiProfiler->setOverrideFont(font);
 
-
-	/*
-		Adding ID's has to be done before the start/stop calls.
-		This allows start/stop to be really fast and we still have nice information like
-		names and groups.
-		Groups are created automatically each time an ID with a new group-name is added.
-		Groups exist to sort the display data in a nicer way.
-	*/
 	MY_PROFILE(
 		getProfiler().add(EP_APP_TIME_ONCE, L"full time", L"group a");
 		getProfiler().add(EP_APP_TIME_UPDATED, L"full time updated", L"group a");
@@ -349,9 +262,6 @@ int main()
 		getProfiler().add(EP_DRAW_SCENE, L"draw scene", L"group a");
 	)
 
-    /*
-		Two timers which run the whole time. One will be continuosly updated the other won't.
-    */
 	MY_PROFILE(getProfiler().start(EP_APP_TIME_ONCE);)
 	MY_PROFILE(getProfiler().start(EP_APP_TIME_UPDATED);)
 
@@ -360,9 +270,6 @@ int main()
 	{
 		if (device->isWindowActive())
 		{
-			/*
-				For comparison show the FPS in the title bar
-			*/
 			s32 fps = driver->getFPS();
 			if (lastFPS != fps)
 			{
@@ -372,55 +279,27 @@ int main()
 				lastFPS = fps;
 			}
 
-			/*
-				Times are only updated on stop() calls. So if we want a long-running timer
-				to update we have to stop() and start() it in between.
-				Note that this will also update the call-counter and is rarely needed.
-			*/
 			MY_PROFILE(getProfiler().stop(EP_APP_TIME_UPDATED);)
 			MY_PROFILE(getProfiler().start(EP_APP_TIME_UPDATED);)
 
-			/*
-				The following CProfileScope's will all do the same thing:
-				they measure the time this loop takes. They call start()
-				when the object is created and call stop() when it
-				is destroyed.
-
-				The first one creates an ID on it's first call and will
-				do constant string-comparisons for the name. It's
-				the slowest, but most comfortable solution. Use it when you
-				just need to run a quick check without the hassle of setting
-				up id's.
-			*/
 			MY_PROFILE(CProfileScope p3(L"scope 3", L"group a");)
-
-			/*
-				Second CProfileScope solution will create a data block on first
-				call. So it's a little bit slower on the first run. But usually
-				that's hardly noticable.
-			*/
 			MY_PROFILE(CProfileScope p2(EP_SCOPE2, L"scope 2", L"group a");)
-
-			/*
-				Last CProfileScope solution is the fastest one. But you must add
-				the id before you can use it like that.
-			*/
 			MY_PROFILE(CProfileScope p1(EP_SCOPE1));
+			
+			// just filling up - need to blow the amount of profiles fitting into the display
+			for ( int i=0; i<50; ++i )
+			{
+				core::stringw s(i);
+				MY_PROFILE(CProfileScope p3(s.c_str(), L"group a");)
+			}
+			
 
 			driver->beginScene(true, true, SColor(0,200,200,200));
 
-			/*
-				If you want to profile only some lines and not a complete scope
-				then you have to work with start() and stop() calls.
-			*/
 			MY_PROFILE(getProfiler().start(EP_DRAW_SCENE);)
 			smgr->drawAll();
 			MY_PROFILE(getProfiler().stop(EP_DRAW_SCENE);)
 
-			/*
-				If it doesn't matter if the profiler takes some time you can also
-				be lazy and create id's automatically on the spot:
-			*/
 			MY_PROFILE(s32 pEnv = getProfiler().add(L"draw env", L"group a");)
 			MY_PROFILE(getProfiler().start(pEnv);)
 			env->drawAll();
@@ -430,21 +309,11 @@ int main()
 		}
 	}
 
-	/*
-		Shutdown.
-	*/
 	device->drop();
-
-	/*
-		The profiler is independent of an device - so we can still work with it.
-	*/
 
 	MY_PROFILE(getProfiler().stop(EP_APP_TIME_UPDATED));
 	MY_PROFILE(getProfiler().stop(EP_APP_TIME_ONCE));
 
-	/*
-		Print a complete overview of the profiling data to the console.
-	*/
 	MY_PROFILE(core::stringw output);
 	MY_PROFILE(getProfiler().printAll(output));
 	MY_PROFILE(printf("%s", core::stringc(output).c_str() ));
@@ -452,5 +321,3 @@ int main()
 	return 0;
 }
 
-/*
-**/
