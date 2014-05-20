@@ -484,8 +484,8 @@ void CGUITTFont::draw(const core::stringw& text, const core::rect<s32>& position
 	// Clear the glyph pages of their render information.
 	for (u32 i = 0; i < Glyph_Pages.size(); ++i)
 	{
-		Glyph_Pages[i]->render_positions.clear();
-		Glyph_Pages[i]->render_source_rects.clear();
+		Glyph_Pages[i]->render_positions.set_used(0);
+		Glyph_Pages[i]->render_source_rects.set_used(0);
 	}
 
 	// Set up some variables.
@@ -503,9 +503,6 @@ void CGUITTFont::draw(const core::stringw& text, const core::rect<s32>& position
 		if (vcenter)
 			offset.Y = ((position.getHeight() - textDimension.Height) >> 1) + offset.Y;
 	}
-
-	// Set up our render map.
-	core::map<u32, CGUITTGlyphPage*> Render_Map;
 
 	// Start parsing characters.
 	u32 n;
@@ -556,7 +553,6 @@ void CGUITTFont::draw(const core::stringw& text, const core::rect<s32>& position
 			CGUITTGlyphPage* const page = Glyph_Pages[glyph.glyph_page];
 			page->render_positions.push_back(core::position2di(offset.X + offx, offset.Y + offy));
 			page->render_source_rects.push_back(glyph.source_rect);
-			Render_Map.set(glyph.glyph_page, page);
 		}
 		offset.X += getWidthFromCharacter(currentChar);
 
@@ -566,17 +562,15 @@ void CGUITTFont::draw(const core::stringw& text, const core::rect<s32>& position
 
 	// Draw now.
 	update_glyph_pages();
-	core::map<u32, CGUITTGlyphPage*>::Iterator j = Render_Map.getIterator();
-	while (!j.atEnd())
+	if (!use_transparency)
+		color.color |= 0xff000000;
+	for (u32 i = 0; i < Glyph_Pages.size(); ++i)
 	{
-		core::map<u32, CGUITTGlyphPage*>::Node* n = j.getNode();
-		j++;
-		if (n == 0) continue;
-
-		CGUITTGlyphPage* page = n->getValue();
-
-		if (!use_transparency) color.color |= 0xff000000;
-		Driver->draw2DImageBatch(page->texture, page->render_positions, page->render_source_rects, clip, color, true);
+		CGUITTGlyphPage* page = Glyph_Pages[i];
+		if ( !page->render_positions.empty() )
+		{
+			Driver->draw2DImageBatch(page->texture, page->render_positions, page->render_source_rects, clip, color, true);
+		}
 	}
 }
 
