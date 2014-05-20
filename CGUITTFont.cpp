@@ -539,9 +539,11 @@ void CGUITTFont::draw(const core::stringw& text, const core::rect<s32>& position
 				continue;
 			}
 
+			SGUITTGlyph& glyph = Glyphs[n-1];
+
 			// Calculate the glyph offset.
-			s32 offx = Glyphs[n-1].offset.X;
-			s32 offy = (font_metrics.ascender / 64) - Glyphs[n-1].offset.Y;
+			s32 offx = glyph.offset.X;
+			s32 offy = (font_metrics.ascender / 64) - glyph.offset.Y;
 
 			// Apply kerning.
 			core::vector2di k = getKerning(currentChar, previousChar);
@@ -549,7 +551,6 @@ void CGUITTFont::draw(const core::stringw& text, const core::rect<s32>& position
 			offset.Y += k.Y;
 
 			// Determine rendering information.
-			SGUITTGlyph& glyph = Glyphs[n-1];
 			CGUITTGlyphPage* const page = Glyph_Pages[glyph.glyph_page];
 			page->render_positions.push_back(core::position2di(offset.X + offx, offset.Y + offy));
 			page->render_source_rects.push_back(glyph.source_rect);
