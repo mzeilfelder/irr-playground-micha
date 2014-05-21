@@ -379,6 +379,4 @@ namespace gui
 } // end namespace gui
 } // end namespace irr
 
-#endif // HC1_HAS_FREETYPE
-
 #endif // __C_GUI_TTFONT_H_INCLUDED__
