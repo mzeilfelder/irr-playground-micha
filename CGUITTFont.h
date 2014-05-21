@@ -38,13 +38,17 @@
 	- remove textscenenodes. Probably shouldn't be in this class and make understanding it harder.
 	- remove createTextureFromChar (it also had a memory leak probably as it wasn't dropping pageholder)
 	- remove Glyphs.set_free_when_destroyed(false). That function prevents clearing the array - it's not about pointers. Rather fix SGUITTGlyph (which didn't care about rule of three).
+	- don't drop the driver (not grabbed - but I changed that stuff a lot so might not have been there originally)
+	- remove a few memory re-allocations in drawing
+	- CGUITTGlyphPage::updateTexture replaced dirtyflag by check for glpyhs to handle
+	- CGUITTGlyphPage::updateTexture works with ::texture->getSize() instead of getOriginalSize. Same result in this case, but more correct.
 */
 
 #ifndef __C_GUI_TTFONT_H_INCLUDED__
 #define __C_GUI_TTFONT_H_INCLUDED__
 
 #include <ft2build.h>
-#include FT_FREETYPE_H
+#include FT_FREETYPE_H	// official way to include freetype.h correct according to freetype documenation
 #include <irrlicht.h>
 
 // TODO: really shouldn't be in irr namespace so far (as long as it's not in the engine)
@@ -126,7 +130,7 @@ namespace gui
 	class CGUITTGlyphPage
 	{
 		public:
-			CGUITTGlyphPage(video::IVideoDriver* Driver, const io::path& texture_name) :texture(0), available_slots(0), used_slots(0), dirty(false), driver(Driver), name(texture_name) {}
+			CGUITTGlyphPage(video::IVideoDriver* Driver, const io::path& texture_name) :texture(0), available_slots(0), used_slots(0), driver(Driver), name(texture_name) {}
 			~CGUITTGlyphPage()
 			{
 				if (texture)
@@ -173,11 +177,13 @@ namespace gui
 			//! Updates the texture atlas with new glyphs.
 			void updateTexture()
 			{
-				if (!dirty) return;
+				if (glyph_to_be_paged.empty())
+					return;
 
 				void* ptr = texture->lock();
 				video::ECOLOR_FORMAT format = texture->getColorFormat();
-				core::dimension2du size = texture->getOriginalSize();
+				core::dimension2du size = texture->getSize();
+
 				video::IImage* pageholder = driver->createImageFromData(format, size, ptr, true, false);
 
 				for (u32 i = 0; i < glyph_to_be_paged.size(); ++i)
@@ -199,16 +205,14 @@ namespace gui
 					}
 				}
 
-				pageholder->drop();
 				texture->unlock();
+				pageholder->drop();
 				glyph_to_be_paged.clear();
-				dirty = false;
 			}
 
 			video::ITexture* texture;
 			u32 available_slots;
 			u32 used_slots;
-			bool dirty;
 
 			core::array<core::vector2di> render_positions;
 			core::array<core::recti> render_source_rects;
@@ -374,5 +378,7 @@ namespace gui
 
 } // end namespace gui
 } // end namespace irr
+
+#endif // HC1_HAS_FREETYPE
 
 #endif // __C_GUI_TTFONT_H_INCLUDED__

@@ -28,10 +28,6 @@
    john@suckerfreegames.com
 */
 
-/*	
-	Changes are listed in the header file.
-*/
-
 #include "CGUITTFont.h"
 
 namespace irr
@@ -146,8 +142,10 @@ void SGUITTGlyph::preload(u32 char_index, FT_Face face, video::IVideoDriver* dri
 
 	// Attempt to load the glyph.
 	if (FT_Load_Glyph(face, char_index, loadFlags) != FT_Err_Ok)
+	{
 		// TODO: error message?
 		return;
+	}
 
 	FT_GlyphSlot glyph = face->glyph;
 	FT_Bitmap bits = glyph->bitmap;
@@ -164,8 +162,10 @@ void SGUITTGlyph::preload(u32 char_index, FT_Face face, video::IVideoDriver* dri
 	{
 		page = parent->createGlyphPage(bits.pixel_mode);
 		if (!page)
+		{
 			// TODO: add error message?
 			return;
+		}
 	}
 
 	glyph_page = parent->getLastGlyphPageIndex();
@@ -177,7 +177,6 @@ void SGUITTGlyph::preload(u32 char_index, FT_Face face, video::IVideoDriver* dri
 	source_rect.UpperLeftCorner = page_position;
 	source_rect.LowerRightCorner = core::vector2di(page_position.X + bits.width, page_position.Y + bits.rows);
 
-	page->dirty = true;
 	++page->used_slots;
 	--page->available_slots;
 
@@ -228,7 +227,7 @@ CGUITTFont* CGUITTFont::createTTFont(irr::video::IVideoDriver* driver, irr::io::
 
 //! Constructor.
 CGUITTFont::CGUITTFont(irr::video::IVideoDriver* driver, irr::io::IFileSystem* fileSystem)
-: use_monochrome(false), use_transparency(true), use_hinting(true), use_auto_hinting(true),
+: use_monochrome(false), use_transparency(true), use_hinting(false), use_auto_hinting(false),
 batch_load_size(1), Driver(driver), FileSystem(fileSystem), Logger(0), GlobalKerningWidth(0), GlobalKerningHeight(0)
 {
 	#ifdef _DEBUG
@@ -324,7 +323,6 @@ bool CGUITTFont::load(const io::path& filename, u32 size, bool antialias, bool t
 
 	// Allocate our glyphs.
 	Glyphs.clear();
-	Glyphs.reallocate(tt_face->num_glyphs);
 	Glyphs.set_used(tt_face->num_glyphs);
 	for (FT_Long i = 0; i < tt_face->num_glyphs; ++i)
 	{
@@ -389,8 +387,7 @@ void CGUITTFont::update_glyph_pages() const
 {
 	for (u32 i = 0; i != Glyph_Pages.size(); ++i)
 	{
-		if (Glyph_Pages[i]->dirty)
-			Glyph_Pages[i]->updateTexture();
+		Glyph_Pages[i]->updateTexture();
 	}
 }
 
@@ -568,6 +565,7 @@ void CGUITTFont::draw(const core::stringw& text, const core::rect<s32>& position
 	for (u32 i = 0; i < Glyph_Pages.size(); ++i)
 	{
 		CGUITTGlyphPage* page = Glyph_Pages[i];
+
 		if ( !page->render_positions.empty() )
 		{
 			Driver->draw2DImageBatch(page->texture, page->render_positions, page->render_source_rects, clip, color, true);
