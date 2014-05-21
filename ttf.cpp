@@ -58,8 +58,8 @@ int main()
 	skin->setFont(font); 
 	font->drop();
 	
-	env->addStaticText( L"The quick fox jumps over the lazy brown dog", rect<s32>(20, 20, 120, 40),true);
-	env->addEditBox(L"", rect<s32>(20, 50, 120, 70));
+	env->addStaticText( L"The quick fox jumps\n over the lazy \0brown dog", rect<s32>(20, 20, 320, 60),true);
+	env->addEditBox(L"", rect<s32>(20, 70, 320, 110));
 
 	while(device->run() && driver)
 	{
