@@ -41,15 +41,10 @@ int main()
 	else
 		return 1;
 
-	// load same font twice
+	// load same font twice (just testing if it causes any troubles)
 	irr::gui::CGUITTFont * fontAgain = irr::gui::CGUITTFont::createTTFont(driver, device->getFileSystem(), fontName, fontSize, fontAntiAlias, fontTransparency);
 	if ( fontAgain )
 		fontAgain->drop();
-	
-	// load same font with other size
-	irr::gui::CGUITTFont * fontOtherSize = irr::gui::CGUITTFont::createTTFont(driver, device->getFileSystem(), fontName, fontSize+4, fontAntiAlias, fontTransparency);
-	if ( fontOtherSize )
-		fontOtherSize->drop();	
 	
 	IGUISkin* skin = env->getSkin();
 	if ( !skin )
@@ -58,8 +53,16 @@ int main()
 	skin->setFont(font); 
 	font->drop();
 	
-	env->addStaticText( L"The quick fox jumps\n over the lazy \0brown dog", rect<s32>(20, 20, 320, 60),true);
-	env->addEditBox(L"", rect<s32>(20, 70, 320, 110));
+	env->addStaticText( L"The quick brown fox\n jumps over the lazy dog", rect<s32>(20, 20, 320, 60),true);
+	IGUIEditBox * editBox = env->addEditBox(L"", rect<s32>(20, 70, 320, 110));
+
+		// load same font with other size
+	irr::gui::CGUITTFont * fontOtherSize = irr::gui::CGUITTFont::createTTFont(driver, device->getFileSystem(), fontName, fontSize-4, fontAntiAlias, fontTransparency);
+	if ( fontOtherSize )
+	{
+		editBox->setOverrideFont( fontOtherSize );
+		fontOtherSize->drop();
+	}
 
 	while(device->run() && driver)
 	{

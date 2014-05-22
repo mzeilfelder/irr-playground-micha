@@ -44,6 +44,10 @@
 	- remove a few memory re-allocations in drawing
 	- CGUITTGlyphPage::updateTexture replaced dirtyflag by check for glpyhs to handle
 	- CGUITTGlyphPage::updateTexture works with ::texture->getSize() instead of getOriginalSize. Same result in this case, but more correct.
+	
+	TODO:
+	- Hinting should be one enum with explanation (have to figure it out first, results are strange currently when I enable it)
+	- max_font_height shouldn't have to be calculated each time. Set test-characters when font-size can change. And update each time getHeightFromCharacter is called.
 */
 
 #ifndef __C_GUI_TTFONT_H_INCLUDED__
@@ -53,7 +57,7 @@
 #include FT_FREETYPE_H	// official way to include freetype.h correct according to freetype documenation
 #include <irrlicht.h>
 
-// TODO: really shouldn't be in irr namespace so far (as long as it's not in the engine)
+// TODO: Shouldn't be in irr namespace as long as it's not in the engine (but leaving it for now in the hope that will change)
 namespace irr
 {
 namespace gui
@@ -236,9 +240,10 @@ namespace gui
 			//! \param size The size of the font glyphs in pixels.  Since this is the size of the individual glyphs, the true height of the font may change depending on the characters used.
 			//! \param antialias set the use_monochrome (opposite to antialias) flag
 			//! \param transparency set the use_transparency flag
+			//! \param invisibleChars Set characters which don't need drawing (speed optimization)
 			//! \param logger Irrlicht logging, for printing out additinal warnings/errors
 			//! \return Returns a pointer to a CGUITTFont.  Will return 0 if the font failed to load.
-			static CGUITTFont* createTTFont(irr::video::IVideoDriver* driver, irr::io::IFileSystem* fileSystem, const io::path& filename, u32 size, bool antialias = true, bool transparency = true, irr::ILogger* logger = 0);
+			static CGUITTFont* createTTFont(irr::video::IVideoDriver* driver, irr::io::IFileSystem* fileSystem, const io::path& filename, u32 size, bool antialias = true, bool transparency = true, const wchar_t *invisibleChars = L" ", irr::ILogger* logger = 0);
 
 			//! Destructor
 			virtual ~CGUITTFont();
@@ -309,6 +314,9 @@ namespace gui
 			virtual s32 getKerningHeight() const;
 
 			//! Define which characters should not be drawn by the font.
+			/** This is a speed optimization. For example spaces don't draw anything in most fonts.
+			So making them invisible save the render-time for those. Instead an empty space with 
+			their width is added to the output. */
 			virtual void setInvisibleCharacters(const wchar_t *s);
 
 			//! Get the last glyph page if there's still available slots.

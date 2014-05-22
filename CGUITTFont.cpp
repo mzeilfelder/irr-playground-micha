@@ -199,7 +199,7 @@ void SGUITTGlyph::unload()
 
 //////////////////////
 
-CGUITTFont* CGUITTFont::createTTFont(irr::video::IVideoDriver* driver, irr::io::IFileSystem* fileSystem, const io::path& filename, u32 size, bool antialias, bool transparency, irr::ILogger* logger)
+CGUITTFont* CGUITTFont::createTTFont(irr::video::IVideoDriver* driver, irr::io::IFileSystem* fileSystem, const io::path& filename, u32 size, bool antialias, bool transparency, const wchar_t *invisibleChars, irr::ILogger* logger)
 {
 	if ( !driver )
 		return 0;
@@ -219,6 +219,8 @@ CGUITTFont* CGUITTFont::createTTFont(irr::video::IVideoDriver* driver, irr::io::
 		font->drop();
 		return 0;
 	}
+	
+	font->setInvisibleCharacters(invisibleChars);
 
 	return font;
 }
@@ -233,8 +235,6 @@ batch_load_size(1), Driver(driver), FileSystem(fileSystem), Logger(0), GlobalKer
 	#ifdef _DEBUG
 	setDebugName("CGUITTFont");
 	#endif
-
-	setInvisibleCharacters(L" ");
 }
 
 bool CGUITTFont::load(const io::path& filename, u32 size, bool antialias, bool transparency)
