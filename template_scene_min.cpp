@@ -50,5 +50,8 @@ int main(int argc, char *argv[])
 		Device->sleep( 1 );
 	}
 	
+	Device->closeDevice();
+	Device->drop();
+	
 	return 0;
 }
