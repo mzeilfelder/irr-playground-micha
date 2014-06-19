@@ -34,7 +34,7 @@ int main()
 	
 	for (u32 i=0; i< t.size(); ++i )
 	{
-		float angle = atan2(t[i].Y, t[i].X) - atan2(a.Y, a.X);		
+		float angle = atan2(a.Y, a.X) - atan2(t[i].Y, t[i].X);
 		std::cout << "(" << t[i].X << "," << t[i].Y << "): " << a.dotProduct(t[i]) << " a: " << angle << "\n";
 	}
 	return 0;
