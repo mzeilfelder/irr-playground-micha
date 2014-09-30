@@ -39,6 +39,33 @@
 					<Add directory="../../lib/Win32-gcc" />
 				</Linker>
 			</Target>
+			<Target title=" Linux64es2_debug">
+				<Option platforms="Unix;" />
+				<Option output="playground" prefix_auto="0" extension_auto="0" />
+				<Option object_output=".objsLinux64_es2debug" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-Wall" />
+					<Add option="-std=c++11" />
+					<Add option="-g" />
+					<Add option="-fno-exceptions" />
+					<Add option="-fno-rtti" />
+					<Add option="-D_IRR_STATIC_LIB_" />
+					<Add option="-DDEBUG" />
+					<Add option="-D_DEBUG" />
+				</Compiler>
+				<Linker>
+					<Add library="Xext" />
+					<Add library="X11" />
+					<Add library="Xrandr" />
+					<Add library="Xxf86vm" />
+					<Add library="GLESv2" />
+					<Add library="EGL" />
+					<Add library="GL" />
+					<Add directory="../../lib/Linux" />
+				</Linker>
+			</Target>
 		</Build>
 		<VirtualTargets>
 			<Add alias="All" targets="Windows;Linux;" />
