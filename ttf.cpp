@@ -53,8 +53,8 @@ int main()
 	skin->setFont(font); 
 	font->drop();
 	
-	env->addStaticText( L"The quick brown fox\n jumps over the lazy dog", rect<s32>(20, 20, 320, 60),true);
-	IGUIEditBox * editBox = env->addEditBox(L"", rect<s32>(20, 70, 320, 110));
+	env->addStaticText( L"the quick brown fox\n jumps over the lazy dog\nTHE LAZY DOG JUMPS OVER\nTHE QUICK BROWN FOX", rect<s32>(20, 20, 320, 120),true);
+	IGUIEditBox * editBox = env->addEditBox(L"", rect<s32>(20, 130, 320, 210));
 
 		// load same font with other size
 	irr::gui::CGUITTFont * fontOtherSize = irr::gui::CGUITTFont::createTTFont(driver, device->getFileSystem(), fontName, fontSize-4, fontAntiAlias, fontTransparency);

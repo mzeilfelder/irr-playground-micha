@@ -1,6 +1,7 @@
-# Makefile for Irrlicht Examples - note that in this case we put the binary result beside the sources
-# It's usually sufficient to change just the target name and source file list
-# and be sure that CXX is set to a valid compiler
+# Makefile for Irrlicht Examples.
+# Note that in this case we put the binary result beside the sources
+# In some cases you might want to pass additional variables to the Makefile, like:
+# make FREETYPE=1 ES2=1
 Target = playground
 Sources = main.cpp 
 ifdef FREETYPE
@@ -36,6 +37,9 @@ LDFLAGS = -L/usr/X11R6/lib$(LIBSELECT) -L../../lib/Linux -lIrrlicht -lGL -lXxf86
 #LDFLAGS += -lSDL
 ifdef FREETYPE
 	LDFLAGS += -lfreetype
+endif
+ifdef ES2
+	LDFLAGS += -lGLESv2 -lEGL
 endif
 all_linux clean_linux: SYSTEM=Linux
 all_win32: LDFLAGS = -L../../lib/Win32-gcc -lIrrlicht -lopengl32 -lm
