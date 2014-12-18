@@ -43,7 +43,7 @@ int main()
 	video::IVideoDriver* driver = device->getVideoDriver();
 	gui::IGUIEnvironment* env = device->getGUIEnvironment();
 
-	video::ITexture* texture = driver->getTexture("my_media/1024x1024.jpg");
+	video::ITexture* texture = driver->getTexture("my_media/glas.tga");
 	texture = downscaleTexture(driver, texture, 2);
 
 	env->addImage(texture, core::position2d<s32>(10, 10));
@@ -52,7 +52,7 @@ int main()
 	{
 		if (device->isWindowActive())
 		{
-			driver->beginScene(true, true, video::SColor(255, 255, 255, 255));
+			driver->beginScene(true, true, video::SColor(255, 0, 0, 255));
 
 			env->drawAll();
 
