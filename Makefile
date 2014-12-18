@@ -33,13 +33,14 @@ endif
 
 # target specific settings
 all_linux: 
-LDFLAGS = -L/usr/X11R6/lib$(LIBSELECT) -L../../lib/Linux -lIrrlicht -lGL -lXxf86vm -lXext -lX11 -lXcursor -lXrandr 
+LDFLAGS = -L/usr/X11R6/lib$(LIBSELECT) -L../../lib/Linux -lIrrlicht -lXxf86vm -lXext -lX11 -lXcursor -lXrandr 
+ifdef ES2
+	LDFLAGS += -lGLESv2 -lEGL
+endif
+LDFLAGS += -lGL
 #LDFLAGS += -lSDL
 ifdef FREETYPE
 	LDFLAGS += -lfreetype
-endif
-ifdef ES2
-	LDFLAGS += -lGLESv2 -lEGL
 endif
 all_linux clean_linux: SYSTEM=Linux
 all_win32: LDFLAGS = -L../../lib/Win32-gcc -lIrrlicht -lopengl32 -lm
