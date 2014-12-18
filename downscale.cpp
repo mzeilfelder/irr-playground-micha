@@ -43,10 +43,14 @@ int main()
 	video::IVideoDriver* driver = device->getVideoDriver();
 	gui::IGUIEnvironment* env = device->getGUIEnvironment();
 
-	video::ITexture* texture = driver->getTexture("my_media/glas.tga");
+	video::ITexture* texture = driver->getTexture("my_media/512x512.jpg");
 	texture = downscaleTexture(driver, texture, 2);
 
-	env->addImage(texture, core::position2d<s32>(10, 10));
+	video::ITexture* textureAlpha = driver->getTexture("my_media/glas.tga");
+	textureAlpha = downscaleTexture(driver, textureAlpha, 2);
+
+	env->addImage(texture, core::position2d<s32>(70, 70));
+	env->addImage(textureAlpha, core::position2d<s32>(1, 1));
 
 	while (device->run())
 	{
