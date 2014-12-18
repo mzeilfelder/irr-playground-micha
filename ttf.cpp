@@ -30,7 +30,7 @@ int main()
 
 	video::IVideoDriver* driver = device->getVideoDriver();
 	IGUIEnvironment* env = device->getGUIEnvironment();
-	
+
 	irr::io::path fontName("my_media/fonts/cyrillic.ttf");
 	unsigned int fontSize = 14;
 	bool fontAntiAlias = true;
@@ -52,6 +52,8 @@ int main()
 
 	skin->setFont(font); 
 	font->drop();
+	
+	//skin->setFont(env->getFont("my_media/fonts/gentium12px.xml"));	// non-ttf font for comparison	
 	
 	env->addStaticText( L"the quick brown fox\n jumps over the lazy dog\nTHE LAZY DOG JUMPS OVER\nTHE QUICK BROWN FOX", rect<s32>(20, 20, 320, 120),true);
 	IGUIEditBox * editBox = env->addEditBox(L"", rect<s32>(20, 130, 320, 210));
