@@ -22,3 +22,5 @@ Irrlicht.dll
 Debug\*
 Release\*
 *.blend?
+
+my_media/write_test.*
