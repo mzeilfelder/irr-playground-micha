@@ -1,7 +1,7 @@
 // Code is under the zlib license (same as Irrlicht)
 // Written by Michael Zeilfelder
 // 
-// Test and simple examlpe for using a custom-skin
+// Test and simple example for using a custom-skin
 
 #include "irrlicht.h"
 

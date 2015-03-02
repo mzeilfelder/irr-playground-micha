@@ -4,7 +4,10 @@
 // Testing results for IFileSystem::getRelativeFilename
 
 #include <irrlicht.h>
+
+#ifdef _MSC_VER
 #pragma comment (lib, "../../lib/Win32-visualstudio/Irrlicht.lib")
+#endif
 
 using namespace irr;
 using namespace std;
