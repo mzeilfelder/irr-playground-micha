@@ -11,15 +11,18 @@
 #include <IVideoDriver.h>
 #include <irrMath.h>
 #include <SColor.h>
+#include <S3DVertex.h>
 
 namespace
 {
+	// TODO: I needed color-constants a few times already. We should just add a bunch of them to Irrlicht
 	const irr::video::SColor COL_WHITE = irr::video::SColor(255, 255, 255, 255);
 	const irr::video::SColor COL_BLACK = irr::video::SColor(255, 0, 0, 0);
 };
 
 namespace irr
 {
+	// TODO: Either give this it's own class like SColorHSL has or add some functions to the HSL class.
     inline core::vector3df RGBftoHSV(const video::SColorf &rgb)
     {
         core::vector3df hsv;
@@ -140,9 +143,9 @@ namespace irr
 		
         void CGUIColorPicker::setRelativePosition(const core::recti &r)
         {
-            RelativeRect.UpperLeftCorner = r.UpperLeftCorner;
-            RelativeRect.LowerRightCorner.X = r.UpperLeftCorner.X + 110;
-            RelativeRect.LowerRightCorner.Y = r.UpperLeftCorner.X + 160;
+			// The idea is that the color-picker can't be resized. But setRelativePosition is not a virtual function. So maybe we rather make this resizable?
+			// Although making IGUIElement::setRelativePosition virtual sounds also like it would make sense.
+            RelativeRect.UpperLeftCorner += r.UpperLeftCorner-RelativeRect.UpperLeftCorner;
         }
 		
         bool CGUIColorPicker::OnEvent(const SEvent &event) 
@@ -326,10 +329,8 @@ namespace irr
  
             IGUIElement::draw();
  
-            Environment->getVideoDriver()->draw2DImage(GradientTexture, {
-                AbsoluteRect.UpperLeftCorner.X+90,
-                AbsoluteRect.UpperLeftCorner.Y+5
-            });
+            Environment->getVideoDriver()->draw2DImage(GradientTexture, 
+					core::position2d<s32>(AbsoluteRect.UpperLeftCorner.X+90, AbsoluteRect.UpperLeftCorner.Y+5));
  
             // 2 draw because the interpolation in the diagonal is not well rendered
             Environment->getVideoDriver()->draw2DRectangle(COL_BLACK, Box, &AbsoluteClippingRect);
@@ -443,6 +444,7 @@ int main()
 	device->setEventReceiver(&receiver);
 
 	context.colorPicker = new CGUIColorPicker(env, env->getRootGUIElement(), -1);	
+	context.colorPicker->setRelativePosition(core::rect<s32>(10, 10, 200, 500));
 	//context.colorSelect = env->addColorSelectDialog (L"irr color select", false);
 
 	while(device->run() && driver)

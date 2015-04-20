@@ -8,7 +8,6 @@
 #define __C_GUI_COLOR_PICKER_HEADER__
  
 #include <IGUIElement.h>
-#include <S3DVertex.h>
  
 namespace irr
 {
@@ -35,6 +34,8 @@ namespace irr
                 virtual void setPickedColor(video::SColor color);
                 virtual video::SColor getPickedColor() const;
  
+			
+				// TODO: also needs setDrawBackground flag like other elements and should use skin-value by default.
                 virtual void setBackgroundColor(video::SColor color);
                 virtual video::SColor getBackgroundColor() const;
  
