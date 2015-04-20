@@ -32,12 +32,11 @@ namespace irr
 			
 				virtual void draw() _IRR_OVERRIDE_;			
  
-                virtual void setPickedColor(const video::SColor&);
-				// TODO probably better use copy instead reference here as dialog might get remove()'d on event (which is currently outcommented as not working - maybe that's the reason?)
-                virtual const video::SColor& getPickedColor() const;
+                virtual void setPickedColor(video::SColor color);
+                virtual video::SColor getPickedColor() const;
  
-                virtual void setBackgroundColor(const video::SColor&);
-                virtual const video::SColor& getBackgroundColor() const;
+                virtual void setBackgroundColor(video::SColor color);
+                virtual video::SColor getBackgroundColor() const;
  
                 		
             protected:
@@ -46,15 +45,17 @@ namespace irr
                 virtual void createGradientTexture();
 
 				// TODO: members start upper-case in Irrlicht
-                IGUIButton      *close;
-                IGUIScrollBar   *scroll;
-                video::ITexture *img[2];
-                bool isGradient, isColor, isInside;				
-                video::SColor    pickcolor, color;
-                video::SColor    background, white, black, alpha;
-                core::recti      box, pickbox, gradient;
-                core::vector2di  pickpos;
-                int              colorpos;
+                IGUIButton      *Close;
+                IGUIScrollBar   *Scroll;
+				video::ITexture *AlphaTexture;
+				video::ITexture *GradientTexture;
+                bool IsGradient, IsColor, IsInside;				
+                video::SColor    PickColor;
+				video::SColor    SomeColor;	// TODO: which one is that? hsv?
+                video::SColor    Background, Alpha;
+                core::recti      Box, PickBox, Gradient;	// TODO: which box is a box?
+                core::vector2di  PickPos;
+                int              ColorPos;
         };
     }
 }

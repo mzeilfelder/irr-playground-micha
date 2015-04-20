@@ -12,6 +12,12 @@
 #include <irrMath.h>
 #include <SColor.h>
 
+namespace
+{
+	const irr::video::SColor COL_WHITE = irr::video::SColor(255, 255, 255, 255);
+	const irr::video::SColor COL_BLACK = irr::video::SColor(255, 0, 0, 0);
+};
+
 namespace irr
 {
     inline core::vector3df RGBftoHSV(const video::SColorf &rgb)
@@ -49,18 +55,16 @@ namespace irr
     {
         CGUIColorPicker::CGUIColorPicker(IGUIEnvironment *environment, IGUIElement *parent, s32 id)
             : IGUIElement(EGUIET_COLOR_SELECT_DIALOG , environment, parent, id, core::rect<s32>(200, 200, 310, 360))
-			, close(0), scroll(0), isGradient(false), isColor(false), isInside(false)
-			, background(video::SColor(64, 255, 255, 255))
-			, white(video::SColor(255, 255, 255, 255))
-			, black(video::SColor(255, 0, 0, 0))
-			, colorpos(0)
+			, Close(0), Scroll(0), GradientTexture(0), IsGradient(false), IsColor(false), IsInside(false)
+			, Background(video::SColor(64, 255, 255, 255))
+			, ColorPos(0)
         {
-            close = Environment->addButton(core::rect<s32>(5, 140, 85, 156), this, 0, L"take this color");
+            Close = Environment->addButton(core::rect<s32>(5, 140, 85, 156), this, 0, L"take this color");
  
-            scroll = Environment->addScrollBar(true, core::rect<s32>(5, 125, 85, 135), this);
-            scroll->setMin(0);
-            scroll->setMax(255);
-            scroll->setPos(255);
+            Scroll = Environment->addScrollBar(true, core::rect<s32>(5, 125, 85, 135), this);
+            Scroll->setMin(0);
+            Scroll->setMax(255);
+            Scroll->setPos(255);
  
             createAlphaTexture();
             createGradientTexture();
@@ -71,16 +75,20 @@ namespace irr
 		
         CGUIColorPicker::~CGUIColorPicker() 
         {
-            close->drop();
-            scroll->drop();
-            img[0]->drop();
-            img[1]->drop();
+			if ( Close )
+				Close->drop();
+			if ( Scroll )
+				Scroll->drop();
+			if ( AlphaTexture )
+				AlphaTexture->drop();
+			if ( GradientTexture )
+				GradientTexture->drop();
         }
 		
         void CGUIColorPicker::createAlphaTexture() 
         {
-            img[0] = Environment->getVideoDriver()->addTexture(core::dimension2d<u32>(16, 16), "alpha", video::ECF_A8R8G8B8);
-            u32 *tmp = (u32*) img[0]->lock();
+            AlphaTexture = Environment->getVideoDriver()->addTexture(core::dimension2d<u32>(16, 16), "alpha", video::ECF_A8R8G8B8);
+            u32 *tmp = (u32*) AlphaTexture->lock();
  
             video::SColor color;
  
@@ -95,14 +103,14 @@ namespace irr
             square(video::SColor(255, 102, 102, 102), 8, 0, 16,  8);
             square(video::SColor(255, 102, 102, 102), 0, 8,  8, 16);
  
-            img[0]->unlock();
+            AlphaTexture->unlock();
         }
 		
         void CGUIColorPicker::createGradientTexture() 
         {
 			// TODO: can't use non pot textures
-            img[1] = Environment->getVideoDriver()->addTexture(core::dimension2d<u32>(15, 151), "gradient", video::ECF_A8R8G8B8);
-            u32 *tmp = (u32*) img[1]->lock();
+            GradientTexture = Environment->getVideoDriver()->addTexture(core::dimension2d<u32>(15, 151), "gradient", video::ECF_A8R8G8B8);
+            u32 *tmp = (u32*) GradientTexture->lock();
  
             video::SColor from;
             video::SColor to;
@@ -127,7 +135,7 @@ namespace irr
             interpolate(video::SColor(255, 0, 255, 0), video::SColor(255, 255, 255, 0), 100, 125);
             interpolate(video::SColor(255, 255, 255, 0), video::SColor(255, 255, 0, 0), 125, 151);
  
-            img[1]->unlock();
+            GradientTexture->unlock();
         }
 		
         void CGUIColorPicker::setRelativePosition(const core::recti &r)
@@ -145,16 +153,16 @@ namespace irr
  
                 if(event.MouseInput.Event == EMIE_LMOUSE_PRESSED_DOWN)
                 {
-                    isGradient = gradient.isPointInside(pos);
-                    isColor = box.isPointInside(pos);
-                    isInside = AbsoluteRect.isPointInside(pos);
+                    IsGradient = Gradient.isPointInside(pos);
+                    IsColor = Box.isPointInside(pos);
+                    IsInside = AbsoluteRect.isPointInside(pos);
                 }
  
                 if(event.MouseInput.Event == EMIE_LMOUSE_LEFT_UP)
                 {
                     // does not work since 1.7 (i think)
                     // probably need CGUIModalScreen if this module is add to the engine
-                    //if(!AbsoluteRect.isPointInside(pos) && !isInside)
+                    //if(!AbsoluteRect.isPointInside(pos) && !IsInside)
                     //{
                     //    SEvent event;
                     //    event.EventType = EET_GUI_EVENT;
@@ -165,46 +173,46 @@ namespace irr
                     //    remove();
                     //    drop();
                     //}
-                    isGradient = isColor = false;
+                    IsGradient = IsColor = false;
                 }
  
-                if(isGradient)
+                if(IsGradient)
                 {
-                    if(pos.X < gradient.UpperLeftCorner.X)
-                        pos.X = gradient.UpperLeftCorner.X;
-                    if(pos.Y < gradient.UpperLeftCorner.Y)
-                        pos.Y = gradient.UpperLeftCorner.Y;
+                    if(pos.X < Gradient.UpperLeftCorner.X)
+                        pos.X = Gradient.UpperLeftCorner.X;
+                    if(pos.Y < Gradient.UpperLeftCorner.Y)
+                        pos.Y = Gradient.UpperLeftCorner.Y;
  
-                    if(pos.X > gradient.LowerRightCorner.X)
-                        pos.X = gradient.LowerRightCorner.X;
-                    if(pos.Y > gradient.LowerRightCorner.Y)
-                        pos.Y = gradient.LowerRightCorner.Y;
+                    if(pos.X > Gradient.LowerRightCorner.X)
+                        pos.X = Gradient.LowerRightCorner.X;
+                    if(pos.Y > Gradient.LowerRightCorner.Y)
+                        pos.Y = Gradient.LowerRightCorner.Y;
  
-                    colorpos = pos.Y - gradient.UpperLeftCorner.Y;
-                    u32 *tmp =(u32*)img[1]->lock();
-                    color.set(tmp[colorpos*img[1]->getOriginalSize().Width]);
-                    img[1]->unlock();
+                    ColorPos = pos.Y - Gradient.UpperLeftCorner.Y;
+                    u32 *tmp =(u32*)GradientTexture->lock();
+                    SomeColor.set(tmp[ColorPos*GradientTexture->getOriginalSize().Width]);
+                    GradientTexture->unlock();
                     recalculatePickedColor();
                 }
  
-                if(isColor)
+                if(IsColor)
                 {
-                    if(pos.X < box.UpperLeftCorner.X)
-                        pos.X = box.UpperLeftCorner.X;
-                    if(pos.Y < box.UpperLeftCorner.Y)
-                        pos.Y = box.UpperLeftCorner.Y;
+                    if(pos.X < Box.UpperLeftCorner.X)
+                        pos.X = Box.UpperLeftCorner.X;
+                    if(pos.Y < Box.UpperLeftCorner.Y)
+                        pos.Y = Box.UpperLeftCorner.Y;
  
-                    if(pos.X > box.LowerRightCorner.X)
-                        pos.X = box.LowerRightCorner.X;
-                    if(pos.Y > box.LowerRightCorner.Y)
-                        pos.Y = box.LowerRightCorner.Y;
+                    if(pos.X > Box.LowerRightCorner.X)
+                        pos.X = Box.LowerRightCorner.X;
+                    if(pos.Y > Box.LowerRightCorner.Y)
+                        pos.Y = Box.LowerRightCorner.Y;
  
-                    pickpos.X = pos.X - box.UpperLeftCorner.X;
-                    pickpos.Y = pos.Y - box.UpperLeftCorner.Y;
+                    PickPos.X = pos.X - Box.UpperLeftCorner.X;
+                    PickPos.Y = pos.Y - Box.UpperLeftCorner.Y;
                     recalculatePickedColor();
                 }
  
-                if(isGradient || isColor)
+                if(IsGradient || IsColor)
                     return true;
             }
  
@@ -234,17 +242,18 @@ namespace irr
 		
         void CGUIColorPicker::recalculatePickedColor() 
         {
-            video::SColor hcolor = color.getInterpolated(white, pickpos.X/80.f);
+            video::SColor hcolor = SomeColor.getInterpolated(COL_WHITE, PickPos.X/80.f);
  
-            pickcolor = black.getInterpolated(hcolor, pickpos.Y/80.f);
-            pickcolor.setAlpha(scroll->getPos());
+            PickColor = COL_BLACK.getInterpolated(hcolor, PickPos.Y/80.f);
+            PickColor.setAlpha(Scroll->getPos());
  
-            alpha = color;
-            alpha.setAlpha(0);
+            Alpha = SomeColor;
+            Alpha.setAlpha(0);
         }
-        void CGUIColorPicker::setPickedColor(const video::SColor &c) 
+		
+        void CGUIColorPicker::setPickedColor(video::SColor c) 
         {
-            pickcolor = c;
+            PickColor = c;
  
             core::vector3df hsv = RGBftoHSV({
                 c.getRed()/255.f,
@@ -253,58 +262,63 @@ namespace irr
                 c.getAlpha()/255.f
             });
  
-            colorpos = 150-hsv.X/360.f*150.f;
-            pickpos.X = hsv.Y*80.f;
-            pickpos.Y = 80-(hsv.Z)*80.f;
+            ColorPos = 150-hsv.X/360.f*150.f;
+            PickPos.X = hsv.Y*80.f;
+            PickPos.Y = 80-(hsv.Z)*80.f;
  
-            u32 *tmp =(u32*)img[1]->lock();
-            color.set(tmp[colorpos*img[1]->getOriginalSize().Width]);
-            img[1]->unlock();
+            u32 *tmp =(u32*)GradientTexture->lock();
+            SomeColor.set(tmp[ColorPos*GradientTexture->getOriginalSize().Width]);
+            GradientTexture->unlock();
  
-            alpha = color;
-            alpha.setAlpha(0);
+            Alpha = SomeColor;
+            Alpha.setAlpha(0);
         }
-        const video::SColor& CGUIColorPicker::getPickedColor() const 
+		
+        video::SColor CGUIColorPicker::getPickedColor() const 
         {
-            return pickcolor;
+            return PickColor;
         }
-        void CGUIColorPicker::setBackgroundColor(const video::SColor &b) 
+		
+        void CGUIColorPicker::setBackgroundColor(video::SColor b) 
         {
-            background = b;
+            Background = b;
         }
-        const video::SColor& CGUIColorPicker::getBackgroundColor() const 
+		
+        video::SColor CGUIColorPicker::getBackgroundColor() const 
         {
-            return background;
+            return Background;
         }
+		
         void CGUIColorPicker::updateAbsolutePosition()
         {
             IGUIElement::updateAbsolutePosition();
  
-            box.UpperLeftCorner = AbsoluteRect.UpperLeftCorner;
-            box.LowerRightCorner = AbsoluteRect.UpperLeftCorner;
-            box.UpperLeftCorner.X += 5;
-            box.UpperLeftCorner.Y += 5;
-            box.LowerRightCorner.X += 85;
-            box.LowerRightCorner.Y += 85;
+            Box.UpperLeftCorner = AbsoluteRect.UpperLeftCorner;
+            Box.LowerRightCorner = AbsoluteRect.UpperLeftCorner;
+            Box.UpperLeftCorner.X += 5;
+            Box.UpperLeftCorner.Y += 5;
+            Box.LowerRightCorner.X += 85;
+            Box.LowerRightCorner.Y += 85;
  
-            gradient.UpperLeftCorner = AbsoluteRect.UpperLeftCorner;
-            gradient.LowerRightCorner = AbsoluteRect.UpperLeftCorner;
-            gradient.UpperLeftCorner.X += 90;
-            gradient.UpperLeftCorner.Y += 5;
-            gradient.LowerRightCorner.X += 105;
-            gradient.LowerRightCorner.Y += 155;
+            Gradient.UpperLeftCorner = AbsoluteRect.UpperLeftCorner;
+            Gradient.LowerRightCorner = AbsoluteRect.UpperLeftCorner;
+            Gradient.UpperLeftCorner.X += 90;
+            Gradient.UpperLeftCorner.Y += 5;
+            Gradient.LowerRightCorner.X += 105;
+            Gradient.LowerRightCorner.Y += 155;
  
-            pickbox.UpperLeftCorner = AbsoluteRect.UpperLeftCorner;
-            pickbox.LowerRightCorner = AbsoluteRect.UpperLeftCorner;
-            pickbox.UpperLeftCorner.X += 5;
-            pickbox.UpperLeftCorner.Y += 90;
-            pickbox.LowerRightCorner.X += 85;
-            pickbox.LowerRightCorner.Y += 120;
+            PickBox.UpperLeftCorner = AbsoluteRect.UpperLeftCorner;
+            PickBox.LowerRightCorner = AbsoluteRect.UpperLeftCorner;
+            PickBox.UpperLeftCorner.X += 5;
+            PickBox.UpperLeftCorner.Y += 90;
+            PickBox.LowerRightCorner.X += 85;
+            PickBox.LowerRightCorner.Y += 120;
         }
+		
         void CGUIColorPicker::draw()
         {
             Environment->getSkin()->draw3DSunkenPane(
-                this, background,
+                this, Background,
                 false, true,
                 AbsoluteRect,
                 &AbsoluteClippingRect
@@ -312,38 +326,38 @@ namespace irr
  
             IGUIElement::draw();
  
-            Environment->getVideoDriver()->draw2DImage(img[1], {
+            Environment->getVideoDriver()->draw2DImage(GradientTexture, {
                 AbsoluteRect.UpperLeftCorner.X+90,
                 AbsoluteRect.UpperLeftCorner.Y+5
             });
  
             // 2 draw because the interpolation in the diagonal is not well rendered
-            Environment->getVideoDriver()->draw2DRectangle(black, box, &AbsoluteClippingRect);
-            Environment->getVideoDriver()->draw2DRectangle(box, white, color, alpha, alpha, &AbsoluteClippingRect);
+            Environment->getVideoDriver()->draw2DRectangle(COL_BLACK, Box, &AbsoluteClippingRect);
+            Environment->getVideoDriver()->draw2DRectangle(Box, COL_WHITE, SomeColor, Alpha, Alpha, &AbsoluteClippingRect);
  
             {
 				using namespace core;
-                const vector2di start(AbsoluteRect.UpperLeftCorner.X+90,  AbsoluteRect.UpperLeftCorner.Y+5+colorpos);
-                const vector2di end(AbsoluteRect.UpperLeftCorner.X+105,  AbsoluteRect.UpperLeftCorner.Y+5+colorpos);
-                const vector2di hstart(box.UpperLeftCorner.X,  box.UpperLeftCorner.Y+pickpos.Y);
-                const vector2di hend(box.LowerRightCorner.X, box.UpperLeftCorner.Y+pickpos.Y);
-                const vector2di vstart(box.UpperLeftCorner.X+pickpos.X, box.UpperLeftCorner.Y);
-                const vector2di vend(box.UpperLeftCorner.X+pickpos.X, box.LowerRightCorner.Y);
+                const vector2di start(AbsoluteRect.UpperLeftCorner.X+90,  AbsoluteRect.UpperLeftCorner.Y+5+ColorPos);
+                const vector2di end(AbsoluteRect.UpperLeftCorner.X+105,  AbsoluteRect.UpperLeftCorner.Y+5+ColorPos);
+                const vector2di hstart(Box.UpperLeftCorner.X,  Box.UpperLeftCorner.Y+PickPos.Y);
+                const vector2di hend(Box.LowerRightCorner.X, Box.UpperLeftCorner.Y+PickPos.Y);
+                const vector2di vstart(Box.UpperLeftCorner.X+PickPos.X, Box.UpperLeftCorner.Y);
+                const vector2di vend(Box.UpperLeftCorner.X+PickPos.X, Box.LowerRightCorner.Y);
  
-                Environment->getVideoDriver()->draw2DLine(position2di( start.X,    start.Y-1), position2di( end.X,    end.Y-1), white);
-                Environment->getVideoDriver()->draw2DLine(position2di( start.X,    start.Y+1), position2di( end.X,    end.Y+1), white);
-                Environment->getVideoDriver()->draw2DLine(position2di(hstart.X,   hstart.Y-1), position2di(hend.X,   hend.Y-1), white);
-                Environment->getVideoDriver()->draw2DLine(position2di(hstart.X,   hstart.Y+1), position2di(hend.X,   hend.Y+1), white);
-                Environment->getVideoDriver()->draw2DLine(position2di(vstart.X-1,   vstart.Y), position2di(vend.X-1, vend.Y  ), white);
-                Environment->getVideoDriver()->draw2DLine(position2di(vstart.X+1,   vstart.Y), position2di(vend.X+1, vend.Y  ), white);
+                Environment->getVideoDriver()->draw2DLine(position2di( start.X,    start.Y-1), position2di( end.X,    end.Y-1), COL_WHITE);
+                Environment->getVideoDriver()->draw2DLine(position2di( start.X,    start.Y+1), position2di( end.X,    end.Y+1), COL_WHITE);
+                Environment->getVideoDriver()->draw2DLine(position2di(hstart.X,   hstart.Y-1), position2di(hend.X,   hend.Y-1), COL_WHITE);
+                Environment->getVideoDriver()->draw2DLine(position2di(hstart.X,   hstart.Y+1), position2di(hend.X,   hend.Y+1), COL_WHITE);
+                Environment->getVideoDriver()->draw2DLine(position2di(vstart.X-1,   vstart.Y), position2di(vend.X-1, vend.Y  ), COL_WHITE);
+                Environment->getVideoDriver()->draw2DLine(position2di(vstart.X+1,   vstart.Y), position2di(vend.X+1, vend.Y  ), COL_WHITE);
  
-                Environment->getVideoDriver()->draw2DLine(start,   end, black);
-                Environment->getVideoDriver()->draw2DLine(hstart, hend, black);
-                Environment->getVideoDriver()->draw2DLine(vstart, vend, black);
+                Environment->getVideoDriver()->draw2DLine(start,   end, COL_BLACK);
+                Environment->getVideoDriver()->draw2DLine(hstart, hend, COL_BLACK);
+                Environment->getVideoDriver()->draw2DLine(vstart, vend, COL_BLACK);
             }
  
-            Environment->getVideoDriver()->draw2DImage(img[0], pickbox, pickbox);
-            Environment->getVideoDriver()->draw2DRectangle( pickcolor, pickbox, &AbsoluteClippingRect);
+            Environment->getVideoDriver()->draw2DImage(AlphaTexture, PickBox, PickBox);
+            Environment->getVideoDriver()->draw2DRectangle( PickColor, PickBox, &AbsoluteClippingRect);
         }
     }
 }
@@ -429,7 +443,7 @@ int main()
 	device->setEventReceiver(&receiver);
 
 	context.colorPicker = new CGUIColorPicker(env, env->getRootGUIElement(), -1);	
-	context.colorSelect = env->addColorSelectDialog (L"irr color select", false);
+	//context.colorSelect = env->addColorSelectDialog (L"irr color select", false);
 
 	while(device->run() && driver)
 	{
