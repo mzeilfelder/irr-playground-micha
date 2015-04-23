@@ -27,7 +27,7 @@ int main(int argc, char *argv[])
 								-1);
 
 	scene::IAnimatedMesh* aniMeshOrig = smgr->getMesh( "../../media/ninja.b3d" );
-	scene::IMeshSceneNode * nodeOrig = smgr->addMeshSceneNode (aniMeshOrig, NULL, -1, core::vector3df(-10, 0, 0) );
+	scene::IAnimatedMeshSceneNode  * nodeOrig = smgr->addAnimatedMeshSceneNode (aniMeshOrig, NULL, -1, core::vector3df(-10, 0, 0) );
 	nodeOrig->setMaterialFlag(video::EMF_LIGHTING, false);
 
 	scene::IMeshWriter * b3dMeshWriter = smgr->createMeshWriter (scene::EMWT_B3D );
@@ -37,7 +37,7 @@ int main(int argc, char *argv[])
 	b3dMeshWriter->drop();
 
 	scene::IAnimatedMesh* aniMeshCopy = smgr->getMesh( "my_media/write_ninja.b3d" );
-	scene::IMeshSceneNode * nodeCopy = smgr->addMeshSceneNode (aniMeshCopy, NULL, -1, core::vector3df(100, 0, 0) );
+	scene::IAnimatedMeshSceneNode  * nodeCopy = smgr->addAnimatedMeshSceneNode (aniMeshCopy, NULL, -1, core::vector3df(10, 0, 0) );
 	nodeCopy->setMaterialFlag(video::EMF_LIGHTING, false); 
 
 	while ( device->run() )
