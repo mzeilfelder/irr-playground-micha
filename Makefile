@@ -1,11 +1,14 @@
 # Makefile for Irrlicht Examples.
 # Note that in this case we put the binary result beside the sources
 # In some cases you might want to pass additional variables to the Makefile, like:
-# make FREETYPE=1 ES2=1
+# make FREETYPE=1 ES2=1 GRID=1
 Target = playground
 Sources = main.cpp 
 ifdef FREETYPE
 Sources += CGUITTFont.cpp
+endif
+ifdef GRID
+Sources += CGridSceneNode.cpp
 endif
 
 # general compiler settings

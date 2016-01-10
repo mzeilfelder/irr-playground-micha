@@ -517,7 +517,6 @@ void CGridSceneNode::rebuildSelectionMesh()
 	irr::video::SColor col(128, 0, 0, 255);
 	irr::core::vector3df edges[8];
 	BoundingBox.getEdges(edges);
-	irr::video::S3DVertex* vertices = SelectionMeshBuffer->getVertexBuffer().pointer();
 	for ( int i=0; i<4; ++i )
 		SelectionMeshBuffer->getVertexBuffer().push_back ( video::S3DVertex((edges[i*2]+edges[i*2+1])/2, core::vector3df(0,1,0), col, core::vector2df(0.0f, 0.0f)) );
 
