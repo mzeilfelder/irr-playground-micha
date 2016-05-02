@@ -31,7 +31,8 @@ int main()
 	video::IVideoDriver* driver = device->getVideoDriver();
 	IGUIEnvironment* env = device->getGUIEnvironment();
 
-	irr::io::path fontName("my_media/fonts/cyrillic.ttf");
+	//irr::io::path fontName("my_media/fonts/cyrillic.ttf");
+	irr::io::path fontName("my_media/fonts/andika/Andika-R.ttf");
 	unsigned int fontSize = 14;
 	bool fontAntiAlias = true;
 	bool fontTransparency = true;
@@ -54,8 +55,8 @@ int main()
 	font->drop();
 	
 	//skin->setFont(env->getFont("my_media/fonts/gentium12px.xml"));	// non-ttf font for comparison	
-	
-	env->addStaticText( L"the quick brown fox\n jumps over the lazy dog\nTHE LAZY DOG JUMPS OVER\nTHE QUICK BROWN FOX", rect<s32>(20, 20, 320, 120),true);
+	core::stringw str(L"the quick brown fox\n jumps over the lazy dog\nTHE LAZY DOG JUMPS OVER\nTHE QUICK BROWN FOX");
+	env->addStaticText( str.c_str(), rect<s32>(20, 20, 320, 120),true);
 	IGUIEditBox * editBox = env->addEditBox(L"", rect<s32>(20, 130, 320, 210));
 
 		// load same font with other size
@@ -73,6 +74,9 @@ int main()
 			driver->beginScene(true, true, SColor(0,200,200,200));
 	
 			env->drawAll();
+			
+			const recti position(20, 220, 320, 320);
+			font->draw(str, position, SColor(255,10,20,30));
 		
 			driver->endScene();
 		}

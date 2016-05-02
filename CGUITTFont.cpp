@@ -510,7 +510,7 @@ void CGUITTFont::draw(const core::stringw& text, const core::rect<s32>& position
 		wchar_t currentChar = *iter;
 		n = getGlyphIndexByChar(currentChar);
 		bool visible = (Invisible.findFirst(currentChar) == -1);
-		if (n > 0 && visible)
+		if (visible)
 		{
 			bool lineBreak=false;
 			if (currentChar == L'\r') // Mac or Windows breaks
@@ -535,22 +535,25 @@ void CGUITTFont::draw(const core::stringw& text, const core::rect<s32>& position
 				++iter;
 				continue;
 			}
+			
+			if ( n > 0 )
+			{
+				SGUITTGlyph& glyph = Glyphs[n-1];
 
-			SGUITTGlyph& glyph = Glyphs[n-1];
+				// Calculate the glyph offset.
+				s32 offx = glyph.offset.X;
+				s32 offy = (font_metrics.ascender / 64) - glyph.offset.Y;
 
-			// Calculate the glyph offset.
-			s32 offx = glyph.offset.X;
-			s32 offy = (font_metrics.ascender / 64) - glyph.offset.Y;
+				// Apply kerning.
+				core::vector2di k = getKerning(currentChar, previousChar);
+				offset.X += k.X;
+				offset.Y += k.Y;
 
-			// Apply kerning.
-			core::vector2di k = getKerning(currentChar, previousChar);
-			offset.X += k.X;
-			offset.Y += k.Y;
-
-			// Determine rendering information.
-			CGUITTGlyphPage* const page = Glyph_Pages[glyph.glyph_page];
-			page->render_positions.push_back(core::position2di(offset.X + offx, offset.Y + offy));
-			page->render_source_rects.push_back(glyph.source_rect);
+				// Determine rendering information.
+				CGUITTGlyphPage* const page = Glyph_Pages[glyph.glyph_page];
+				page->render_positions.push_back(core::position2di(offset.X + offx, offset.Y + offy));
+				page->render_source_rects.push_back(glyph.source_rect);
+			}
 		}
 		offset.X += getWidthFromCharacter(currentChar);
 
