@@ -55,11 +55,11 @@ int main()
 	font->drop();
 	
 	//skin->setFont(env->getFont("my_media/fonts/gentium12px.xml"));	// non-ttf font for comparison	
-	core::stringw str(L"the quick brown fox\n jumps over the lazy dog\nTHE LAZY DOG JUMPS OVER\nTHE QUICK BROWN FOX");
+	core::stringw str(L"the quick brown fox\n jumps over äöü the lazy dog\nTHE LAZY DOG JUMPS OVER\nTHE QUICK BROWN FOX");
 	env->addStaticText( str.c_str(), rect<s32>(20, 20, 320, 120),true);
 	IGUIEditBox * editBox = env->addEditBox(L"", rect<s32>(20, 130, 320, 210));
 
-		// load same font with other size
+	// load same font with other size
 	irr::gui::CGUITTFont * fontOtherSize = irr::gui::CGUITTFont::createTTFont(driver, device->getFileSystem(), fontName, fontSize-4, fontAntiAlias, fontTransparency);
 	if ( fontOtherSize )
 	{
@@ -77,6 +77,16 @@ int main()
 			
 			const recti position(20, 220, 320, 320);
 			font->draw(str, position, SColor(255,10,20,30));
+			
+			// TODO: drawing texture-pages not yet working - at least not with opengl. Maybe something about colors being messed up - not sure yet.
+			core::position2di texPos(330, 10);
+			u32 numPages = font->getLastGlyphPageIndex()+1;
+			for ( u32 i=0; i < numPages; ++i )
+			{
+				ITexture* tex = font->getPageTextureByIndex(i);
+				driver->draw2DImage(tex, texPos);
+				texPos.Y += tex->getSize().Height + 10;
+			}
 		
 			driver->endScene();
 		}
@@ -86,4 +96,3 @@ int main()
 
 	return 0;
 }
-

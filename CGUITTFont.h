@@ -152,7 +152,7 @@ namespace gui
 			{
 				if( texture )
 					return false;
-
+				
 				bool flgmip = driver->getTextureCreationFlag(video::ETCF_CREATE_MIP_MAPS);
 				driver->setTextureCreationFlag(video::ETCF_CREATE_MIP_MAPS, false);
 				bool allowMemCpy = driver->getTextureCreationFlag(video::ETCF_ALLOW_MEMORY_COPY);
