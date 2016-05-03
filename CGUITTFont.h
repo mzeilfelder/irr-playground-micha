@@ -238,7 +238,7 @@ namespace gui
 	};
 
 	//! Class representing a TrueType font.
-	class CGUITTFont : public IGUIFont
+	class CGUITTFont : public irr::gui::IGUIFont
 	{
 		public:
 			//! Creates a new TrueType font and returns a pointer to it.  The pointer must be drop()'ed when finished.
@@ -255,45 +255,7 @@ namespace gui
 
 			//! Destructor
 			virtual ~CGUITTFont();
-
-			//! Sets the amount of glyphs to batch load.
-			virtual void setBatchLoadSize(u32 batch_size) { batch_load_size = batch_size; }
-
-			//! Sets the maximum texture size for a page of glyphs.
-			virtual void setMaxPageTextureSize(const core::dimension2du& texture_size) { max_page_texture_size = texture_size; }
-
-			//! Get the font size.
-			virtual u32 getFontSize() const { return size; }
-
-			//! Check the font's transparency.
-			virtual bool isTransparent() const { return use_transparency; }
-
-			//! Check if the font auto-hinting is enabled.
-			//! Auto-hinting is FreeType's built-in font hinting engine.
-			virtual bool useAutoHinting() const { return use_auto_hinting; }
-
-			//! Check if the font hinting is enabled.
-			virtual bool useHinting()	 const { return use_hinting; }
-
-			//! Check if the font is being loaded as a monochrome font.
-			//! The font can either be a 256 color grayscale font, or a 2 color monochrome font.
-			virtual bool useMonochrome()  const { return use_monochrome; }
-
-			//! Tells the font to allow transparency when rendering.
-			//! Default: true.
-			//! \param flag If true, the font draws using transparency.
-			virtual void setTransparency(const bool flag);
-
-			//! Tells the font to use monochrome rendering.
-			//! Default: false.
-			//! \param flag If true, the font draws using a monochrome image.  If false, the font uses a grayscale image.
-			virtual void setMonochrome(const bool flag);
-
-			//! Enables or disables font hinting.
-			//! Default: Hinting and auto-hinting true.
-			//! \param enable If false, font hinting is turned off. If true, font hinting is turned on.
-			//! \param enable_auto_hinting If true, FreeType uses its own auto-hinting algorithm.  If false, it tries to use the algorithm specified by the font.
-			virtual void setFontHinting(const bool enable, const bool enable_auto_hinting = true);
+		
 
 			//! Draws some text and clips it to the specified rectangle if wanted.
 			virtual void draw(const core::stringw& text, const core::rect<s32>& position,
@@ -320,7 +282,48 @@ namespace gui
 
 			//! Returns the distance between letters
 			virtual s32 getKerningHeight() const;
+		
+		
 
+			//! Sets the amount of glyphs to batch load.
+			void setBatchLoadSize(u32 batch_size) { batch_load_size = batch_size; }
+
+			//! Sets the maximum texture size for a page of glyphs.
+			void setMaxPageTextureSize(const core::dimension2du& texture_size) { max_page_texture_size = texture_size; }
+
+			//! Get the font size.
+			u32 getFontSize() const { return size; }
+
+			//! Check the font's transparency.
+			bool isTransparent() const { return use_transparency; }
+
+			//! Check if the font auto-hinting is enabled.
+			//! Auto-hinting is FreeType's built-in font hinting engine.
+			bool useAutoHinting() const { return use_auto_hinting; }
+
+			//! Check if the font hinting is enabled.
+			bool useHinting()	 const { return use_hinting; }
+
+			//! Check if the font is being loaded as a monochrome font.
+			//! The font can either be a 256 color grayscale font, or a 2 color monochrome font.
+			bool useMonochrome()  const { return use_monochrome; }
+
+			//! Tells the font to allow transparency when rendering.
+			//! Default: true.
+			//! \param flag If true, the font draws using transparency.
+			void setTransparency(const bool flag);
+
+			//! Tells the font to use monochrome rendering.
+			//! Default: false.
+			//! \param flag If true, the font draws using a monochrome image.  If false, the font uses a grayscale image.
+			void setMonochrome(const bool flag);
+
+			//! Enables or disables font hinting.
+			//! Default: Hinting and auto-hinting true.
+			//! \param enable If false, font hinting is turned off. If true, font hinting is turned on.
+			//! \param enable_auto_hinting If true, FreeType uses its own auto-hinting algorithm.  If false, it tries to use the algorithm specified by the font.
+			void setFontHinting(const bool enable, const bool enable_auto_hinting = true);
+			
 			//! Define which characters should not be drawn by the font.
 			/** This is a speed optimization. For example spaces don't draw anything in most fonts.
 			So making them invisible save the render-time for those. Instead an empty space with 
@@ -341,7 +344,7 @@ namespace gui
 
 			//! This function is for debugging mostly. If the page doesn't exist it returns zero.
 			//! \param page_index Simply return the texture handle of a given page index.
-			virtual video::ITexture* getPageTextureByIndex(u32 page_index) const;
+			video::ITexture* getPageTextureByIndex(u32 page_index) const;
 
 		protected:
 			bool use_monochrome;
