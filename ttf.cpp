@@ -27,6 +27,8 @@ using namespace gui;
 
 int main()
 {
+//	video::E_DRIVER_TYPE driverType = video::EDT_SOFTWARE;	
+//	video::E_DRIVER_TYPE driverType = video::EDT_BURNINGSVIDEO;
 	video::E_DRIVER_TYPE driverType = video::EDT_OPENGL;
 	IrrlichtDevice * device = createDevice(driverType, core::dimension2d<u32>(640, 480));
 	if (device == 0)
