@@ -283,7 +283,13 @@ namespace gui
 			//! Returns the distance between letters
 			virtual s32 getKerningHeight() const;
 		
-		
+			//! Define which characters should not be drawn by the font.
+			/** This is a speed optimization. For example spaces don't draw anything in most fonts.
+			So making them invisible save the render-time for those. Instead an empty space with 
+			their width is added to the output. */
+			virtual void setInvisibleCharacters(const wchar_t *s);
+
+
 
 			//! Sets the amount of glyphs to batch load.
 			void setBatchLoadSize(u32 batch_size) { batch_load_size = batch_size; }
@@ -324,12 +330,6 @@ namespace gui
 			//! \param enable_auto_hinting If true, FreeType uses its own auto-hinting algorithm.  If false, it tries to use the algorithm specified by the font.
 			void setFontHinting(const bool enable, const bool enable_auto_hinting = true);
 			
-			//! Define which characters should not be drawn by the font.
-			/** This is a speed optimization. For example spaces don't draw anything in most fonts.
-			So making them invisible save the render-time for those. Instead an empty space with 
-			their width is added to the output. */
-			virtual void setInvisibleCharacters(const wchar_t *s);
-
 			//! Get the last glyph page if there's still available slots.
 			//! If not, it will return zero.
 			CGUITTGlyphPage* getLastGlyphPage() const;
