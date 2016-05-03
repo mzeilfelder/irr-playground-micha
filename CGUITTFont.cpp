@@ -82,7 +82,11 @@ video::IImage* SGUITTGlyph::createGlyphImage(const FT_Bitmap& bits, video::IVide
 
 			// Load the monochrome data in.
 			const u32 image_pitch = image->getPitch() / sizeof(u16);
+#if (IRRLICHT_VERSION_MAJOR > 1) || (IRRLICHT_VERSION_MAJOR == 1 && IRRLICHT_VERSION_MINOR >= 9)			
 			u16* image_data = (u16*)image->getData();
+#else
+			u16* image_data = (u16*)image->lock();
+#endif			
 			u8* glyph_data = bits.buffer;
 			for (s32 y = 0; y < bits.rows; ++y)
 			{
@@ -110,7 +114,11 @@ video::IImage* SGUITTGlyph::createGlyphImage(const FT_Bitmap& bits, video::IVide
 			// Load the grayscale data in.
 			const float gray_count = static_cast<float>(bits.num_grays);
 			const u32 image_pitch = image->getPitch() / sizeof(u32);
+#if (IRRLICHT_VERSION_MAJOR > 1) || (IRRLICHT_VERSION_MAJOR == 1 && IRRLICHT_VERSION_MINOR >= 9)			
 			u32* image_data = (u32*)image->getData();
+#else
+			u32* image_data = (u32*)image->lock();
+#endif
 			u8* glyph_data = bits.buffer;
 			for (s32 y = 0; y < bits.rows; ++y)
 			{
