@@ -5,6 +5,10 @@
 // To get it running run the Makefile with:
 // make FREETYPE=1
 // (will only work on a system with freetype installed)
+//
+// Open problem: 
+// - When ETCF_ALLOW_MEMORY_COPY is not set in CGUITTFont.h then each character typed in the editbox which wasn't used before makes the characters less visible (maybe more bright)
+// - setTransparency(false) makes no difference
 
 #include <irrlicht.h>
 #include "CGUITTFont.h"
@@ -23,6 +27,8 @@ using namespace gui;
 
 int main()
 {
+//	video::E_DRIVER_TYPE driverType = video::EDT_SOFTWARE;	
+//	video::E_DRIVER_TYPE driverType = video::EDT_BURNINGSVIDEO;
 	video::E_DRIVER_TYPE driverType = video::EDT_OPENGL;
 	IrrlichtDevice * device = createDevice(driverType, core::dimension2d<u32>(640, 480));
 	if (device == 0)
@@ -38,14 +44,19 @@ int main()
 	bool fontTransparency = true;
 	irr::gui::CGUITTFont * font = irr::gui::CGUITTFont::createTTFont(driver, device->getFileSystem(), fontName, fontSize, fontAntiAlias, fontTransparency);
 	if ( font )
+	{
 		font->setFontHinting(false, false);
+		font->setTransparency(false);
+	}
 	else
 		return 1;
 
-	// load same font twice (just testing if it causes any troubles)
+	
+#if 0	// load same font twice (just testing if it causes any troubles)
 	irr::gui::CGUITTFont * fontAgain = irr::gui::CGUITTFont::createTTFont(driver, device->getFileSystem(), fontName, fontSize, fontAntiAlias, fontTransparency);
 	if ( fontAgain )
 		fontAgain->drop();
+#endif
 	
 	IGUISkin* skin = env->getSkin();
 	if ( !skin )
@@ -59,13 +70,14 @@ int main()
 	env->addStaticText( str.c_str(), rect<s32>(20, 20, 320, 120),true);
 	IGUIEditBox * editBox = env->addEditBox(L"", rect<s32>(20, 130, 320, 210));
 
-	// load same font with other size
+#if 0	// load same font with other size
 	irr::gui::CGUITTFont * fontOtherSize = irr::gui::CGUITTFont::createTTFont(driver, device->getFileSystem(), fontName, fontSize-4, fontAntiAlias, fontTransparency);
 	if ( fontOtherSize )
 	{
 		editBox->setOverrideFont( fontOtherSize );
 		fontOtherSize->drop();
 	}
+#endif
 
 	while(device->run() && driver)
 	{

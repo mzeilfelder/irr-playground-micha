@@ -44,6 +44,7 @@
 	- remove a few memory re-allocations in drawing
 	- CGUITTGlyphPage::updateTexture replaced dirtyflag by check for glpyhs to handle
 	- CGUITTGlyphPage::updateTexture works with ::texture->getSize() instead of getOriginalSize. Same result in this case, but more correct.
+	- Irrlichtify code (variable naming etc)
 	
 	TODO:
 	- Hinting should be one enum with explanation (have to figure it out first, results are strange currently when I enable it)
@@ -69,12 +70,13 @@ namespace gui
 	struct SGUITTGlyph
 	{
 		//! Constructor.
-		SGUITTGlyph() : isLoaded(false), glyph_page(0), surface(0), parent(0) {}
+		SGUITTGlyph() : IsLoaded(false), GlyphPage(0), Surface(0), Parent(0) {}
+		explicit SGUITTGlyph(CGUITTFont* parent) : IsLoaded(false), GlyphPage(0), Surface(0), Parent(parent) {}
 
 		//! Destructor.
 		~SGUITTGlyph() { unload(); }
 
-		SGUITTGlyph(const SGUITTGlyph &other): isLoaded(false), glyph_page(0), surface(0), parent(0)
+		SGUITTGlyph(const SGUITTGlyph &other): IsLoaded(false), GlyphPage(0), Surface(0), Parent(0)
 		{
 			*this = other;
 		}
@@ -83,15 +85,15 @@ namespace gui
 		{
 			if ( &other != this )
 			{
-				isLoaded = other.isLoaded;
-				glyph_page = other.glyph_page;
+				IsLoaded = other.IsLoaded;
+				GlyphPage = other.GlyphPage;
 
-				if ( other.surface )
-					other.surface->grab();
-				if ( surface )
-					surface->drop();
-				surface = other.surface;
-				parent = other.parent;
+				if ( other.Surface )
+					other.Surface->grab();
+				if ( Surface )
+					Surface->drop();
+				Surface = other.Surface;
+				Parent = other.Parent;
 			}
 			return *this;
 		}
@@ -109,131 +111,77 @@ namespace gui
 		//! Creates the IImage object from the FT_Bitmap.
 		video::IImage* createGlyphImage(const FT_Bitmap& bits, video::IVideoDriver* driver) const;
 
+		
 		//! If true, the glyph has been loaded.
-		bool isLoaded;
+		bool IsLoaded;
 
 		//! The page the glyph is on.
-		u32 glyph_page;
+		u32 GlyphPage;
 
 		//! The source rectangle for the glyph.
-		core::recti source_rect;
+		core::recti SourceRect;
 
 		//! The offset of glyph when drawn.
-		core::vector2di offset;
+		core::vector2di Offset;
 
 		//! Glyph advance information.
-		FT_Vector advance;
+		FT_Vector Advance;
 
 		//! This is just the temporary image holder.  After this glyph is paged,
 		//! it will be dropped.
-		mutable video::IImage* surface;
+		mutable video::IImage* Surface;
 
 		//! The pointer pointing to the parent (CGUITTFont)
-		CGUITTFont* parent;
+		CGUITTFont* Parent;
 	};
 
 	//! Holds a sheet of glyphs.
 	class CGUITTGlyphPage
 	{
 		public:
-			CGUITTGlyphPage(video::IVideoDriver* Driver, const io::path& texture_name) :texture(0), available_slots(0), used_slots(0), driver(Driver), name(texture_name) {}
+			CGUITTGlyphPage(video::IVideoDriver* driver, const io::path& textureName) : Texture(0), AvailableSlots(0), UsedSlots(0), Driver(driver), Name(textureName) 
+			{
+			}
+			
 			~CGUITTGlyphPage()
 			{
-				if (texture)
+				if (Texture)
 				{
-					if (driver)
-						driver->removeTexture(texture);
-					else texture->drop();
+					if (Driver)
+						Driver->removeTexture(Texture);
+					else 
+						Texture->drop();
 				}
 			}
 
 			//! Create the actual page texture,
-			bool createPageTexture(const u8& pixel_mode, const core::dimension2du& texture_size)
-			{
-				if( texture )
-					return false;
-				
-				bool flgmip = driver->getTextureCreationFlag(video::ETCF_CREATE_MIP_MAPS);
-				driver->setTextureCreationFlag(video::ETCF_CREATE_MIP_MAPS, false);
-				bool allowMemCpy = driver->getTextureCreationFlag(video::ETCF_ALLOW_MEMORY_COPY);
-				driver->setTextureCreationFlag(video::ETCF_ALLOW_MEMORY_COPY, true);
-
-				// Set the texture color format.
-				switch (pixel_mode)
-				{
-					case FT_PIXEL_MODE_MONO:
-						texture = driver->addTexture(texture_size, name, video::ECF_A1R5G5B5);
-						break;
-					case FT_PIXEL_MODE_GRAY:
-					default:
-						texture = driver->addTexture(texture_size, name, video::ECF_A8R8G8B8);
-						break;
-				}
-
-				// Restore our texture creation flags.
-				driver->setTextureCreationFlag(video::ETCF_ALLOW_MEMORY_COPY, allowMemCpy);
-				driver->setTextureCreationFlag(video::ETCF_CREATE_MIP_MAPS, flgmip);
-				return texture ? true : false;
-			}
+			bool createPageTexture(const u8& pixelMode, const core::dimension2du& textureSize);
 
 			//! Add the glyph to a list of glyphs to be paged.
 			//! This collection will be cleared after updateTexture is called.
 			void pushGlyphToBePaged(const SGUITTGlyph* glyph)
 			{
-				glyph_to_be_paged.push_back(glyph);
+				GlyphsToBePaged.push_back(glyph);
 			}
 
 			//! Updates the texture atlas with new glyphs.
-			void updateTexture()
-			{
-				if (glyph_to_be_paged.empty())
-					return;
+			void updateTexture();
 
-				void* ptr = texture->lock();
-				video::ECOLOR_FORMAT format = texture->getColorFormat();
-				core::dimension2du size = texture->getSize();
+			video::ITexture* Texture;
+			u32 AvailableSlots;
+			u32 UsedSlots;
 
-				video::IImage* pageholder = driver->createImageFromData(format, size, ptr, true, false);
-
-				for (u32 i = 0; i < glyph_to_be_paged.size(); ++i)
-				{
-					const SGUITTGlyph* glyph = glyph_to_be_paged[i];
-					if (glyph && glyph->isLoaded)
-					{
-						if (glyph->surface)
-						{
-							glyph->surface->copyTo(pageholder, glyph->source_rect.UpperLeftCorner);
-							glyph->surface->drop();
-							glyph->surface = 0;
-						}
-						else
-						{
-							; // TODO: add error message?
-							//currently, if we failed to create the image, just ignore this operation.
-						}
-					}
-				}
-
-				texture->unlock();
-				pageholder->drop();
-				glyph_to_be_paged.clear();
-			}
-
-			video::ITexture* texture;
-			u32 available_slots;
-			u32 used_slots;
-
-			core::array<core::vector2di> render_positions;
-			core::array<core::recti> render_source_rects;
+			core::array<core::vector2di> RenderPositions;
+			core::array<core::recti> RenderSourceRects;
 
 		private:
-			core::array<const SGUITTGlyph*> glyph_to_be_paged;
-			video::IVideoDriver* driver;
-			io::path name;
+			core::array<const SGUITTGlyph*> GlyphsToBePaged;
+			video::IVideoDriver* Driver;
+			io::path Name;
 	};
 
 	//! Class representing a TrueType font.
-	class CGUITTFont : public IGUIFont
+	class CGUITTFont : public irr::gui::IGUIFont
 	{
 		public:
 			//! Creates a new TrueType font and returns a pointer to it.  The pointer must be drop()'ed when finished.
@@ -250,45 +198,7 @@ namespace gui
 
 			//! Destructor
 			virtual ~CGUITTFont();
-
-			//! Sets the amount of glyphs to batch load.
-			virtual void setBatchLoadSize(u32 batch_size) { batch_load_size = batch_size; }
-
-			//! Sets the maximum texture size for a page of glyphs.
-			virtual void setMaxPageTextureSize(const core::dimension2du& texture_size) { max_page_texture_size = texture_size; }
-
-			//! Get the font size.
-			virtual u32 getFontSize() const { return size; }
-
-			//! Check the font's transparency.
-			virtual bool isTransparent() const { return use_transparency; }
-
-			//! Check if the font auto-hinting is enabled.
-			//! Auto-hinting is FreeType's built-in font hinting engine.
-			virtual bool useAutoHinting() const { return use_auto_hinting; }
-
-			//! Check if the font hinting is enabled.
-			virtual bool useHinting()	 const { return use_hinting; }
-
-			//! Check if the font is being loaded as a monochrome font.
-			//! The font can either be a 256 color grayscale font, or a 2 color monochrome font.
-			virtual bool useMonochrome()  const { return use_monochrome; }
-
-			//! Tells the font to allow transparency when rendering.
-			//! Default: true.
-			//! \param flag If true, the font draws using transparency.
-			virtual void setTransparency(const bool flag);
-
-			//! Tells the font to use monochrome rendering.
-			//! Default: false.
-			//! \param flag If true, the font draws using a monochrome image.  If false, the font uses a grayscale image.
-			virtual void setMonochrome(const bool flag);
-
-			//! Enables or disables font hinting.
-			//! Default: Hinting and auto-hinting true.
-			//! \param enable If false, font hinting is turned off. If true, font hinting is turned on.
-			//! \param enable_auto_hinting If true, FreeType uses its own auto-hinting algorithm.  If false, it tries to use the algorithm specified by the font.
-			virtual void setFontHinting(const bool enable, const bool enable_auto_hinting = true);
+		
 
 			//! Draws some text and clips it to the specified rectangle if wanted.
 			virtual void draw(const core::stringw& text, const core::rect<s32>& position,
@@ -315,13 +225,54 @@ namespace gui
 
 			//! Returns the distance between letters
 			virtual s32 getKerningHeight() const;
-
+		
 			//! Define which characters should not be drawn by the font.
 			/** This is a speed optimization. For example spaces don't draw anything in most fonts.
 			So making them invisible save the render-time for those. Instead an empty space with 
 			their width is added to the output. */
 			virtual void setInvisibleCharacters(const wchar_t *s);
 
+
+
+			//! Sets the amount of glyphs to batch load.
+			void setBatchLoadSize(u32 batch_size) { BatchLoadSize = batch_size; }
+
+			//! Sets the maximum texture size for a page of glyphs.
+			void setMaxPageTextureSize(const core::dimension2du& texture_size) { MaxPageTextureSize = texture_size; }
+
+			//! Get the font size.
+			u32 getFontSize() const { return Size; }
+
+			//! Check the font's transparency.
+			bool isTransparent() const { return UseTransparency; }
+
+			//! Check if the font auto-hinting is enabled.
+			//! Auto-hinting is FreeType's built-in font hinting engine.
+			bool useAutoHinting() const { return UseAutoHinting; }
+
+			//! Check if the font hinting is enabled.
+			bool useHinting()	 const { return UseHinting; }
+
+			//! Check if the font is being loaded as a monochrome font.
+			//! The font can either be a 256 color grayscale font, or a 2 color monochrome font.
+			bool useMonochrome()  const { return UseMonochrome; }
+
+			//! Tells the font to allow transparency when rendering.
+			//! Default: true.
+			//! \param flag If true, the font draws using transparency.
+			void setTransparency(const bool flag);
+
+			//! Tells the font to use monochrome rendering.
+			//! Default: false.
+			//! \param flag If true, the font draws using a monochrome image.  If false, the font uses a grayscale image.
+			void setMonochrome(const bool flag);
+
+			//! Enables or disables font hinting.
+			//! Default: Hinting and auto-hinting true.
+			//! \param enable If false, font hinting is turned off. If true, font hinting is turned on.
+			//! \param enable_auto_hinting If true, FreeType uses its own auto-hinting algorithm.  If false, it tries to use the algorithm specified by the font.
+			void setFontHinting(const bool enable, const bool enable_auto_hinting = true);
+			
 			//! Get the last glyph page if there's still available slots.
 			//! If not, it will return zero.
 			CGUITTGlyphPage* getLastGlyphPage() const;
@@ -332,56 +283,61 @@ namespace gui
 			CGUITTGlyphPage* createGlyphPage(const u8& pixel_mode);
 
 			//! Get the last glyph page's index.
-			u32 getLastGlyphPageIndex() const { return Glyph_Pages.size() - 1; }
+			u32 getLastGlyphPageIndex() const { return GlyphPages.size() - 1; }
 
 			//! This function is for debugging mostly. If the page doesn't exist it returns zero.
 			//! \param page_index Simply return the texture handle of a given page index.
-			virtual video::ITexture* getPageTextureByIndex(u32 page_index) const;
-
-		protected:
-			bool use_monochrome;
-			bool use_transparency;
-			bool use_hinting;
-			bool use_auto_hinting;
-			u32 size;
-			u32 batch_load_size;
-			core::dimension2du max_page_texture_size;
+			video::ITexture* getPageTextureByIndex(u32 page_index) const;
 
 		private:
-			// Manages the FreeType library.
-			static FT_Library c_library;
-			static core::map<io::path, SGUITTFace*> c_faces;
-			static bool c_libraryLoaded;
-
 			CGUITTFont(irr::video::IVideoDriver* driver, irr::io::IFileSystem* fileSystem);
+		
 			bool load(const io::path& filename, u32 size, bool antialias, bool transparency);
 			void reset_images();
 			void update_glyph_pages() const;
 			void update_load_flags()
 			{
 				// Set up our loading flags.
-				load_flags = FT_LOAD_DEFAULT | FT_LOAD_RENDER;
-				if (!useHinting()) load_flags |= FT_LOAD_NO_HINTING;
-				if (!useAutoHinting()) load_flags |= FT_LOAD_NO_AUTOHINT;
-				if (useMonochrome()) load_flags |= FT_LOAD_MONOCHROME | FT_LOAD_TARGET_MONO | FT_RENDER_MODE_MONO;
-				else load_flags |= FT_LOAD_TARGET_NORMAL;
+				LoadFlags = FT_LOAD_DEFAULT | FT_LOAD_RENDER;
+				if (!useHinting()) 
+					LoadFlags |= FT_LOAD_NO_HINTING;
+				if (!useAutoHinting()) 
+					LoadFlags |= FT_LOAD_NO_AUTOHINT;
+				if (useMonochrome()) 
+					LoadFlags |= FT_LOAD_MONOCHROME | FT_LOAD_TARGET_MONO | FT_RENDER_MODE_MONO;
+				else 
+					LoadFlags |= FT_LOAD_TARGET_NORMAL;
 			}
 			u32 getWidthFromCharacter(wchar_t c) const;
 			u32 getHeightFromCharacter(wchar_t c) const;
 			u32 getGlyphIndexByChar(wchar_t c) const;
 			core::vector2di getKerning(const wchar_t thisLetter, const wchar_t previousLetter) const;
 			core::dimension2d<u32> getDimensionUntilEndOfLine(const wchar_t* p) const;
+			
+			// Manages the FreeType library.
+			static FT_Library c_library;
+			static core::map<io::path, SGUITTFace*> c_faces;
+			static bool c_libraryLoaded;
+		
 
+			bool UseMonochrome;
+			bool UseTransparency;
+			bool UseHinting;
+			bool UseAutoHinting;
+			u32 Size;
+			u32 BatchLoadSize;
+			core::dimension2du MaxPageTextureSize;
+			
 			irr::video::IVideoDriver* Driver;
 			irr::io::IFileSystem* FileSystem;
 			irr::ILogger* Logger;
 
-			io::path filename;
-			FT_Face tt_face;
-			FT_Size_Metrics font_metrics;
-			FT_Int32 load_flags;
+			io::path Filename;
+			FT_Face TTface;
+			FT_Size_Metrics FontMetrics;
+			FT_Int32 LoadFlags;
 
-			core::array<CGUITTGlyphPage*> Glyph_Pages;
+			core::array<CGUITTGlyphPage*> GlyphPages;
 			mutable core::array<SGUITTGlyph> Glyphs;
 
 			s32 GlobalKerningWidth;
