@@ -1,7 +1,7 @@
 // Code is under the zlib license (same as Irrlicht)
 // Written by Michael Zeilfelder
 // 
-// Test for profiling rendering of simple static MeshSceneNodes
+// Similar to profile_meshscenenode.cpp for now, but want to try some other experiments with this one.
 // You can pass 3 parameters for the number of nodes created in x, y and z direction
 // So have x*y*z nodes in the end
 
@@ -27,9 +27,7 @@ int main(int argc, char* argv[])
 	videoDriver->setMinHardwareBufferVertexCount(10);
 	IRandomizer* randomizer = device->getRandomizer();
 
-   
-	scene::IAnimatedMesh* aniMesh = smgr->getMesh( "/home/micha/Downloads/blender/pin.obj" );
-	//scene::IAnimatedMesh* aniMesh = smgr->getMesh( "my_media/asymetric_arc.obj" );
+	scene::IAnimatedMesh* aniMesh = smgr->getMesh( "my_media/pin.obj" );
 	if (!aniMesh)
 		return 0;
 	scene::IMesh * mesh = aniMesh->getMesh (0);
@@ -75,18 +73,16 @@ int main(int argc, char* argv[])
 				irr::f32 posZ = -halfSizeZ + z*extent.Z + gapZ;
 				scene::IMeshSceneNode * node = smgr->addMeshSceneNode (mesh, NULL, -1, vector3df(posX, posY, posZ) );
 				//node->setMaterialFlag(video::EMF_LIGHTING, false);
-				//node->setMaterialFlag(video::EMF_ANISOTROPIC_FILTER, true);
 				node->getMaterial(0).EmissiveColor = video::SColor(randomizer->rand());
-				node->updateAbsolutePosition();
 			}
 		}
 	}
 	
-	/*scene::ILightSceneNode* nodeLight = */smgr->addLightSceneNode(0, core::vector3df(0, 200, 0),
+	/*scene::ILightSceneNode* nodeLight = */smgr->addLightSceneNode(0, core::vector3df(0, 300, 0),
 														video::SColorf(1.0f, 1.0f, 1.0f),
-														500.0f);
+														500.0f); 
 	
-	irr::scene::ICameraSceneNode * camera = smgr->addCameraSceneNodeFPS(0, 20.f, 1.1f );
+	irr::scene::ICameraSceneNode * camera = smgr->addCameraSceneNodeFPS(0, 20.f, 0.5f );
 	camera->updateAbsolutePosition();
 	camera->setTarget( vector3df(0,0,0) );
 	camera->updateAbsolutePosition();
