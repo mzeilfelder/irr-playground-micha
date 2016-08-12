@@ -32,6 +32,12 @@ public:
 	{
 		irr::video::SMaterial Material;
 		irr::core::matrix4 Transform;
+		
+		bool operator < (const Instance& other) const
+		{
+			return (Material.EmissiveColor < other.Material.EmissiveColor);
+		}
+	
 	};
 
 	SimpleMeshArray(scene::IMesh * mesh, scene::ISceneNode* parent, scene::ISceneManager* mgr, s32 id=-1)
@@ -119,6 +125,10 @@ public:
 		return Instances.size()-1;
 	}
 	
+	void sortInstancesByEmissiveColor()
+	{
+		Instances.sort();
+	}
 	
 private:
 	scene::IMesh * Mesh;
@@ -170,9 +180,28 @@ int main(int argc, char* argv[])
 	f32 halfSizeX = 0.5f * (nodesX*extent.X + GAP*(nodesX-1));
 	f32 halfSizeY = 0.5f * (nodesY*extent.Y + GAP*(nodesY-1));
 	f32 halfSizeZ = 0.5f * (nodesZ*extent.Z + GAP*(nodesZ-1));
+
+	irr::core::array<irr::video::SColor> Colors;
+	Colors.push_back( irr::video::SColor(255, 0,   0,  139) );
+	Colors.push_back( irr::video::SColor(255, 0,   0,  255) );
+	Colors.push_back( irr::video::SColor(255, 0,  255, 255) );
+	Colors.push_back( irr::video::SColor(255, 64,  64, 64) );
+	Colors.push_back( irr::video::SColor(255, 128,128, 128) );
+	Colors.push_back( irr::video::SColor(255, 0,  100,  0) );
+	Colors.push_back( irr::video::SColor(255, 0,  255,  0) );
+	Colors.push_back( irr::video::SColor(255, 192, 192,192) );
+	Colors.push_back( irr::video::SColor(255, 255, 0,  255) );
+	Colors.push_back( irr::video::SColor(255, 255, 192,128) );
+	Colors.push_back( irr::video::SColor(255, 255, 176,176) );
+	Colors.push_back( irr::video::SColor(255, 139, 0,   0) );
+	Colors.push_back( irr::video::SColor(255, 255, 0,   0) );
+	Colors.push_back( irr::video::SColor(255, 255, 255, 0) );
+	Colors.push_back( irr::video::SColor(255, 255, 255, 255) );
+	Colors.push_back( irr::video::SColor(255, 165, 42, 42) );
+	Colors.push_back( irr::video::SColor(255, 255, 215, 0) );
 	
-	//SimpleMeshArray * arrayNode = NULL;
-	SimpleMeshArray * arrayNode = new SimpleMeshArray(mesh, smgr->getRootSceneNode(), smgr);
+	SimpleMeshArray * arrayNode = NULL;
+	//SimpleMeshArray * arrayNode = new SimpleMeshArray(mesh, smgr->getRootSceneNode(), smgr);
 	if ( arrayNode )
 	{
 		arrayNode->setAutomaticCulling(0);
@@ -190,11 +219,13 @@ int main(int argc, char* argv[])
 			{
 				irr::f32 gapZ = z > 0 ? (z-1)*GAP : 0.f;
 				irr::f32 posZ = -halfSizeZ + z*extent.Z + gapZ;
+				irr::video::SColor randCol = Colors[ randomizer->rand() % Colors.size() ];
+				//irr::video::SColor randCol = video::SColor(randomizer->rand());
 				
 				if ( arrayNode )
 				{
 					SimpleMeshArray::Instance instance;
-					instance.Material.EmissiveColor = video::SColor(randomizer->rand());
+					instance.Material.EmissiveColor = randCol;
 					instance.Transform.setTranslation( vector3df(posX, posY, posZ) );
 					arrayNode->addInstance(instance);
 				}
@@ -202,10 +233,15 @@ int main(int argc, char* argv[])
 				{
 					scene::IMeshSceneNode * node = smgr->addMeshSceneNode (mesh, NULL, -1, vector3df(posX, posY, posZ) );
 					//node->setMaterialFlag(video::EMF_LIGHTING, false);
-					node->getMaterial(0).EmissiveColor = video::SColor(randomizer->rand());
+					node->getMaterial(0).EmissiveColor = randCol;
 				}
 			}
 		}
+	}
+	
+	if ( arrayNode )
+	{
+		arrayNode->sortInstancesByEmissiveColor();
 	}
 	
 	/*scene::ILightSceneNode* nodeLight = */smgr->addLightSceneNode(0, core::vector3df(0, 300, 0),
