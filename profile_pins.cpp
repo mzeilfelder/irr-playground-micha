@@ -15,6 +15,110 @@ using namespace core;
 #ifdef _MSC_VER
 #pragma comment(lib, "Irrlicht.lib")
 #endif
+
+
+// Show a simple mesh several times.
+// Bassic idea is to test how much faster it can get when knowing exacly what is needed (and also testing which flexibility costs most)
+// - single material per mesh instance
+// - not animated
+// - no transpareny
+// - parent transformations ignored
+class SimpleMeshArray : public scene::ISceneNode
+{
+public:
+
+	struct Instance
+	{
+		irr::video::SMaterial Material;
+		irr::core::matrix4 Transform;
+	};
+
+	SimpleMeshArray(scene::IMesh * mesh, scene::ISceneNode* parent, scene::ISceneManager* mgr, s32 id=-1)
+		: scene::ISceneNode(parent, mgr, id)
+		, Mesh(0)
+	{
+		Box.MinEdge = irr::core::vector3df(-FLT_MAX, -FLT_MAX, -FLT_MAX);
+		Box.MaxEdge = irr::core::vector3df(FLT_MAX, FLT_MAX, FLT_MAX);
+		setMesh(mesh);		
+	}
+
+	virtual void OnRegisterSceneNode()
+	{
+		if (IsVisible)
+		{
+			SceneManager->registerNodeForRendering(this, scene::ESNRP_SOLID);
+			std::cout << "registered";
+		}
+
+		ISceneNode::OnRegisterSceneNode();
+	}
+
+	virtual void render()
+	{
+		video::IVideoDriver* driver = SceneManager->getVideoDriver();
+
+		for ( u32 i=0; i < Instances.size(); ++i )
+		{
+			driver->setTransform(video::ETS_WORLD, Instances[i].Transform);
+			driver->setMaterial(Instances[i].Material);
+			
+			for (u32 m=0; m<Mesh->getMeshBufferCount(); ++m)
+			{
+				scene::IMeshBuffer* mb = Mesh->getMeshBuffer(m);
+				driver->drawMeshBuffer(mb);
+				std::cout << "draw";
+			}			
+		}
+	}
+
+	virtual const core::aabbox3d<f32>& getBoundingBox() const
+	{
+		return Box;
+	}
+
+	virtual u32 getMaterialCount() const
+	{
+		return Instances.size();
+	}
+
+	virtual video::SMaterial& getMaterial(u32 i)
+	{
+		return Instances[i].Material;
+	}	
+	
+	//! Sets a new mesh to display
+	void setMesh(irr::scene::IMesh* mesh)
+	{
+		if ( mesh != Mesh )
+		{
+			if ( mesh )
+				mesh->grab();
+			if ( Mesh )
+				Mesh->drop();
+			Mesh = mesh;
+		}
+	}
+
+	//! Get the currently defined mesh for display.
+	irr::scene::IMesh* getMesh(void)
+	{
+		return Mesh;
+	}
+	
+	irr::u32 addInstance(const Instance& instance)
+	{
+		Instances.push_back(instance);
+		return Instances.size()-1;
+	}
+	
+	
+private:
+	scene::IMesh * Mesh;
+	core::aabbox3d<f32> Box;
+	core::array<Instance> Instances;
+};
+
+
  
 int main(int argc, char* argv[])
 {
@@ -59,6 +163,9 @@ int main(int argc, char* argv[])
 	f32 halfSizeY = 0.5f * (nodesY*extent.Y + GAP*(nodesY-1));
 	f32 halfSizeZ = 0.5f * (nodesZ*extent.Z + GAP*(nodesZ-1));
 	
+	//SimpleMeshArray * arrayNode = NULL;
+	SimpleMeshArray * arrayNode = new SimpleMeshArray(mesh, NULL, smgr);
+		
 	for ( int x = 0; x < nodesX; ++x )
 	{
 		irr::f32 gapX = x > 0 ? (x-1)*GAP : 0.f;
@@ -71,9 +178,20 @@ int main(int argc, char* argv[])
 			{
 				irr::f32 gapZ = z > 0 ? (z-1)*GAP : 0.f;
 				irr::f32 posZ = -halfSizeZ + z*extent.Z + gapZ;
-				scene::IMeshSceneNode * node = smgr->addMeshSceneNode (mesh, NULL, -1, vector3df(posX, posY, posZ) );
-				//node->setMaterialFlag(video::EMF_LIGHTING, false);
-				node->getMaterial(0).EmissiveColor = video::SColor(randomizer->rand());
+				
+				if ( arrayNode )
+				{
+					SimpleMeshArray::Instance instance;
+					instance.Material.EmissiveColor = video::SColor(randomizer->rand());
+					instance.Transform.setTranslation( vector3df(posX, posY, posZ) );
+					arrayNode->addInstance(instance);
+				}
+				else
+				{
+					scene::IMeshSceneNode * node = smgr->addMeshSceneNode (mesh, NULL, -1, vector3df(posX, posY, posZ) );
+					//node->setMaterialFlag(video::EMF_LIGHTING, false);
+					node->getMaterial(0).EmissiveColor = video::SColor(randomizer->rand());
+				}
 			}
 		}
 	}
