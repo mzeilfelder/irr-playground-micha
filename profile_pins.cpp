@@ -56,17 +56,19 @@ public:
 		video::IVideoDriver* driver = SceneManager->getVideoDriver();
 
 		//driver->setMaterial(Instances[0].Material);	// test with setting just one material for all
+		// scene::IMeshBuffer* mb = Mesh->getMeshBuffer(0);
 		
 		for ( u32 i=0; i < Instances.size(); ++i )
 		{
 			driver->setTransform(video::ETS_WORLD, Instances[i].Transform);
 			driver->setMaterial(Instances[i].Material);
 			
+			//driver->drawMeshBuffer(mb);
 			for (u32 m=0; m<Mesh->getMeshBufferCount(); ++m)
 			{
 				scene::IMeshBuffer* mb = Mesh->getMeshBuffer(m);
 				driver->drawMeshBuffer(mb);
-			}			
+			}
 		}
 	}
 
@@ -95,9 +97,13 @@ public:
 			if ( Mesh )
 			{
 				Mesh->drop();
-				Box = Mesh->getBoundingBox(); // not correct yet - have to modify in addInstance
 			}
 			Mesh = mesh;
+			if ( Mesh )
+			{
+				Box = Mesh->getBoundingBox(); // not correct yet - have to modify in addInstance				
+				//std::cout << "meshbuffers: " << Mesh->getMeshBufferCount() << "\n";
+			}
 		}
 	}
 
