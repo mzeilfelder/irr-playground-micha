@@ -16,6 +16,7 @@ using namespace core;
 #pragma comment(lib, "Irrlicht.lib")
 #endif
 
+// TODO: try with sorting materials
 
 // Show a simple mesh several times.
 // Bassic idea is to test how much faster it can get when knowing exacly what is needed (and also testing which flexibility costs most)
@@ -37,17 +38,14 @@ public:
 		: scene::ISceneNode(parent, mgr, id)
 		, Mesh(0)
 	{
-		Box.MinEdge = irr::core::vector3df(-FLT_MAX, -FLT_MAX, -FLT_MAX);
-		Box.MaxEdge = irr::core::vector3df(FLT_MAX, FLT_MAX, FLT_MAX);
-		setMesh(mesh);		
+		setMesh(mesh);
 	}
 
 	virtual void OnRegisterSceneNode()
 	{
-		if (IsVisible)
+		if (IsVisible && Mesh)
 		{
 			SceneManager->registerNodeForRendering(this, scene::ESNRP_SOLID);
-			std::cout << "registered";
 		}
 
 		ISceneNode::OnRegisterSceneNode();
@@ -57,6 +55,8 @@ public:
 	{
 		video::IVideoDriver* driver = SceneManager->getVideoDriver();
 
+		//driver->setMaterial(Instances[0].Material);	// test with setting just one material for all
+		
 		for ( u32 i=0; i < Instances.size(); ++i )
 		{
 			driver->setTransform(video::ETS_WORLD, Instances[i].Transform);
@@ -66,7 +66,6 @@ public:
 			{
 				scene::IMeshBuffer* mb = Mesh->getMeshBuffer(m);
 				driver->drawMeshBuffer(mb);
-				std::cout << "draw";
 			}			
 		}
 	}
@@ -94,7 +93,10 @@ public:
 			if ( mesh )
 				mesh->grab();
 			if ( Mesh )
+			{
 				Mesh->drop();
+				Box = Mesh->getBoundingBox(); // not correct yet - have to modify in addInstance
+			}
 			Mesh = mesh;
 		}
 	}
@@ -164,7 +166,11 @@ int main(int argc, char* argv[])
 	f32 halfSizeZ = 0.5f * (nodesZ*extent.Z + GAP*(nodesZ-1));
 	
 	//SimpleMeshArray * arrayNode = NULL;
-	SimpleMeshArray * arrayNode = new SimpleMeshArray(mesh, NULL, smgr);
+	SimpleMeshArray * arrayNode = new SimpleMeshArray(mesh, smgr->getRootSceneNode(), smgr);
+	if ( arrayNode )
+	{
+		arrayNode->setAutomaticCulling(0);
+	}
 		
 	for ( int x = 0; x < nodesX; ++x )
 	{
