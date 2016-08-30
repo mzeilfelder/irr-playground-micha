@@ -31,7 +31,7 @@
 /*
 	This class is discussed in the following forum-thread: http://irrlicht.sourceforge.net/forum/viewtopic.php?f=6&t=37296
 
-	Changes by Michael Zeilfelder to adapt it to HCraft:
+	Changes by Michael Zeilfelder:
 	- Remove ustring (otherwise I risk converting strings twice in my project as they are UCS-2 or UCS-4 already)
 	- Remove const-ref in places where it makes no sense
 	- Remove additional create functions and keep just one. Pass only the parameters actually needed to it.

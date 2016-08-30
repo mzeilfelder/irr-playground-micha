@@ -407,10 +407,10 @@ bool CGUITTFont::load(const io::path& filename, u32 size, bool antialias, bool t
 
 	// Allocate our glyphs.
 	Glyphs.clear();
-	Glyphs.set_used(TTface->num_glyphs);
+	Glyphs.reallocate(TTface->num_glyphs);
 	for (FT_Long i = 0; i < TTface->num_glyphs; ++i)
 	{
-		Glyphs[i] = SGUITTGlyph(this);
+		Glyphs.push_back(SGUITTGlyph(this));
 	}
 
 	// Cache the first 127 ascii characters.
