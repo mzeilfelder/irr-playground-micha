@@ -45,6 +45,7 @@
 	- CGUITTGlyphPage::updateTexture replaced dirtyflag by check for glpyhs to handle
 	- CGUITTGlyphPage::updateTexture works with ::texture->getSize() instead of getOriginalSize. Same result in this case, but more correct.
 	- Irrlichtify code (variable naming etc)
+	- Add support for outlines (lot of code got changed for that, I guess original code now barely recognizable)
 	
 	TODO:
 	- Hinting should be one enum with explanation (have to figure it out first, results are strange currently when I enable it)
@@ -56,6 +57,8 @@
 
 #include <ft2build.h>
 #include FT_FREETYPE_H	// official way to include freetype.h correct according to freetype documenation
+#include FT_STROKER_H
+#include FT_BITMAP_H
 #include <irrlicht.h>
 
 // TODO: Shouldn't be in irr namespace as long as it's not in the engine (but leaving it for now in the hope that will change)
@@ -65,81 +68,126 @@ namespace gui
 {
 	struct SGUITTFace;
 	class CGUITTFont;
+	class CGUITTGlyphPage;
+
+	// A line of Width pixels starting at X,Y.
+	struct SGlyphPixelSpan
+	{
+		SGlyphPixelSpan() { }
+		SGlyphPixelSpan(int _x, int _y, int _width, int _coverage)
+		: X(_x), Y(_y), Width(_width), Coverage(_coverage) { }
+
+		int X, Y;
+		int Width;
+		int Coverage;	// Alpha value, probably in range 0-255
+	};
 
 	//! Structure representing a single TrueType glyph.
 	struct SGUITTGlyph
 	{
-		//! Constructor.
-		SGUITTGlyph() : IsLoaded(false), GlyphPage(0), Surface(0), Parent(0) {}
-		explicit SGUITTGlyph(CGUITTFont* parent) : IsLoaded(false), GlyphPage(0), Surface(0), Parent(parent) {}
-
-		//! Destructor.
-		~SGUITTGlyph() { unload(); }
-
-		SGUITTGlyph(const SGUITTGlyph &other): IsLoaded(false), GlyphPage(0), Surface(0), Parent(0)
-		{
-			*this = other;
-		}
-
-		SGUITTGlyph& operator=(const SGUITTGlyph &other)
-		{
-			if ( &other != this )
-			{
-				IsLoaded = other.IsLoaded;
-				GlyphPage = other.GlyphPage;
-
-				if ( other.Surface )
-					other.Surface->grab();
-				if ( Surface )
-					Surface->drop();
-				Surface = other.Surface;
-				Parent = other.Parent;
-			}
-			return *this;
-		}
-
 		//! Preload the glyph.
 		//!	The preload process occurs when the program tries to cache the glyph from FT_Library.
 		//! However, it simply defines the SGUITTGlyph's properties and will only create the page
 		//! textures if necessary.  The actual creation of the textures should only occur right
 		//! before the batch draw call.
-		void preload(u32 char_index, FT_Face face, video::IVideoDriver* driver, u32 font_size, const FT_Int32 loadFlags);
+		void preload(CGUITTFont& font, u32 char_index, FT_Face face, u32 fontSize, float outline, FT_Int32 loadFlags);
 
 		//! Unloads the glyph.
 		void unload();
 
-		//! Creates the IImage object from the FT_Bitmap.
-		video::IImage* createGlyphImage(const FT_Bitmap& bits, video::IVideoDriver* driver) const;
-
-		
 		//! If true, the glyph has been loaded.
-		bool IsLoaded;
+		bool IsLoaded() const { return TopLayer.GlyphPage || OutlineLayer.GlyphPage; }
 
-		//! The page the glyph is on.
-		u32 GlyphPage;
+		//! Structure for layers inside SGUITTGlyph
+		struct SGlyphLayer
+		{
+			SGlyphLayer() : GlyphPage(0) {}
 
-		//! The source rectangle for the glyph.
-		core::recti SourceRect;
+			void clear()
+			{
+				GlyphPage = 0;
+			}
 
-		//! The offset of glyph when drawn.
-		core::vector2di Offset;
+			//! The page the glyph is on. Weak pointer.
+			CGUITTGlyphPage* GlyphPage;
 
-		//! Glyph advance information.
-		FT_Vector Advance;
+			//! The source rectangle for the glyph.
+			core::recti SourceRect;
 
-		//! This is just the temporary image holder.  After this glyph is paged,
-		//! it will be dropped.
-		mutable video::IImage* Surface;
+			//! The offset of glyph when drawn.
+			core::vector2di Offset;
 
-		//! The pointer pointing to the parent (CGUITTFont)
-		CGUITTFont* Parent;
+			//! Glyph advance information.
+			FT_Vector Advance;
+		};
+
+		SGlyphLayer TopLayer;
+		SGlyphLayer OutlineLayer;
+
+	protected:
+		//! Creates the IImage object from the FT_Bitmap.
+		video::IImage* createGlyphImageFromBitmap(const irr::video::ECOLOR_FORMAT colorFormat, const FT_Bitmap& bits, video::IVideoDriver* driver) const;
+		video::IImage* createGlyphImageFromPixelSpans(const irr::video::ECOLOR_FORMAT colorFormat, video::IVideoDriver* driver, int width, int height) const;
+
+		bool renderSpans(FT_Library &library, FT_Face &face, float outline);
+
+	private:
+		//! description of glyph using pixel spans
+		irr::core::array<SGlyphPixelSpan> PixelSpans;
+		irr::core::array<SGlyphPixelSpan> PixelOutlineSpans;
+
 	};
 
-	//! Holds a sheet of glyphs.
+	//! Holds a sheet of glyphs rendered to a texture
 	class CGUITTGlyphPage
 	{
+		private:
+			struct PagedGlyphTextures
+			{
+				PagedGlyphTextures(video::IImage* surface, const irr::core::recti& pageRect)
+					: Surface(surface), PageRect(pageRect)
+				{
+					if ( Surface )
+						Surface->grab();
+				}
+
+				PagedGlyphTextures(const PagedGlyphTextures& other) : Surface(0)
+				{
+					*this = other;
+				}
+
+				~PagedGlyphTextures()
+				{
+					if ( Surface )
+						Surface->drop();
+				}
+
+				PagedGlyphTextures& operator=(const PagedGlyphTextures& other)
+				{
+					if ( this != &other )  
+					{
+						PageRect = other.PageRect;
+						if ( Surface != other.Surface )
+						{
+							if ( Surface )
+								Surface->drop();
+							Surface = other.Surface;
+							if ( Surface )
+								Surface->grab();
+						}
+					}
+
+					return *this;
+				}
+
+				irr::core::recti PageRect;
+				video::IImage* Surface;	// Temporary holder, drop after glyph is page
+			};
+
+
 		public:
-			CGUITTGlyphPage(video::IVideoDriver* driver, const io::path& textureName) : Texture(0), AvailableSlots(0), UsedSlots(0), Driver(driver), Name(textureName) 
+			CGUITTGlyphPage(video::IVideoDriver* driver, const io::path& textureName) 
+				: Texture(0), Driver(driver), Name(textureName) 
 			{
 			}
 			
@@ -155,34 +203,48 @@ namespace gui
 			}
 
 			//! Create the actual page texture,
-			bool createPageTexture(const u8& pixelMode, const core::dimension2du& textureSize);
+			bool createPageTexture(const irr::video::ECOLOR_FORMAT colorFormat, const core::dimension2du& textureSize);
 
-			//! Add the glyph to a list of glyphs to be paged.
+			//! Add the glyphlayer to a list of textures to be paged.
 			//! This collection will be cleared after updateTexture is called.
-			void pushGlyphToBePaged(const SGUITTGlyph* glyph)
+			//\param surface Should contain an image with the glyph (for this layer)
+			//\param rect Target rectangle to be used on this page
+			void pushGlyphLayerToBePaged(video::IImage* surface, const irr::core::recti& pageRect)
 			{
-				GlyphsToBePaged.push_back(glyph);
+				if ( surface )
+				{
+					GlyphLayersToBePaged.push_back(CGUITTGlyphPage::PagedGlyphTextures(surface, pageRect));
+				}
 			}
 
 			//! Updates the texture atlas with new glyphs.
 			void updateTexture();
 
-			video::ITexture* Texture;
-			u32 AvailableSlots;
-			u32 UsedSlots;
+			//! Request space to place a glyph with given width/height. Returns reserved space in rect.
+			//\return true when reserving worked out, false when there was no space left on this page
+			bool reserveGlyphSpace(irr::core::recti& rect, u32 width, u32 height);
 
+			video::ITexture* Texture;	// contains bitmaps of all glyphs on this page
+
+			// Glyphs which will be drawn on next draw call
 			core::array<core::vector2di> RenderPositions;
 			core::array<core::recti> RenderSourceRects;
+			core::array<core::vector2di> OutlineRenderPositions;
+			core::array<core::recti> OutlineRenderSourceRects;
 
 		private:
-			core::array<const SGUITTGlyph*> GlyphsToBePaged;
+
+			core::array<PagedGlyphTextures> GlyphLayersToBePaged;
 			video::IVideoDriver* Driver;
-			io::path Name;
+			io::path Name;	// texture-name
+			core::recti LastRow; // Contains glyph space reserved in the row which was last used to reserve glyphs (to figure out where to reserve space for next glyph)
 	};
 
 	//! Class representing a TrueType font.
 	class CGUITTFont : public irr::gui::IGUIFont
 	{
+		friend struct SGUITTGlyph;
+
 		public:
 			//! Creates a new TrueType font and returns a pointer to it.  The pointer must be drop()'ed when finished.
 			//! \param driver Irrlicht video driver
@@ -193,8 +255,9 @@ namespace gui
 			//! \param transparency set the use_transparency flag
 			//! \param invisibleChars Set characters which don't need drawing (speed optimization)
 			//! \param logger Irrlicht logging, for printing out additinal warnings/errors
+			//! \param outline Render an outline with a different color (default white) behind the text
 			//! \return Returns a pointer to a CGUITTFont.  Will return 0 if the font failed to load.
-			static CGUITTFont* createTTFont(irr::video::IVideoDriver* driver, irr::io::IFileSystem* fileSystem, const io::path& filename, u32 size, bool antialias = true, bool transparency = true, const wchar_t *invisibleChars = L" ", irr::ILogger* logger = 0);
+			static CGUITTFont* createTTFont(irr::video::IVideoDriver* driver, irr::io::IFileSystem* fileSystem, const io::path& filename, u32 size, bool antialias = true, bool transparency = true, float outline = 0.f, irr::ILogger* logger = 0);
 
 			//! Destructor
 			virtual ~CGUITTFont();
@@ -272,27 +335,32 @@ namespace gui
 			//! \param enable If false, font hinting is turned off. If true, font hinting is turned on.
 			//! \param enable_auto_hinting If true, FreeType uses its own auto-hinting algorithm.  If false, it tries to use the algorithm specified by the font.
 			void setFontHinting(const bool enable, const bool enable_auto_hinting = true);
+
+			void setOutline(float outline);
+			float getOutline() const { return Outline; }
+
+			void setOutlineColor(video::SColor color) { OutlineColor = color; }
+			video::SColor getOutlineColor() const { return OutlineColor; }
 			
-			//! Get the last glyph page if there's still available slots.
-			//! If not, it will return zero.
-			CGUITTGlyphPage* getLastGlyphPage() const;
-
-			//! Create a new glyph page texture.
-			//! \param pixel_mode the pixel mode defined by FT_Pixel_Mode
-			//should be better typed. fix later.
-			CGUITTGlyphPage* createGlyphPage(const u8& pixel_mode);
-
-			//! Get the last glyph page's index.
-			u32 getLastGlyphPageIndex() const { return GlyphPages.size() - 1; }
-
 			//! This function is for debugging mostly. If the page doesn't exist it returns zero.
 			//! \param page_index Simply return the texture handle of a given page index.
 			video::ITexture* getPageTextureByIndex(u32 page_index) const;
 
+		protected:
+			//! Create a new glyph page texture.
+			//! \param pixel_mode the pixel mode defined by FT_Pixel_Mode
+			//should be better typed. fix later.
+			CGUITTGlyphPage* createGlyphPage(const irr::video::ECOLOR_FORMAT colorFormat);
+
+			// Reserve a rectangle on a glyph page
+			//\param spotRect Will return the target rectangle reserved on the page
+			CGUITTGlyphPage* getGlyphPageSpot(irr::core::recti& spotRect, const irr::video::ECOLOR_FORMAT colorFormat, u32 width, u32 height);
+
+
 		private:
 			CGUITTFont(irr::video::IVideoDriver* driver, irr::io::IFileSystem* fileSystem);
 		
-			bool load(const io::path& filename, u32 size, bool antialias, bool transparency);
+			bool load(const io::path& filename, u32 size, bool antialias, bool transparency, float outline);
 			void reset_images();
 			void update_glyph_pages() const;
 			void update_load_flags()
@@ -324,6 +392,8 @@ namespace gui
 			bool UseTransparency;
 			bool UseHinting;
 			bool UseAutoHinting;
+			float Outline;
+			video::SColor OutlineColor;
 			u32 Size;
 			u32 BatchLoadSize;
 			core::dimension2du MaxPageTextureSize;
