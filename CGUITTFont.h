@@ -180,8 +180,8 @@ namespace gui
 					return *this;
 				}
 
-				irr::core::recti PageRect;
 				video::IImage* Surface;	// Temporary holder, drop after glyph is page
+				irr::core::recti PageRect;
 			};
 
 
@@ -345,6 +345,9 @@ namespace gui
 			//! This function is for debugging mostly. If the page doesn't exist it returns zero.
 			//! \param page_index Simply return the texture handle of a given page index.
 			video::ITexture* getPageTextureByIndex(u32 page_index) const;
+			
+			//! Return the number of texture pages used internally
+			irr::u32 getNumGlyphPages() const { return GlyphPages.size(); }
 
 		protected:
 			//! Create a new glyph page texture.
