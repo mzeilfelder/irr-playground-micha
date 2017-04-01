@@ -1,7 +1,7 @@
 // Code is under the zlib license (same as Irrlicht)
 // Written by Michael Zeilfelder
 //
-// Template for loading a model + a fps camera.
+// Draw boxes
 
 #include <irrlicht.h>
 
