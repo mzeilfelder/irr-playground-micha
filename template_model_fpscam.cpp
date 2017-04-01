@@ -2,7 +2,6 @@
 // Written by Michael Zeilfelder
 // 
 // Template for loading a model + a fps camera.
-// Also contains some function to draw a helper-box at some point.
 
 #include <irrlicht.h>
  
