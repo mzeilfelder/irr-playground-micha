@@ -70,7 +70,7 @@ int main()
 	videoDriver->setMinHardwareBufferVertexCount(0); // for testing hw buffers
 	// create meshbuffer for the box
 	scene::SMeshBuffer * boxMeshBuffer = new scene::SMeshBuffer();
-	boxMeshBuffer->setHardwareMappingHint(scene::EHM_STREAM, scene::EBT_VERTEX);	// will be ignored by driver (except you hack 
+	boxMeshBuffer->setHardwareMappingHint(scene::EHM_STREAM, scene::EBT_VERTEX);
 	boxMeshBuffer->setHardwareMappingHint(scene::EHM_STATIC, scene::EBT_INDEX);
 	boxMeshBuffer->setPrimitiveType(scene::EPT_LINES);
 	boxMeshBuffer->Vertices.set_used(24);
