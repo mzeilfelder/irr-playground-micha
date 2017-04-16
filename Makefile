@@ -1,7 +1,7 @@
 # Makefile for Irrlicht Examples.
 # Note that in this case we put the binary result beside the sources
 # In some cases you might want to pass additional variables to the Makefile, like:
-# make FREETYPE=1 ES2=1 GRID=1
+# make FREETYPE=1 ES2=1 GRID=1 SDL=1
 Target = playground
 Sources = main.cpp 
 ifdef FREETYPE
@@ -36,9 +36,12 @@ endif
 
 # target specific settings
 all_linux: 
-LDFLAGS = -L/usr/X11R6/lib$(LIBSELECT) -L../../lib/Linux -lIrrlicht -lXxf86vm -lXext -lX11 -lXcursor -lXrandr 
+LDFLAGS = -L/usr/X11R6/lib$(LIBSELECT) -L../../lib/Linux -lIrrlicht -lXxf86vm -lXext -lX11 -lXcursor -lXrandr
 ifdef ES2
 	LDFLAGS += -lGLESv2 -lEGL
+endif
+ifdef SDL
+	LDFLAGS += -lSDL
 endif
 LDFLAGS += -lGL
 #LDFLAGS += -lSDL
