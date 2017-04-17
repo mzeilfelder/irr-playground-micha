@@ -64,17 +64,28 @@ struct SContext
 
 			videoDriver->setTransform(video::ETS_WORLD, core::IdentityMatrix);
 
-			videoDriver->drawMeshBuffer(pointMeshBuffer);
-			videoDriver->drawMeshBuffer(lineStripMeshBuffer);
-			videoDriver->drawMeshBuffer(lineLoopMeshBuffer);
-			videoDriver->drawMeshBuffer(linesMeshBuffer);
-			videoDriver->drawMeshBuffer(triangleStripMeshBuffer);
-			videoDriver->drawMeshBuffer(triangleFanMeshBuffer);
-			videoDriver->drawMeshBuffer(triangleMeshBuffer);
-			videoDriver->drawMeshBuffer(quadStripMeshBuffer);
-			videoDriver->drawMeshBuffer(quadMeshBuffer);
-			videoDriver->drawMeshBuffer(polygonMeshBuffer);
-			videoDriver->drawMeshBuffer(pointSpriteMeshBuffer);
+			if ( pointMeshBuffer )
+				videoDriver->drawMeshBuffer(pointMeshBuffer);
+			if ( lineStripMeshBuffer )
+				videoDriver->drawMeshBuffer(lineStripMeshBuffer);
+			if ( lineLoopMeshBuffer )
+				videoDriver->drawMeshBuffer(lineLoopMeshBuffer);
+			if ( linesMeshBuffer )
+				videoDriver->drawMeshBuffer(linesMeshBuffer);
+			if ( triangleStripMeshBuffer )
+				videoDriver->drawMeshBuffer(triangleStripMeshBuffer);
+			if ( triangleFanMeshBuffer )
+				videoDriver->drawMeshBuffer(triangleFanMeshBuffer);
+			if ( triangleMeshBuffer )
+				videoDriver->drawMeshBuffer(triangleMeshBuffer);
+			if ( quadStripMeshBuffer )
+				videoDriver->drawMeshBuffer(quadStripMeshBuffer);
+			if ( quadMeshBuffer )
+				videoDriver->drawMeshBuffer(quadMeshBuffer);
+			if ( polygonMeshBuffer )
+				videoDriver->drawMeshBuffer(polygonMeshBuffer);
+			if ( pointSpriteMeshBuffer )
+				videoDriver->drawMeshBuffer(pointSpriteMeshBuffer);
 
 			smgr->drawAll();
 
@@ -172,6 +183,8 @@ protected:
 		triangleMeshBuffer->Vertices[4].Pos = core::vector3df(9, -33, 0);
 		triangleMeshBuffer->Vertices[5].Pos = core::vector3df(7, -38, 0);
 
+//#if 0 // to see same results as in emscripten
+#ifndef __EMSCRIPTEN__  // not supported in webgl, thought not sure about point-sprites
 		// quad_strip meshbuffer
 		quadStripMeshBuffer = new scene::SMeshBuffer();
 		quadStripMeshBuffer->setPrimitiveType(scene::EPT_QUAD_STRIP);
@@ -216,6 +229,7 @@ protected:
 		pointSpriteMeshBuffer->Vertices[1].Pos = core::vector3df(20, 20, 0);
 		pointSpriteMeshBuffer->Vertices[2].Pos = core::vector3df(20, 12, 0);
 		pointSpriteMeshBuffer->Vertices[3].Pos = core::vector3df(-20, 12, 0);
+#endif		
 	}
 
 	void initBufferDefaults(irr::scene::SMeshBuffer * mb, irr::u32 size, irr::video::SColor color)
