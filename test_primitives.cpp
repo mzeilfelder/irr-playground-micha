@@ -32,7 +32,11 @@ struct SContext
 		smgr = device->getSceneManager();
 		videoDriver = device->getVideoDriver ();
 
+#ifdef __EMSCRIPTEN__
+		irr::scene::ICameraSceneNode * camera = smgr->addCameraSceneNodeFPS(0, 0.f, 0.f );
+#else
 		irr::scene::ICameraSceneNode * camera = smgr->addCameraSceneNodeFPS(0, 20.f, 0.1f );
+#endif
 		camera->updateAbsolutePosition();
 		camera->setTarget(core::vector3df(0,0,0));
 		camera->updateAbsolutePosition();
