@@ -71,6 +71,16 @@ int main()
 		clipRect = core::rect<s32>(144,16, 1000, 1000);
 		destPos = core::position2d<s32>(150,20);
 		driver->draw2DImage(t, destPos, sourceRect, &clipRect, SColor(255,255,255,255), true);
+		
+		// clip completely
+		clipRect = core::rect<s32>(0,0, 1, 1);
+		destPos = core::position2d<s32>(320,320);
+		driver->draw2DImage(t, destPos, sourceRect, &clipRect, SColor(255,255,255,255), true);
+		
+		// draw inverted (shouldn't work for now)
+		sourceRect = core::rect<s32>(64,64,32,32);
+		destPos = core::position2d<s32>(160,160);
+		driver->draw2DImage(t, destPos, sourceRect, &clipRect, SColor(255,255,255,255), true);
 
 		driver->endScene();
     }
