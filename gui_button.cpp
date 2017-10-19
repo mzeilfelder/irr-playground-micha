@@ -1,6 +1,6 @@
 // Code is under the zlib license (same as Irrlicht)
 // Written by Michael Zeilfelder
-// 
+//
 // Testing button functions
 
 #include <irrlicht.h>
@@ -27,6 +27,7 @@ struct SAppContext
 	IGUICheckBox * CbEnabled;
 	IGUICheckBox * CbScaleSprite;
 	array<IGUIButton*> Buttons;
+	IGUIListBox* ListEvents;
 };
 
 class MyEventReceiver : public IEventReceiver
@@ -40,6 +41,17 @@ public:
 		{
 			switch(event.GUIEvent.EventType)
 			{
+				case EGET_BUTTON_CLICKED:
+				{
+					gui::IGUIButton * caller = static_cast<gui::IGUIButton *>(event.GUIEvent.Caller);
+					irr::core::stringw txt(L"click");
+					if ( caller->getClickShiftState() )
+						txt += L" shift";
+					if ( caller->getClickControlState() )
+						txt += L" ctrl";
+					Context.ListEvents->insertItem(0, txt.c_str(), 0);
+				}
+				break;
 				case EGET_CHECKBOX_CHANGED :
 				{
 					if ( event.GUIEvent.Caller == Context.CbScaleImage )
@@ -100,9 +112,9 @@ public:
 
 		return false;
 	}
-	
+
 private:
-	SAppContext & Context;	
+	SAppContext & Context;
 };
 
 int main()
@@ -111,11 +123,11 @@ int main()
 	IrrlichtDevice * device = createDevice(driverType, core::dimension2d<u32>(800, 600));
 	if (device == 0)
 		return 1; // could not create selected driver.
-	
+
 	SAppContext context;
 	context.Device = device;
 	MyEventReceiver receiver(context);
-	device->setEventReceiver(&receiver);	
+	device->setEventReceiver(&receiver);
 
 	video::IVideoDriver* driver = device->getVideoDriver();
 	IGUIEnvironment* env = device->getGUIEnvironment();
@@ -126,7 +138,7 @@ int main()
 	skin->setSize(EGDS_BUTTON_PRESSED_TEXT_OFFSET_Y, 10 );
 	skin->setSize(EGDS_BUTTON_PRESSED_SPRITE_OFFSET_X, 1);
 	skin->setSize(EGDS_BUTTON_PRESSED_SPRITE_OFFSET_Y, 1);
-	
+
 	// dynamic options
 	context.CbScaleImage = env->addCheckBox (false, recti(10, 10, 100, 30), 0, -1, L"scale image");
 	context.CbAlpha = env->addCheckBox (false, recti(110, 10, 200, 30), 0, -1, L"alpha");
@@ -134,7 +146,7 @@ int main()
 	context.CbPushButton = env->addCheckBox (false, recti(310, 10, 400, 30), 0, -1, L"pushbutton");
 	context.CbEnabled = env->addCheckBox (true, recti(410, 10, 500, 30), 0, -1, L"enabled");
 	context.CbScaleSprite = env->addCheckBox (false, recti(510, 10, 600, 30), 0, -1, L"scale sprite");
-	
+
 	// create a spritebank
 	gui::IGUISpriteBank * buttonSpriteBank = env->addEmptySpriteBank(io::path("buttons"));
 	buttonSpriteBank->addTexture( driver->getTexture("my_media/btn_sprites.png") );
@@ -161,36 +173,36 @@ int main()
 	btn = env->addButton(recti(10, top, 138, top+32), 0, -1, L"image+pressed");
 	btn->setImage( driver->getTexture("my_media/btn_up.png") );
 	btn->setPressedImage( driver->getTexture("my_media/btn_down.png") );
-	
+
 	btn = env->addButton(recti(140, top, 268, top+32), 0, -1, L"image");
 	btn->setImage( driver->getTexture("my_media/btn_up.png") );
-	
+
 	btn = env->addButton(recti(270, top, 398, top+32), 0, -1, L"rect");
 	btn->setImage( driver->getTexture("my_media/btn_up.png"), recti(0,0,64,16) );
 	btn->setPressedImage( driver->getTexture("my_media/btn_down.png"), recti(0,0,64,16) );
-	
+
 	// create the buttons with images (old style) - larger than textures
 	top += 40;
 	btn = env->addButton(recti(10, top, 266, top+64), 0, -1, L"image+pressed");
 	btn->setImage( driver->getTexture("my_media/btn_up.png") );
 	btn->setPressedImage( driver->getTexture("my_media/btn_down.png") );
-	
+
 	btn = env->addButton(recti(270, top, 526, top+64), 0, -1, L"image");
 	btn->setImage( driver->getTexture("my_media/btn_up.png") );
-	
+
 	btn = env->addButton(recti(530, top, 786, top+64), 0, -1, L"rect");
 	btn->setImage( driver->getTexture("my_media/btn_up.png"), recti(0,0,64,16) );
 	btn->setPressedImage( driver->getTexture("my_media/btn_down.png"), recti(0,0,64,16) );
-	
+
 	// create the buttons with images (old style) - smaller than textures
 	top += 70;
 	btn = env->addButton(recti(10, top, 70, top+20), 0, -1, L"image+pressed");
 	btn->setImage( driver->getTexture("my_media/btn_up.png") );
 	btn->setPressedImage( driver->getTexture("my_media/btn_down.png") );
-	
+
 	btn = env->addButton(recti(80, top, 160, top+20), 0, -1, L"image");
-	btn->setImage( driver->getTexture("my_media/btn_up.png") );	
-	
+	btn->setImage( driver->getTexture("my_media/btn_up.png") );
+
 	btn = env->addButton(recti(170, top, 230, top+20), 0, -1, L"rect");
 	btn->setImage( driver->getTexture("my_media/btn_up.png"), recti(0,0,64,16) );
 	btn->setPressedImage( driver->getTexture("my_media/btn_down.png"), recti(0,0,64,16) );
@@ -205,15 +217,15 @@ int main()
 	btn->setSprite(EGBS_BUTTON_FOCUSED, 4);
 	btn->setSprite(EGBS_BUTTON_NOT_FOCUSED, 5);
 	btn->setSprite(EGBS_BUTTON_DISABLED, 6);
-	
+
 	btn = env->addButton(recti(140, top, 268, top+32), 0, -1, L"button up and focused");
 	btn->setSprite(EGBS_BUTTON_UP, 0);
 	btn->setSprite(EGBS_BUTTON_FOCUSED, 4);
-	
+
 	btn = env->addButton(recti(280, top, 408, top+32), 0, -1, L"only button up");
 	btn->setSprite(EGBS_BUTTON_UP, 0);
-	btn->setSprite(EGBS_BUTTON_FOCUSED, 4);	
-	
+	btn->setSprite(EGBS_BUTTON_FOCUSED, 4);
+
 	// button with sprites  - larger than textures
 	top += 40;
 	btn = env->addButton(recti(10, top, 266, top+64), 0, -1, L"all states");
@@ -224,15 +236,15 @@ int main()
 	btn->setSprite(EGBS_BUTTON_FOCUSED, 4);
 	btn->setSprite(EGBS_BUTTON_NOT_FOCUSED, 5);
 	btn->setSprite(EGBS_BUTTON_DISABLED, 6);
-	
+
 	btn = env->addButton(recti(270, top, 526, top+64), 0, -1, L"button up and focused");
 	btn->setSprite(EGBS_BUTTON_UP, 0);
 	btn->setSprite(EGBS_BUTTON_FOCUSED, 4);
-	
+
 	btn = env->addButton(recti(530, top, 786, top+64), 0, -1, L"only button up");
 	btn->setSprite(EGBS_BUTTON_UP, 0);
-	btn->setSprite(EGBS_BUTTON_FOCUSED, 4);	
-	
+	btn->setSprite(EGBS_BUTTON_FOCUSED, 4);
+
 	// button with sprites - smaller than textures
 	top += 70;
 	btn = env->addButton(recti(10, top, 70, top+20), 0, -1, L"all states");
@@ -243,15 +255,15 @@ int main()
 	btn->setSprite(EGBS_BUTTON_FOCUSED, 4);
 	btn->setSprite(EGBS_BUTTON_NOT_FOCUSED, 5);
 	btn->setSprite(EGBS_BUTTON_DISABLED, 6);
-	
+
 	btn = env->addButton(recti(80, top, 140, top+20), 0, -1, L"button up and focused");
 	btn->setSprite(EGBS_BUTTON_UP, 0);
 	btn->setSprite(EGBS_BUTTON_FOCUSED, 4);
-	
+
 	btn = env->addButton(recti(150, top, 210, top+20), 0, -1, L"only button up");
 	btn->setSprite(EGBS_BUTTON_UP, 0);
-	btn->setSprite(EGBS_BUTTON_FOCUSED, 4);	
-	
+	btn->setSprite(EGBS_BUTTON_FOCUSED, 4);
+
 	// create the buttons with images (old style) and sprites - all kind of sizes
 	top += 30;
 	btn = env->addButton(recti(10, top, 138, top+32), 0, -1, L"all states");
@@ -286,7 +298,7 @@ int main()
 	btn->setSprite(EGBS_BUTTON_FOCUSED, 4);
 	btn->setSprite(EGBS_BUTTON_NOT_FOCUSED, 5);
 	btn->setSprite(EGBS_BUTTON_DISABLED, 6);
-	
+
 	// create buttons with images (new style) - larger
 	top += 70;
 	btn = env->addButton(recti(10, top, 160, top+50), 0, -1, L"all images");
@@ -299,18 +311,20 @@ int main()
 	btn->setImage(EGBIS_IMAGE_DOWN_FOCUSED, driver->getTexture("my_media/btn_down_focused.png") );
 	btn->setImage(EGBIS_IMAGE_DOWN_FOCUSED_MOUSEOVER, driver->getTexture("my_media/btn_down_focused_over.png") );
 	btn->setImage(EGBIS_IMAGE_DISABLED, driver->getTexture("my_media/btn_disabled.png") );
-	
+
 	btn = env->addButton(recti(170, top, 320, top+50), 0, -1, L"img  up/down/disabled/down_focused_over");
 	btn->setImage(EGBIS_IMAGE_UP, driver->getTexture("my_media/btn_up.png") );
 	btn->setImage(EGBIS_IMAGE_DOWN, driver->getTexture("my_media/btn_down.png") );
 	btn->setImage(EGBIS_IMAGE_DOWN_FOCUSED_MOUSEOVER, driver->getTexture("my_media/btn_down_focused_over.png") );
 	btn->setImage(EGBIS_IMAGE_DISABLED, driver->getTexture("my_media/btn_disabled.png") );
-	
+
 	btn = env->addButton(recti(330, top, 480, top+50), 0, -1, L"img up + rect");
 	btn->setImage(EGBIS_IMAGE_UP, driver->getTexture("my_media/btn_up.png"), recti(0,0,64,16) );
 
+	top += 50;
 
-	
+	context.ListEvents = env->addListBox(recti(10, top, 400, top + 50));
+
 
 	// get all IGUIButtons and set the spritebank
 	const auto& rootChildren = env->getRootGUIElement ()->getChildren();
@@ -328,9 +342,9 @@ int main()
 		if (device->isWindowActive())
 		{
 			driver->beginScene(true, true, SColor(0,200,200,200));
-	
+
 			env->drawAll();
-		
+
 			driver->endScene();
 		}
 	}
