@@ -236,10 +236,13 @@ int main()
 	btn->setSprite(EGBS_BUTTON_FOCUSED, 4);
 	btn->setSprite(EGBS_BUTTON_NOT_FOCUSED, 5);
 	btn->setSprite(EGBS_BUTTON_DISABLED, 6);
+	btn->setOverrideColor(irr::video::SColor(255, 0, 0, 255));
 
 	btn = env->addButton(recti(270, top, 526, top+64), 0, -1, L"button up and focused");
 	btn->setSprite(EGBS_BUTTON_UP, 0);
 	btn->setSprite(EGBS_BUTTON_FOCUSED, 4);
+	btn->setOverrideColor(irr::video::SColor(255, 0, 0, 255));
+	btn->enableOverrideColor(false);
 
 	btn = env->addButton(recti(530, top, 786, top+64), 0, -1, L"only button up");
 	btn->setSprite(EGBS_BUTTON_UP, 0);
