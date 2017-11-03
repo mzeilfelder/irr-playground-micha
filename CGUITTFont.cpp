@@ -36,20 +36,20 @@ namespace gui
 {
 
 // From example2.cpp from freetype tutorials from here: https://www.freetype.org/freetype2/docs/tutorial/step3.html (code in public domain)
-// 
+//
 // Each time the renderer calls us back we just push another span entry on our list.
 static void RasterCallback(const int y, const int count, const FT_Span * const spans, void * const user)
 {
 	irr::core::array<SGlyphPixelSpan> *sptr = (irr::core::array<SGlyphPixelSpan> *)user;
-	for (int i = 0; i < count; ++i) 
+	for (int i = 0; i < count; ++i)
 
 	sptr->push_back(SGlyphPixelSpan(spans[i].x, y, spans[i].len, spans[i].coverage));
 }
 
 // From example2.cpp from freetype tutorials from here: https://www.freetype.org/freetype2/docs/tutorial/step3.html (code in public domain)
-// 
+//
 // Set up the raster parameters and render the outline.
-void RenderSpans(FT_Library &library, FT_Outline * const outline, irr::core::array<SGlyphPixelSpan> *spans) 
+void RenderSpans(FT_Library &library, FT_Outline * const outline, irr::core::array<SGlyphPixelSpan> *spans)
 {
 	FT_Raster_Params params;
 	memset(&params, 0, sizeof(params));
@@ -111,11 +111,11 @@ video::IImage* SGUITTGlyph::createGlyphImageFromBitmap(const irr::video::ECOLOR_
 
 			// Load the monochrome data in.
 			const u32 image_pitch = image->getPitch() / sizeof(u16);
-#if (IRRLICHT_VERSION_MAJOR > 1) || (IRRLICHT_VERSION_MAJOR == 1 && IRRLICHT_VERSION_MINOR >= 9)			
+#if (IRRLICHT_VERSION_MAJOR > 1) || (IRRLICHT_VERSION_MAJOR == 1 && IRRLICHT_VERSION_MINOR >= 9)
 			u16* image_data = (u16*)image->getData();
 #else
 			u16* image_data = (u16*)image->lock();
-#endif			
+#endif
 			u8* glyph_data = bits.buffer;
 			for (unsigned int y = 0; y < bits.rows; ++y)
 			{
@@ -143,7 +143,7 @@ video::IImage* SGUITTGlyph::createGlyphImageFromBitmap(const irr::video::ECOLOR_
 			// Load the grayscale data in.
 			const float gray_count = static_cast<float>(bits.num_grays);
 			const u32 image_pitch = image->getPitch() / sizeof(u32);
-#if (IRRLICHT_VERSION_MAJOR > 1) || (IRRLICHT_VERSION_MAJOR == 1 && IRRLICHT_VERSION_MINOR >= 9)			
+#if (IRRLICHT_VERSION_MAJOR > 1) || (IRRLICHT_VERSION_MAJOR == 1 && IRRLICHT_VERSION_MINOR >= 9)
 			u32* image_data = (u32*)image->getData();
 #else
 			u32* image_data = (u32*)image->lock();
@@ -183,7 +183,7 @@ video::IImage* SGUITTGlyph::createGlyphImageFromPixelSpans(const irr::video::ECO
 
 		// Load the grayscale data in.
 		const u32 image_pitch = image->getPitch() / sizeof(u32);
-#if (IRRLICHT_VERSION_MAJOR > 1) || (IRRLICHT_VERSION_MAJOR == 1 && IRRLICHT_VERSION_MINOR >= 9)			
+#if (IRRLICHT_VERSION_MAJOR > 1) || (IRRLICHT_VERSION_MAJOR == 1 && IRRLICHT_VERSION_MINOR >= 9)
 		u32* image_data = (u32*)image->getData();
 #else
 		u32* image_data = (u32*)image->lock();
@@ -244,7 +244,7 @@ bool SGUITTGlyph::renderSpans(FT_Library &library, FT_Face &face, float outline)
 
 void SGUITTGlyph::preload(CGUITTFont& font, u32 char_index, FT_Face face, u32 fontSize, float outline, FT_Int32 loadFlags)
 {
-	if (IsLoaded()) 
+	if (IsLoaded())
 		return;
 
 	// Set the size of the glyph.
@@ -280,7 +280,7 @@ void SGUITTGlyph::preload(CGUITTFont& font, u32 char_index, FT_Face face, u32 fo
 	if ( outline != 0.f )
 	{
 		// Not possible to have outlines with bitmaps. Also not possible to load bitmaps and outlines the same time.
-		loadFlags  = FT_LOAD_NO_BITMAP; // TODO: check if other flags can be used 
+		loadFlags  = FT_LOAD_NO_BITMAP; // TODO: check if other flags can be used
 
 		// Attempt to load the glyph.
 		if (FT_Load_Glyph(face, char_index, loadFlags) != FT_Err_Ok)
@@ -350,7 +350,7 @@ bool CGUITTGlyphPage::createPageTexture(const irr::video::ECOLOR_FORMAT colorFor
 {
 	if ( Texture )
 		return false;
-	
+
 	bool flgmip = Driver->getTextureCreationFlag(video::ETCF_CREATE_MIP_MAPS);
 	Driver->setTextureCreationFlag(video::ETCF_CREATE_MIP_MAPS, false);
 
@@ -363,11 +363,11 @@ bool CGUITTGlyphPage::createPageTexture(const irr::video::ECOLOR_FORMAT colorFor
 	Texture = Driver->addTexture(textureSize, Name, colorFormat);
 
 	// Restore our texture creation flags.
-#if (IRRLICHT_VERSION_MAJOR > 1) || (IRRLICHT_VERSION_MAJOR == 1 && IRRLICHT_VERSION_MINOR >= 9)				
+#if (IRRLICHT_VERSION_MAJOR > 1) || (IRRLICHT_VERSION_MAJOR == 1 && IRRLICHT_VERSION_MINOR >= 9)
 	Driver->setTextureCreationFlag(video::ETCF_ALLOW_MEMORY_COPY, allowMemCpy);
-#endif				
+#endif
 	Driver->setTextureCreationFlag(video::ETCF_CREATE_MIP_MAPS, flgmip);
-	
+
 	return Texture ? true : false;
 }
 
@@ -456,7 +456,7 @@ CGUITTFont* CGUITTFont::createTTFont(irr::video::IVideoDriver* driver, irr::io::
 		font->drop();
 		return 0;
 	}
-	
+
 	return font;
 }
 
@@ -505,7 +505,7 @@ bool CGUITTFont::load(const io::path& filename, u32 size, bool antialias, bool t
 			io::IReadFile* file = FileSystem->createAndOpenFile(filename);
 			if (!file)
 			{
-				if (Logger) 
+				if (Logger)
 					Logger->log(L"CGUITTFont - failed to open the file.", core::stringw(filename).c_str(), irr::ELL_INFORMATION);
 
 				c_faces.remove(filename);
@@ -521,7 +521,7 @@ bool CGUITTFont::load(const io::path& filename, u32 size, bool antialias, bool t
 			// Create the face.
 			if (FT_New_Memory_Face(c_library, face->FaceBuffer, face->FaceBufferSize, 0, &face->Face))
 			{
-				if (Logger) 
+				if (Logger)
 					Logger->log(L"CGUITTFont", L"FT_New_Memory_Face failed.", irr::ELL_INFORMATION);
 
 				c_faces.remove(filename);
@@ -535,7 +535,7 @@ bool CGUITTFont::load(const io::path& filename, u32 size, bool antialias, bool t
 			core::stringc converter(filename);
 			if (FT_New_Face(c_library, converter.c_str(), 0, &face->Face))
 			{
-				if (Logger) 
+				if (Logger)
 					Logger->log(L"CGUITTFont", L"FT_New_Face failed.", irr::ELL_INFORMATION);
 
 				c_faces.remove(filename);
@@ -713,7 +713,7 @@ void CGUITTFont::setMonochrome(const bool flag)
 
 void CGUITTFont::setFontHinting(const bool enable, const bool enable_auto_hinting)
 {
-	if ( UseHinting != enable || UseAutoHinting !=enable_auto_hinting ) 
+	if ( UseHinting != enable || UseAutoHinting !=enable_auto_hinting )
 	{
 		UseHinting = enable;
 		UseAutoHinting = enable_auto_hinting;
@@ -794,7 +794,7 @@ void CGUITTFont::draw(const core::stringw& text, const core::rect<s32>& position
 				++iter;
 				continue;
 			}
-			
+
 			if ( n > 0 )
 			{
 				SGUITTGlyph& glyph = Glyphs[n-1];
@@ -944,7 +944,7 @@ inline u32 CGUITTFont::getWidthFromCharacter(wchar_t c) const
 	}
 	if (c >= 0x2000)
 		return (FontMetrics.ascender / 64);
-	else 
+	else
 		return (FontMetrics.ascender / 64) / 2;
 }
 
@@ -965,7 +965,7 @@ inline u32 CGUITTFont::getHeightFromCharacter(wchar_t c) const
 	}
 	if (c >= 0x2000)
 		return (FontMetrics.ascender / 64);
-	else 
+	else
 		return (FontMetrics.ascender / 64) / 2;
 }
 
