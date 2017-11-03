@@ -33,6 +33,13 @@ struct SAppContext
 	IrrlichtDevice * device;
 	IGUIElement* mGuiParent;
 	array<IGUIElement*> mGuiElements;
+
+	void onRemoveElement(IGUIElement* element)
+	{
+		irr::s32 idx = mGuiElements.linear_search(element);
+		if ( idx >= 0 )
+			mGuiElements.erase(idx);
+	}
 };
 
 
@@ -263,6 +270,13 @@ void LoadTextGuiElements(SAppContext & context)
 	}
 }
 
+IGUIElement* getNonSubElement(IGUIElement* element)
+{
+	while (element && element->isSubElement())
+		element = element->getParent();
+	return element;
+}
+
 class MyEventReceiver : public IEventReceiver
 {
 public:
@@ -270,11 +284,29 @@ public:
 
 	virtual bool OnEvent(const SEvent& event)
 	{
-		if (event.EventType == EET_GUI_EVENT)
+		if ( event.EventType == EET_KEY_INPUT_EVENT )
+		{
+			if ( event.KeyInput.PressedDown == false )
+			{
+				if ( event.KeyInput.Key == KEY_DELETE )
+				{
+					irr::gui::IGUIElement * focus = Context.device->getGUIEnvironment()->getFocus();
+					focus = getNonSubElement(focus);
+					if ( focus )
+						focus->remove();
+				}
+			}
+
+		}
+		else if (event.EventType == EET_GUI_EVENT)
 		{
 			s32 id = event.GUIEvent.Caller->getID();
 			switch(event.GUIEvent.EventType)
 			{
+				case EGET_ELEMENT_REMOVED:
+
+					Context.onRemoveElement(event.GUIEvent.Caller);
+				break;
 				case EGET_CHECKBOX_CHANGED:
 				{
 					IGUICheckBox *cb = static_cast<IGUICheckBox *>(event.GUIEvent.Caller);
