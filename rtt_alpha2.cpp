@@ -4,7 +4,6 @@
 // Testing alpha's and RTT's
 
 #include <irrlicht.h>
-#include "driverChoice.h"
 
 #ifdef _IRR_WINDOWS_
 #pragma comment(lib, "Irrlicht.lib")
