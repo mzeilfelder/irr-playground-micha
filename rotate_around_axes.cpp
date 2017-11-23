@@ -12,7 +12,20 @@ using namespace irr;
 #pragma comment(lib, "Irrlicht.lib")
 #endif
 
+// rotation with quaternions
+irr::core::vector3df applyRelativeRotation(const irr::core::vector3df& oldRotationEulerDeg, const irr::core::quaternion& relativeRotation)
+{
+	// Add relative rotation
+	irr::core::quaternion qt(oldRotationEulerDeg*irr::core::DEGTORAD);
+	irr::core::quaternion qt2(relativeRotation*qt);
 
+	irr::core::vector3df rotateTarget;
+	qt2.toEuler(rotateTarget);
+	rotateTarget *= irr::core::RADTODEG;
+	return rotateTarget;
+}
+
+// rotation with euler and matrices
 irr::core::vector3df rotateAxesXYZToEuler(const irr::core::vector3df& oldRotation, const irr::core::vector3df& rotationAngles, bool useLocalAxes)
 {
     irr::core::matrix4 transformation;
@@ -62,7 +75,13 @@ public:
 				}
 				if ( !rotationAngles.equals(irr::core::vector3df(0,0,0)) )
 				{
+#if 1	// without quaternions
 					core::vector3df newRot = rotateAxesXYZToEuler(oldRotation, rotationAngles, true);
+#else	// with quaternions
+					irr::core::quaternion qt(rotationAngles*irr::core::DEGTORAD);
+					core::vector3df newRot = applyRelativeRotation(oldRotation, qt);
+#endif
+
 					Node->setRotation(newRot);
 				}
 			}
