@@ -86,7 +86,7 @@ int main(int argc, char *argv[])
 
 	scene::ISceneManager* smgr = device->getSceneManager();
 	gui::IGUIEnvironment* guiEnv = device->getGUIEnvironment();
-    video::IVideoDriver* videoDriver =  device->getVideoDriver();
+	video::IVideoDriver* videoDriver =  device->getVideoDriver();
 
 	smgr->addCameraSceneNode (0, core::vector3df(0, 0, 0) );
 
