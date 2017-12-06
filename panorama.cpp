@@ -57,22 +57,28 @@ int main()
    
 	irr::scene::ICameraSceneNode * camera = smgr->addCameraSceneNodeFPS(0, 20.f, 0.1f );
 
+	smgr->getParameters()->setAttribute(scene::DEBUG_NORMAL_LENGTH, 50.f );
+
 	irr::video::ITexture * panoramaTex = videoDriver->getTexture("my_media/panorama.jpg");
 	if (!panoramaTex)
 		return 1;
-	u32 horiRes=128;
+	u32 horiRes=128;	// don't make larger or too many polygons for 16-bit mesh
 	u32 vertRes=128;
 	irr::f32 texturePercentage = 0.95f;
 	irr::f32 spherePercentage = 2.f;
-	irr::f32 radius = 1000.f;	// seems to make no difference as long as it's inside near-far planes
-	smgr->addSkyDomeSceneNode(panoramaTex, horiRes, vertRes, texturePercentage, spherePercentage, radius);
+	irr::f32 radius = 150.f;	// seems to make no difference as long as it's inside near-far planes
+	scene::ISceneNode* skyDomeNode = smgr->addSkyDomeSceneNode(panoramaTex, horiRes, vertRes, texturePercentage, spherePercentage, radius);
+//	skyDomeNode->getMaterial(0).Wireframe = true;
+	//skyDomeNode->setDebugDataVisible(scene::EDS_NORMALS|scene::EDS_MESH_WIRE_OVERLAY);	// note: can't see normals for skydome as they all go toward camera
 
-	scene::IMesh* sphere = geomCreator->createSphereMesh(150.f, 128, 128);
+	scene::IMesh* sphere = geomCreator->createSphereMesh(150.f, horiRes, vertRes);
 	video::SMaterial& sphereMaterial = sphere->getMeshBuffer(0)->getMaterial();
+//	sphereMaterial.Wireframe = true;
 	sphereMaterial.setTexture(0, panoramaTex);
 	sphereMaterial.Lighting = false;
 	sphereMaterial.BackfaceCulling = false;
-	smgr->addMeshSceneNode(sphere, 0, -1, core::vector3df(-200.f, -300.f, -500.f));
+	scene::IMeshSceneNode* sphereNode = smgr->addMeshSceneNode(sphere, 0, -1, core::vector3df(-310.f, -200.f, -500.f));
+	//sphereNode->setDebugDataVisible(scene::EDS_NORMALS|scene::EDS_MESH_WIRE_OVERLAY);
 	sphere->drop();
 
 	irr::f32 origFov = camera->getFOV();
