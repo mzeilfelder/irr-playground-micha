@@ -4,7 +4,6 @@
 // Testing gravity (100 units = 1 m)
 
 #include <irrlicht.h>
-#include "exampleHelper.h"
 
 using namespace irr;
 
@@ -43,6 +42,11 @@ public:
 				Camera->updateAbsolutePosition();
 				return true;
 			}
+			case irr::KEY_KEY_Q:
+			{
+				exit(0);
+				return false;
+			}
 			default:
 				break;
 			}
@@ -73,7 +77,7 @@ int main()
 
 	driver->setTextureCreationFlag(video::ETCF_ALWAYS_32_BIT, true);
 
-	const io::path mediaPath = getExampleMediaPath();
+	const io::path mediaPath("../../media/");
 
 	// add camera
 	scene::ICameraSceneNode* camera =
@@ -86,6 +90,7 @@ int main()
 	// add terrain scene node
 	scene::ITerrainSceneNode* terrain = smgr->addTerrainSceneNode(
 		mediaPath + "terrain-heightmap.bmp",
+		//"my_media/heightmap_2048x2048.png",	// beware - takes a while on starting
 		0,					// parent node
 		-1,					// node id
 		core::vector3df(0.f, 0.f, 0.f),		// position
@@ -101,11 +106,14 @@ int main()
 
 	terrain->setMaterialTexture(0,
 			driver->getTexture(mediaPath + "terrain-texture.jpg"));
+#if 0
 	terrain->setMaterialTexture(1,
 			driver->getTexture(mediaPath + "detailmap3.jpg"));
 	terrain->setMaterialType(video::EMT_DETAIL_MAP);
 	terrain->scaleTexture(1.0f, 20.0f);
+#endif
 
+#if 1
 	// create triangle selector for the terrain
 	scene::ITriangleSelector* selector
 		= smgr->createTerrainTriangleSelector(terrain, 0);
@@ -119,6 +127,7 @@ int main()
 	selector->drop();
 	camera->addAnimator(anim);
 	anim->drop();
+#endif
 
 	// create event receiver
 	MyEventReceiver receiver(terrain, device->getTimer(), camera);
@@ -129,11 +138,17 @@ int main()
 	{
 		if (device->isWindowActive())
 		{
-			core::stringw str(L"Z: ");
-			str += camera->getAbsolutePosition().Y;
-			device->setWindowCaption(str.c_str());
+			static u32 oldTime = device->getTimer ()->getTime();
+			u32 currentTime = device->getTimer ()->getTime();
+			if ( currentTime- oldTime > 500 )
+			{
+				core::stringw str(L"Z: ");
+				str += camera->getAbsolutePosition().Y;
+				device->setWindowCaption(str.c_str());
+				oldTime = currentTime;
+			}
 
-			driver->beginScene(video::ECBF_COLOR | video::ECBF_DEPTH, video::SColor(0));
+			driver->beginScene();
 
 			smgr->drawAll();
 
