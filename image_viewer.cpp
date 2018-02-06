@@ -87,9 +87,11 @@ private:
 int main()
 {
 	video::E_DRIVER_TYPE driverType = video::EDT_OPENGL;
-	IrrlichtDevice * device = createDevice(driverType, core::dimension2d<u32>(640, 480));
+	IrrlichtDevice * device = createDevice(driverType, core::dimension2d<u32>(800, 600));
 	if (device == 0)
 		return 1; // could not create selected driver.
+
+	device->setResizable(true);
 
 	video::IVideoDriver* driver = device->getVideoDriver();
 	IGUIEnvironment* env = device->getGUIEnvironment();

@@ -163,7 +163,7 @@
       </DataExecutionPrevention>
     </Link>
     <PostBuildEvent>
-      <Command>copy /Y "..\..\bin\Win32-VisualStudio\Irrlicht.dll" "Irrlicht.dll"</Command>
+      <Command>copy /Y "..\..\bin\Win64-VisualStudio\Irrlicht.dll" "Irrlicht.dll"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -248,7 +248,7 @@
       </DataExecutionPrevention>
     </Link>
     <PostBuildEvent>
-      <Command>copy /Y "..\..\bin\Win32-VisualStudio\Irrlicht.dll" "Irrlicht.dll"</Command>
+      <Command>copy /Y "..\..\bin\Win64-VisualStudio\Irrlicht.dll" "Irrlicht.dll"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
