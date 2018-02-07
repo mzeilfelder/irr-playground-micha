@@ -37,7 +37,7 @@ void flipBGRAandRGBA(irr::video::IImage& image)
 
 irr::video::IImage* createQuantizedColorImage(irr::video::IVideoDriver* driver, const irr::video::IImage* imageIn, unsigned char numColors, bool dithered)
 {
-	// TODO: could optimize speed by changing exoquant so I can aovid the flipBGRAandRGBA calls.
+	// TODO: could optimize speed by changing exoquant so I can avoid the flipBGRAandRGBA calls.
 
 	if ( !imageIn )
 		return nullptr;
