@@ -35,25 +35,23 @@ void flipBGRAandRGBA(irr::video::IImage& image)
 	}
 }
 
-irr::video::IImage* createQuantizedColorImage(irr::video::IVideoDriver* driver, const irr::video::IImage* imageIn, unsigned char numColors, bool dithered)
+bool quantizeColors(irr::video::IVideoDriver* driver, irr::video::IImage* image, unsigned char numColors, bool dithered)
 {
 	// TODO: could optimize speed by changing exoquant so I can avoid the flipBGRAandRGBA calls.
 
-	if ( !imageIn )
-		return nullptr;
-
-	void * ptrDbg = imageIn->getData();
+	if ( !image )	
+		return false;
 
 	// ExoQuant needs data in r8g8b8a8
-	flipBGRAandRGBA(*(const_cast<irr::video::IImage*>(imageIn)));	// data changed, but we change it back below, so const_cast is fine
+	flipBGRAandRGBA(*image);	
 
 	exq_data *pExq = exq_init(); // init quantizer (per image)
 	
 	exq_no_transparency(pExq);	// we don't want to multiply all pixels by the alpha
 
-	int numPixels = static_cast<int>(imageIn->getImageDataSizeInPixels());
-	unsigned char* inData = static_cast<unsigned char*>(imageIn->getData());
-	exq_feed(pExq, inData, numPixels);
+	int numPixels = static_cast<int>(image->getImageDataSizeInPixels());
+	unsigned char* imgData = static_cast<unsigned char*>(image->getData());
+	exq_feed(pExq, imgData, numPixels);
 	exq_quantize(pExq, numColors); // find palette
 
 	unsigned char * palette = new unsigned char[4*numColors];
@@ -63,31 +61,30 @@ irr::video::IImage* createQuantizedColorImage(irr::video::IVideoDriver* driver, 
 	unsigned char * paletteImage = new unsigned char[numPixels];
 	if ( !dithered )
 	{
-		exq_map_image(pExq, static_cast<int>(imageIn->getImageDataSizeInPixels()), 
-			inData,	paletteImage);	// map image to palette
+		exq_map_image(pExq, static_cast<int>(image->getImageDataSizeInPixels()), 
+			imgData, paletteImage);	// map image to palette
 	}
 	else
 	{
-		exq_map_image_ordered(pExq, imageIn->getDimension().Width, imageIn->getDimension().Height, 
-			inData,	paletteImage);	// alternative image mapping
+		exq_map_image_ordered(pExq, image->getDimension().Width, image->getDimension().Height, 
+			imgData, paletteImage);	// dithered image mapping
 	}
 
-	flipBGRAandRGBA(*(const_cast<irr::video::IImage*>(imageIn)));	// just converting it back to original
-
-	irr::video::IImage* imageOut = driver->createImage(irr::video::ECF_A8R8G8B8, imageIn->getDimension());
-	irr::video::SColor * colData = static_cast<irr::video::SColor *>(imageOut->getData());
+	unsigned char* colData = imgData;
 	for ( int i=0; i < numPixels; ++i )
 	{
 		const unsigned char index = paletteImage[i];
-		*colData = irr::video::SColor( palette[index*4+3], palette[index*4], palette[index*4+1], palette[index*4+2] );
-		++colData;
+		*colData ++ = palette[index*4+2];
+		*colData ++ = palette[index*4+1];
+		*colData ++ = palette[index*4];
+		*colData ++ = palette[index*4+3];
 	}
 
 	exq_free(pExq); 
 	delete[] palette;
 	delete[] paletteImage;
 
-	return imageOut;
+	return true;
 }
 
 struct SAppContext
@@ -114,10 +111,9 @@ struct SAppContext
 		InsertImage(texture, Images, ParentImages, filename.c_str());
 
 		irr::video::IImage * img1 = Device->getVideoDriver()->createImage(texture, irr::core::position2di(0,0),texture->getSize());
-		irr::video::IImage * img2 = createQuantizedColorImage(Device->getVideoDriver(), img1, 255, true);
-		irr::video::ITexture* texQuant = Device->getVideoDriver()->addTexture (irr::io::path("quant") + filename, img2);
+		quantizeColors(Device->getVideoDriver(), img1, 64, true);
+		irr::video::ITexture* texQuant = Device->getVideoDriver()->addTexture (irr::io::path("quant") + filename, img1);
 		img1->drop();
-		img2->drop();
 		InsertImage(texQuant, ImagesQuantisized, ParentQuantImages, filename.c_str());
 	}
 
