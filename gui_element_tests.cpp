@@ -27,7 +27,9 @@ enum
 	GUI_ID_BUTTON_CLEAR,
 	GUI_ID_BUTTON_SAVE,
 	GUI_ID_BUTTON_LOAD,
-	GUI_ID_BUTTON_CREATE_ELEMENTS
+	GUI_ID_BUTTON_CREATE_ELEMENTS,
+	GUI_ID_FIRST_SIZE_CONTROL,
+	GUI_ID_LAST_SIZE_CONTROL = GUI_ID_FIRST_SIZE_CONTROL+EGDS_COUNT-1
 };
 
 
@@ -201,23 +203,60 @@ void AddTestGuiElements(IGUIEnvironment* env, IGUIElement * parent, SAppContext 
 	context.mGuiElements.push_back(contextMenu);	
 }
 
-void AddControlElements(IGUIEnvironment* env, IGUIElement * parent)
+void AddControlElements(IGUIEnvironment* env, IGUIElement * parent, core::position2di leftTop, s32 width)
 {
-	env->addStaticText (L"", rect<s32>(500, 50, 630, 480), /*bool border=*/true, /*bool wordWrap=*/false, parent, -1,/* bool fillBackground=*/false);
-	env->addCheckBox (true, rect<s32>(510, 60, 620, 80), parent, GUI_ID_CHECKBOX_VISIBLE_PARENT, L"parent visible");
-	env->addCheckBox (true, rect<s32>(510, 100, 620, 120), parent, GUI_ID_CHECKBOX_ENABLED_PARENT, L"parent enabled");
-	env->addCheckBox (true, rect<s32>(510, 140, 620, 160), parent, GUI_ID_CHECKBOX_VISIBLE_ELEMENTS, L"elements visible");
-	env->addCheckBox (true, rect<s32>(510, 180, 620, 200), parent, GUI_ID_CHECKBOX_ENABLED_ELEMENTS, L"elements enabled");
+	IGUIStaticText* backgroundElement =  env->addStaticText (L"", rect<s32>(leftTop.X, leftTop.Y, leftTop.X+width, leftTop.Y+430), /*bool border=*/true, /*bool wordWrap=*/false, parent, -1,/* bool fillBackground=*/false);
+	const s32 left = 10;
+	const s32 right = width - 2*left;
+	s32 top = 10;
+	env->addCheckBox (true, rect<s32>(left, top, right, top+20), backgroundElement, GUI_ID_CHECKBOX_VISIBLE_PARENT, L"parent visible");
+	top += 40;
+	env->addCheckBox (true, rect<s32>(left, top, right, top+20), backgroundElement, GUI_ID_CHECKBOX_ENABLED_PARENT, L"parent enabled");
+	top += 40;
+	env->addCheckBox (true, rect<s32>(left, top, right, top+20), backgroundElement, GUI_ID_CHECKBOX_VISIBLE_ELEMENTS, L"elements visible");
+	top += 40;
+	env->addCheckBox (true, rect<s32>(left, top, right, top+20), backgroundElement, GUI_ID_CHECKBOX_ENABLED_ELEMENTS, L"elements enabled");
+	top += 40;
 
-	env->addStaticText(L"Transparent Control:", rect<s32>(510,220,620,240), true);
-	IGUIScrollBar* scrollbar = env->addScrollBar(true, rect<s32>(510, 250, 620, 270), 0, GUI_ID_TRANSPARENCY_SCROLL_BAR);
+	env->addStaticText(L"Transparent Control:", rect<s32>(left, top, right, top+20), true, true, backgroundElement);
+	top += 40;
+	IGUIScrollBar* scrollbar = env->addScrollBar(true, rect<s32>(left, top, right, top+20), backgroundElement, GUI_ID_TRANSPARENCY_SCROLL_BAR);
 	scrollbar->setMax(255);
 	scrollbar->setPos(env->getSkin()->getColor(EGDC_WINDOW).getAlpha());	// set scrollbar position to alpha value of an arbitrary element
+	top += 40;
 
-	env->addButton(rect<s32>(510, 280, 620, 300), parent, GUI_ID_BUTTON_CLEAR, L"clear", L"remove gui elements");
-	env->addButton(rect<s32>(510, 310, 620, 330), parent, GUI_ID_BUTTON_SAVE, L"save", L"save gui");
-	env->addButton(rect<s32>(510, 340, 620, 360), parent, GUI_ID_BUTTON_LOAD, L"load", L"clear & load gui");
-	env->addButton(rect<s32>(510, 370, 620, 390), parent, GUI_ID_BUTTON_CREATE_ELEMENTS, L"create elements", L"clear & create new");
+	env->addButton(rect<s32>(left, top, right, top+20), backgroundElement, GUI_ID_BUTTON_CLEAR, L"clear", L"remove gui elements");
+	top += 40;
+	env->addButton(rect<s32>(left, top, right, top+20), backgroundElement, GUI_ID_BUTTON_SAVE, L"save", L"save gui");
+	top += 40;
+	env->addButton(rect<s32>(left, top, right, top+20), backgroundElement, GUI_ID_BUTTON_LOAD, L"load", L"clear & load gui");
+	top += 40;
+	env->addButton(rect<s32>(left, top, right, top+20), backgroundElement, GUI_ID_BUTTON_CREATE_ELEMENTS, L"create elements", L"clear & create new");
+	top += 40;
+}
+
+void AddSkinSizeControls(IGUIEnvironment* env, IGUIElement * parent, core::position2di leftTop, s32 width)
+{
+	IGUIStaticText* backgroundElement =  env->addStaticText (L"", rect<s32>(leftTop.X, leftTop.Y, leftTop.X+width, leftTop.Y+EGDS_COUNT*25+20), /*bool border=*/true, /*bool wordWrap=*/false, parent, -1,/* bool fillBackground=*/false);
+
+	u32 top = 10;
+	u32 left = 10;
+	u32 staticRight = left + width - 90;
+	u32 editLeft = staticRight+1;
+	u32 editRight = width - 2*left;
+	
+	IGUISkin* skin = env->getSkin();
+
+	for ( u32 i=0; i < (u32)EGDS_COUNT; ++i)
+	{
+		core::stringw name(GUISkinSizeNames[i]);
+		env->addStaticText(name.c_str(), recti(left, top+4, staticRight, top+24), false, false, backgroundElement);
+		IGUISpinBox* sb = env->addSpinBox(L"", recti(editLeft, top, editRight, top+20), false, backgroundElement, GUI_ID_FIRST_SIZE_CONTROL+i);
+		sb->setDecimalPlaces(0);
+		sb->setValue( (irr::f32)skin->getSize((EGUI_DEFAULT_SIZE)i) );
+
+		top += 25;
+	}
 }
 
 // move the children from source to target
@@ -332,6 +371,18 @@ public:
 					}
 					break;
 				}
+
+				case EGET_SPINBOX_CHANGED:
+				{
+					if ( id >= GUI_ID_FIRST_SIZE_CONTROL && id <= GUI_ID_LAST_SIZE_CONTROL )
+					{
+						IGUISpinBox *sb = static_cast<IGUISpinBox *>(event.GUIEvent.Caller);
+						IGUIEnvironment * env = Context.device->getGUIEnvironment();
+						env->getSkin()->setSize(EGUI_DEFAULT_SIZE(id-GUI_ID_FIRST_SIZE_CONTROL), (s32)sb->getValue() );
+					}
+					break;
+				}
+
 			default:
 				break;
 			}
@@ -347,7 +398,8 @@ private:
 int main()
 {
 	video::E_DRIVER_TYPE driverType = video::EDT_OPENGL;
-	IrrlichtDevice * device = createDevice(driverType, core::dimension2d<u32>(640, 480));
+	core::dimension2d<u32> windowSize(1024, 768);
+	IrrlichtDevice * device = createDevice(driverType, core::dimension2d<u32>(1024, 768));
 	if (device == 0)
 		return 1; // could not create selected driver.
 
@@ -366,7 +418,8 @@ int main()
 	MyEventReceiver receiver(context);
 	device->setEventReceiver(&receiver);
 	
-	AddControlElements(env, 0);
+	AddSkinSizeControls(env, 0, core::position2di(windowSize.Width - 350, 10), 200);
+	AddControlElements(env, 0, core::position2di(windowSize.Width - 140, 10), 130);
 	
 	while(device->run() && driver)
 	{
