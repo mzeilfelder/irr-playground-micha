@@ -29,7 +29,11 @@ enum
 	GUI_ID_BUTTON_LOAD,
 	GUI_ID_BUTTON_CREATE_ELEMENTS,
 	GUI_ID_FIRST_SIZE_CONTROL,
-	GUI_ID_LAST_SIZE_CONTROL = GUI_ID_FIRST_SIZE_CONTROL+EGDS_COUNT-1
+	GUI_ID_LAST_SIZE_CONTROL = GUI_ID_FIRST_SIZE_CONTROL+EGDS_COUNT-1,
+	GUI_ID_BUTTON_ADD_WINDOW,
+	GUI_ID_BUTTON_ADD_MESSAGE_BOX,
+	GUI_ID_BUTTON_ADD_FILE_OPEN_DLG,
+	GUI_ID_BUTTON_ADD_COLOR_SELECT_DLG
 };
 
 
@@ -207,7 +211,7 @@ void AddControlElements(IGUIEnvironment* env, IGUIElement * parent, core::positi
 {
 	IGUIStaticText* backgroundElement =  env->addStaticText (L"", rect<s32>(leftTop.X, leftTop.Y, leftTop.X+width, leftTop.Y+430), /*bool border=*/true, /*bool wordWrap=*/false, parent, -1,/* bool fillBackground=*/false);
 	const s32 left = 10;
-	const s32 right = width - 2*left;
+	const s32 right = width - left;
 	s32 top = 10;
 	env->addCheckBox (true, rect<s32>(left, top, right, top+20), backgroundElement, GUI_ID_CHECKBOX_VISIBLE_PARENT, L"parent visible");
 	top += 40;
@@ -234,6 +238,25 @@ void AddControlElements(IGUIEnvironment* env, IGUIElement * parent, core::positi
 	env->addButton(rect<s32>(left, top, right, top+20), backgroundElement, GUI_ID_BUTTON_CREATE_ELEMENTS, L"create elements", L"clear & create new");
 	top += 40;
 }
+
+void AddWindowControls(IGUIEnvironment* env, IGUIElement * parent, core::position2di leftTop, s32 width)
+{
+	IGUIStaticText* backgroundElement =  env->addStaticText (L"", rect<s32>(leftTop.X, leftTop.Y, leftTop.X+width, leftTop.Y+180), /*bool border=*/true, /*bool wordWrap=*/false, parent, -1,/* bool fillBackground=*/false);
+
+	const s32 left = 10;
+	const s32 right = width - left;
+	s32 top = 10;
+
+	env->addButton(rect<s32>(left, top, right, top+20), backgroundElement, GUI_ID_BUTTON_ADD_WINDOW, L"add window", L"");
+	top += 40;
+	env->addButton(rect<s32>(left, top, right, top+20), backgroundElement, GUI_ID_BUTTON_ADD_MESSAGE_BOX, L"add message box", L"");
+	top += 40;
+	env->addButton(rect<s32>(left, top, right, top+20), backgroundElement, GUI_ID_BUTTON_ADD_FILE_OPEN_DLG, L"add file open dialog", L"");
+	top += 40;
+	env->addButton(rect<s32>(left, top, right, top+20), backgroundElement, GUI_ID_BUTTON_ADD_COLOR_SELECT_DLG, L"add color select dialog", L"");
+	top += 40;
+}
+
 
 void AddSkinSizeControls(IGUIEnvironment* env, IGUIElement * parent, core::position2di leftTop, s32 width)
 {
@@ -322,6 +345,22 @@ public:
 						case GUI_ID_BUTTON_CREATE_ELEMENTS:
 							ClearAllTestGuiElements(Context);
 							AddTestGuiElements(Context.device->getGUIEnvironment(), Context.mGuiParent, Context);
+							break;
+						case GUI_ID_BUTTON_ADD_WINDOW:
+						{
+							static s32 wndOffset = 0;
+							Context.device->getGUIEnvironment()->addWindow( recti(30+wndOffset, 30+wndOffset, 230+wndOffset, 230+wndOffset), false, L"title window", nullptr);
+							wndOffset = (wndOffset+25)%100;
+							break;
+						}
+						case GUI_ID_BUTTON_ADD_MESSAGE_BOX:
+							Context.device->getGUIEnvironment()->addMessageBox( L"caption message box", L"some text", false);
+							break;
+						case GUI_ID_BUTTON_ADD_FILE_OPEN_DLG:
+							Context.device->getGUIEnvironment()->addFileOpenDialog(L"title file open", false);
+							break;
+						case GUI_ID_BUTTON_ADD_COLOR_SELECT_DLG:
+							Context.device->getGUIEnvironment()->addColorSelectDialog(L"title color select", false);
 							break;
 					}
 				}
@@ -418,8 +457,9 @@ int main()
 	MyEventReceiver receiver(context);
 	device->setEventReceiver(&receiver);
 	
-	AddSkinSizeControls(env, 0, core::position2di(windowSize.Width - 350, 10), 200);
-	AddControlElements(env, 0, core::position2di(windowSize.Width - 140, 10), 130);
+	AddWindowControls(env, 0,  position2di(windowSize.Width - 460, 10), 100);
+	AddSkinSizeControls(env, 0, position2di(windowSize.Width - 350, 10), 200);
+	AddControlElements(env, 0, position2di(windowSize.Width - 140, 10), 130);
 	
 	while(device->run() && driver)
 	{
