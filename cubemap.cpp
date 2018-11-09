@@ -90,14 +90,56 @@ public:
 	int Step;
 };
 
+//! Copy texture to an image and write that to a file
+void writeTextureToFile(irr::video::IVideoDriver* driver, irr::video::ITexture* texture, irr::u32 layer, const irr::io::path& name)
+{
+	if (!texture)
+		return;
+
+	void* data = texture->lock(irr::video::ETLM_READ_ONLY, layer);
+	if (!data)
+		return;
+
+	irr::video::IImage* image = driver->createImageFromData(texture->getColorFormat(), texture->getSize(), data, false);
+	texture->unlock();
+
+	if (!image)
+		return;
+
+	const u32 quality = 100;
+	driver->writeImageToFile(image, name, quality);
+
+	image->drop();
+}
+
+void writeCubeTextureToFile(irr::video::IVideoDriver* driver, irr::video::ITexture* texture, const irr::io::path& name)
+{
+	io::path path, filename, extension;
+
+	splitFilename(name, &path, &filename, &extension);
+
+	for ( irr::u32 i=0; i<6; ++i )
+	{
+		io::path namet = mergeFilename(path, filename + io::path(i+1), extension);
+		writeTextureToFile(driver, texture, i, namet);
+	}
+}
+
+
 int main()
 {
+#if 0
 	video::E_DRIVER_TYPE driverType = video::EDT_DIRECT3D9;
-	//video::E_DRIVER_TYPE driverType = video::EDT_OPENGL;	// not yet supported
-	IrrlichtDevice* device = createDevice( driverType, core::dimension2d<u32>( 800, 600 ) );
+#else
+	video::E_DRIVER_TYPE driverType = video::EDT_OPENGL;
+#endif
+	IrrlichtDevice* device = createDevice( driverType, core::dimension2d<u32>( 1024, 768 ) );
 	if (!device)
 		return 1; 
 	
+	core::stringw cubeOutName( driverType == video::EDT_DIRECT3D9 ? "cubemap/cube_out_dx.jpg" : "cubemap/cube_out_gl.jpg");
+	core::stringw cubeOutDynName( driverType == video::EDT_DIRECT3D9 ? "cubemap/cube_out_dyn_dx.jpg" : "cubemap/cube_out_dyn_gl.jpg");
+
 	MyEventReceiver eventReceiver;
 	device->setEventReceiver(&eventReceiver);
 
@@ -159,13 +201,17 @@ int main()
 	for ( u32 i=0; i<cubeMapImages.size(); ++i )
 		cubeMapImages[i]->drop();
 	cubeMapImages.clear();
+//	writeCubeTextureToFile(driver, cubeMap, cubeOutName);
 
 	video::ITexture* dynamicCubeMap = 0;
+	video::ITexture* dynamicDebugRT = 0;
 	scene::ICameraSceneNode* cubeMapCamera = 0;
 	if( driver->queryFeature( video::EVDF_RENDER_TO_TARGET ) )
 	{
 		// Create cube map texture
 		dynamicCubeMap = driver->addRenderTargetTextureCubemap(512, "cube_rt");
+		dynamicDebugRT = driver->addRenderTargetTexture(core::dimension2du(512, 512), "cube_dbg_rt");
+
 		cubeMapCamera = smgr->addCameraSceneNode();
 		cubeMapCamera->setFOV(core::PI* 0.5f);	// 90°
 		cubeMapCamera->setAspectRatio(1.f);
@@ -180,13 +226,14 @@ int main()
 	{
 		sphereNode = smgr->addMeshSceneNode( sphereMesh );
 		sphereNode->setPosition( core::vector3df(-250,0,0) );
+		sphereNode->updateAbsolutePosition();
 		sphereNode->setMaterialFlag( video::EMF_LIGHTING, false );
 		sphereNode->setMaterialTexture( 0, dynamicCubeMap );
 		sphereNode->setMaterialType( (video::E_MATERIAL_TYPE)cubeMapReflectionMaterial );
-
 #if 1
 		sphereNode2 = smgr->addMeshSceneNode( sphereMesh );
 		sphereNode2->setPosition( core::vector3df(250,0,0) );
+		sphereNode2->updateAbsolutePosition();
 		sphereNode2->setMaterialFlag( video::EMF_LIGHTING, false );
 		sphereNode2->setMaterialTexture( 0, cubeMap );
 		sphereNode2->setMaterialType( (video::E_MATERIAL_TYPE)cubeMapReflectionMaterial );
@@ -220,14 +267,24 @@ int main()
 	}
 #endif
 
+	// RTT's are rendered upside down in OpenGL.
+	// Now comes the tricky part: In fixed function materials Irrlicht flips the texture-matrix for that.
+	// So this hack I use here would be bad then. The nicer solution imho would be if Irrlicht would 
+	// change the projection matrix if the target is a RTT on OpenGL. But maybe that has some problem I don't see.
+	// The bad part now is - because I fix it here - correct rendered RTT's will no longer work with fixed-function materials in OpenGL *sigh*
+	const float up = driverType == video::EDT_OPENGL ? 1.f : 1.f;
+
 	while(device->run())
 	{
 		if (device->isWindowActive())
 		{
 			driver->beginScene(true, true);
 
-			if( dynamicCubeMap && sphereNode )
+			static bool justOnce = true;	// if nothing changes that's enough, if things the sphere "sees" then we have to update constantly.
+
+			if( dynamicCubeMap && sphereNode && justOnce )
 			{
+				justOnce = false;
 				smgr->setActiveCamera( cubeMapCamera );
 
 				sphereNode->setVisible( false );
@@ -235,41 +292,83 @@ int main()
 				cubeMapCamera->setPosition( center );
 
 				// Render all 6 directions
-				cubeMapCamera->setUpVector( core::vector3df( 0,1,0 ) );
+				cubeMapCamera->setUpVector( core::vector3df( 0,up,0 ) );
 				cubeMapCamera->setTarget( center + core::vector3df(1.f, 0.f, 0.f) );
 				cubeMapRT->setTexture(dynamicCubeMap, 0, video::ECS_POSX);
 				driver->setRenderTargetEx(cubeMapRT, video::ECBF_ALL);
 				smgr->drawAll();
+
+				if ( dynamicDebugRT )
+				{
+					driver->setRenderTarget(dynamicDebugRT, true, true);
+					smgr->drawAll();
+					writeTextureToFile(driver, dynamicDebugRT, 0, io::path("cubemap/cube_out_dbg1.jpg"));
+				}
 
 				cubeMapCamera->setTarget( center + core::vector3df(-1.f, 0.f, 0.f) );
 				cubeMapRT->setTexture(dynamicCubeMap, 0, video::ECS_NEGX);
 				driver->setRenderTargetEx(cubeMapRT, video::ECBF_ALL);
 				smgr->drawAll();
 
+				if ( dynamicDebugRT )
+				{
+					driver->setRenderTarget(dynamicDebugRT, true, true);
+					smgr->drawAll();
+					writeTextureToFile(driver, dynamicDebugRT, 1, io::path("cubemap/cube_out_dbg2.jpg"));
+				}
+
+				cubeMapCamera->setUpVector( core::vector3df(0,0,-up) );
+				cubeMapCamera->setTarget( center + core::vector3df(0.f, 1.f, 0.f) );
+				cubeMapRT->setTexture(dynamicCubeMap, 0, video::ECS_POSY);
+				driver->setRenderTargetEx(cubeMapRT, video::ECBF_ALL);
+				smgr->drawAll();
+
+				if ( dynamicDebugRT )
+				{
+					driver->setRenderTarget(dynamicDebugRT, true, true);
+					smgr->drawAll();
+					writeTextureToFile(driver, dynamicDebugRT, 2, io::path("cubemap/cube_out_dbg3.jpg"));
+				}
+
+				cubeMapCamera->setUpVector( core::vector3df(0,0,up) );
+				cubeMapCamera->setTarget( center + core::vector3df(0.f, -1.f, 0.f) );
+				cubeMapRT->setTexture(dynamicCubeMap, 0, video::ECS_NEGY);
+				driver->setRenderTargetEx(cubeMapRT, video::ECBF_ALL);
+				smgr->drawAll();
+
+				if ( dynamicDebugRT )
+				{
+					driver->setRenderTarget(dynamicDebugRT, true, true);
+					smgr->drawAll();
+					writeTextureToFile(driver, dynamicDebugRT, 3, io::path("cubemap/cube_out_dbg4.jpg"));
+				}
+
+				cubeMapCamera->setUpVector( core::vector3df( 0,up,0 ) );
 				cubeMapCamera->setTarget( center + core::vector3df(0.f, 0.f, 1.f) );
 				cubeMapRT->setTexture(dynamicCubeMap, 0, video::ECS_POSZ);
 				driver->setRenderTargetEx(cubeMapRT, video::ECBF_ALL);
 				smgr->drawAll();
+
+				if ( dynamicDebugRT )
+				{
+					driver->setRenderTarget(dynamicDebugRT, true, true);
+					smgr->drawAll();
+					writeTextureToFile(driver, dynamicDebugRT, 4, io::path("cubemap/cube_out_dbg5.jpg"));
+				}
 
 				cubeMapCamera->setTarget( center + core::vector3df(0.f, 0.f, -1.f) );
 				cubeMapRT->setTexture(dynamicCubeMap, 0, video::ECS_NEGZ);
 				driver->setRenderTargetEx(cubeMapRT, video::ECBF_ALL);
 				smgr->drawAll();
 
-				cubeMapCamera->setUpVector( core::vector3df(0,0,-1) );
-				cubeMapCamera->setTarget( center + core::vector3df(0.f, 1.f, 0.f) );
-				cubeMapRT->setTexture(dynamicCubeMap, 0, video::ECS_POSY);
-				driver->setRenderTargetEx(cubeMapRT, video::ECBF_ALL);
-				smgr->drawAll();
+				if ( dynamicDebugRT )
+				{
+					driver->setRenderTarget(dynamicDebugRT, true, true);
+					smgr->drawAll();
+					writeTextureToFile(driver, dynamicDebugRT, 5, io::path("cubemap/cube_out_dbg6.jpg"));
+				}
 
-				cubeMapCamera->setUpVector( core::vector3df(0,0,1) );
-				cubeMapCamera->setTarget( center + core::vector3df(0.f, -1.f, 0.f) );
-				cubeMapRT->setTexture(dynamicCubeMap, 0, video::ECS_NEGY);
-				driver->setRenderTargetEx(cubeMapRT, video::ECBF_ALL);
-				smgr->drawAll();
-
-				dynamicCubeMap->regenerateMipMapLevels();
-
+				//dynamicCubeMap->regenerateMipMapLevels();
 
 				driver->setRenderTarget(0);
 				sphereNode->setVisible( true );
@@ -279,6 +378,14 @@ int main()
 			env->drawAll();
 
 			driver->endScene();
+
+			static bool first = true;
+			if ( first )
+			{
+				first = false;
+				dynamicDebugRT = 0;
+				writeCubeTextureToFile(driver, dynamicCubeMap, cubeOutDynName);
+			}
 		}
 	}
 

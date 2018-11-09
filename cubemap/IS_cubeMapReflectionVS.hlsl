@@ -18,11 +18,12 @@ void VS(
 	{
 		// create ray from camera position to the vertex, in world space
 		float4 worldPos = mul(float4(VPos.x, VPos.y, VPos.z, 1.0), World);
-		float3 view = CameraPos - worldPos;
+		float3 view = CameraPos - worldPos.xyz;
 		
-		// compute the reflection vector, and assign it to texcoord 0
 		float4 normWorld = normalize(mul(float4(VNorm.x, VNorm.y, VNorm.z, 0.0), World));	// TODO: when objects are scaled non-uniform we need to multiply by WorldInverseTranspose instead
-		outTex = reflect( -normalize(view), normWorld );
+		
+		// compute the reflection vector, and assign it to texcoord 0		
+		outTex = reflect( -normalize(view), normWorld.xyz );
 	}
 	else if ( StyleUVW == 1 )
 	{
