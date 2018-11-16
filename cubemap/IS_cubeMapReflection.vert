@@ -1,14 +1,11 @@
 uniform int StyleUVW ; // 0 = specular reflection, 1 = diffuse reflection, 2 = use model vertex coordinates for uvw.
 uniform vec3  CameraPos;
 
-varying vec3 cubeTC;
-
 void main(void)
 {
 	gl_Position = ftransform();	// same as gl_ModelViewProjectionMatrix * gl_Vertex;
 	
-    // create ray from camera position to the vertex, in world space
-    vec3 V = vec3( gl_Vertex ) - CameraPos;
+    vec3 V = vec3( gl_Vertex ) - CameraPos;	// view vector
 	
     // compute the reflection vector, and assign it to texcoord 0
 	if ( StyleUVW == 0 )

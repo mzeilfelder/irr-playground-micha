@@ -1,26 +1,48 @@
 ﻿// Code is under the zlib license (same as Irrlicht)
-// Written by Michael Zeilfelder based on irrSpintz example EnvCubeMap
+// Written by Michael Zeilfelder. 
+// Based originally on irrSpintz example EnvCubeMap.
 
 #ifdef _MSC_VER
 #pragma comment(lib, "Irrlicht.lib")
 #endif
 
-
 #include "irrlicht.h"
 
 using namespace irr;
 
+// Texture origins in OpenGL are usually left-bottom instead of the more common left-top.
+// Irrlicht ignores that and uses textures with left-top origin and then flips all texture-matrices in the fixed-function pipeline.
+// For shaders it's left to the users to handle those uv-flips for the texture-matrix.
+// RTT's are rendered "correctly" with  left-bottom origin. 
+// In fixed function pipeline Irrlicht handles this by flipping the RTT's texture matrix once more (so all textures are upside down).
+// (not sure why it doesn't to the original flip instead - haven't tried yet changing that - maybe there's more going on)
+// Cubemaps are once more different. Basically each side has left-top as origin. So not flipping textures for those would be fine.
+// Except - OpenGL RTT's still seems to render left-bottom - even when the target is a cubemap RTT.
+// I found no good way around this so far - it just seems messed up as we get a left-handed/right handed coordinate system change that way.
+// So... following 2 defines are the 2 workarounds I found. Both are ugly, which one is better in reality depends probably on the scene.
+// Only use one fo them
+//#define CUBEMAP_UPSIDE_DOWN_GL_PROJECTION
+#define CUBEMAP_USPIDE_DOWN_RTT
+
 class CubeMapReflectionCallback : public video::IShaderConstantSetCallBack
 {
 public:
-	CubeMapReflectionCallback(scene::ISceneManager* smgr) 
+	CubeMapReflectionCallback(scene::ISceneManager* smgr, int styleUVW) 
 		: SceneMgr(smgr) 
-		, StyleUVW(2)
+		, StyleUVW(styleUVW)
+		, flipImage(1.f)
 		, styleUvwID(-1)
 		, worldViewProjID(-1)
 		, worldID(-1)
 		, cameraPosID(-1)
+		, flipImageID(-1)
 	{
+	}
+
+	virtual void OnSetMaterial(const video::SMaterial& material)
+	{
+		video::ITexture * tex = material.getTexture(0);
+		flipImage = tex && tex->isRenderTarget() ? -1.f : 1.f;
 	}
 
 	virtual void OnSetConstants(video::IMaterialRendererServices* services, s32 userData)
@@ -30,8 +52,15 @@ public:
 		if ( worldViewProjID < 0 )	// first update
 		{
 			styleUvwID = services->getVertexShaderConstantID("StyleUVW");
-			worldViewProjID = services->getVertexShaderConstantID("WorldViewProj");
-			worldID = services->getVertexShaderConstantID("World");
+			if( driver->getDriverType() == video::EDT_DIRECT3D9 )
+			{
+				worldViewProjID = services->getVertexShaderConstantID("WorldViewProj");
+				worldID = services->getVertexShaderConstantID("World");
+			}
+			else if ( driver->getDriverType() == video::EDT_OPENGL )
+			{
+				flipImageID = services->getVertexShaderConstantID("FlipRTT");
+			}
 			cameraPosID = services->getVertexShaderConstantID("CameraPos");
 		}
 
@@ -49,6 +78,10 @@ public:
 
 			services->setVertexShaderConstant(worldID, world.pointer(), 16);
 		}
+		else if ( driver->getDriverType() == video::EDT_OPENGL )
+		{
+			services->setVertexShaderConstant(flipImageID, &flipImage, 1);
+		}
 		
 		core::vector3df cameraPos = SceneMgr->getActiveCamera()->getAbsolutePosition();
 		services->setVertexShaderConstant(cameraPosID, &cameraPos.X, 3 );
@@ -58,13 +91,16 @@ private:
 	scene::ISceneManager* SceneMgr;
 
 	int StyleUVW;
+	irr::f32 flipImage;	// 1.0 = original, -1.0 = flipped
 
 	irr::s32 styleUvwID;
 	irr::s32 worldViewProjID;
 	irr::s32 worldID;
 	irr::s32 cameraPosID;
+	irr::s32 flipImageID;
 };
 
+#if 0
 class MyEventReceiver : public IEventReceiver
 {
 public:
@@ -89,6 +125,7 @@ public:
 
 	int Step;
 };
+#endif
 
 //! Copy texture to an image and write that to a file
 void writeTextureToFile(irr::video::IVideoDriver* driver, irr::video::ITexture* texture, irr::u32 layer, const irr::io::path& name)
@@ -125,9 +162,29 @@ void writeCubeTextureToFile(irr::video::IVideoDriver* driver, irr::video::ITextu
 	}
 }
 
+//void debugLogGL(const char* msg)
+//{
+//	InsertEventMarkerEXT(0, msg);
+//}
+
+void flipCullingFlags(const core::array<scene::ISceneNode*>& nodes)
+{
+	for ( irr::u32 n=0; n < nodes.size(); ++n )
+	{
+		scene::ISceneNode* node = nodes[n];
+		const irr::u32 matCount = node->getMaterialCount();
+		for ( irr::u32 m=0; m < matCount; ++m)
+		{
+			video::SMaterial& mat = node->getMaterial(m);
+			mat.BackfaceCulling = !mat.BackfaceCulling;
+			mat.FrontfaceCulling = !mat.FrontfaceCulling;
+		}
+	}
+}
 
 int main()
 {
+
 #if 0
 	video::E_DRIVER_TYPE driverType = video::EDT_DIRECT3D9;
 #else
@@ -140,8 +197,8 @@ int main()
 	core::stringw cubeOutName( driverType == video::EDT_DIRECT3D9 ? "cubemap/cube_out_dx.jpg" : "cubemap/cube_out_gl.jpg");
 	core::stringw cubeOutDynName( driverType == video::EDT_DIRECT3D9 ? "cubemap/cube_out_dyn_dx.jpg" : "cubemap/cube_out_dyn_gl.jpg");
 
-	MyEventReceiver eventReceiver;
-	device->setEventReceiver(&eventReceiver);
+	//MyEventReceiver eventReceiver;
+	//device->setEventReceiver(&eventReceiver);
 
 	video::IVideoDriver* driver = device->getVideoDriver();
 	scene::ISceneManager* smgr = device->getSceneManager();
@@ -169,7 +226,7 @@ int main()
 	s32 cubeMapReflectionMaterial = 0;
 	if( gpu )
 	{
-		CubeMapReflectionCallback* cubeMapCB = new CubeMapReflectionCallback(smgr);
+		CubeMapReflectionCallback* cubeMapCB = new CubeMapReflectionCallback(smgr, 2);
 		cubeMapReflectionMaterial = gpu->addHighLevelShaderMaterialFromFiles(
 			vsFileName, "VS", video::EVST_VS_1_1,
 			psFileName, "PS", video::EPST_PS_2_0,
@@ -196,12 +253,27 @@ int main()
 	cubeMapImages.push_back(driver->createImageFromFile( "cubemap/cubemap_negy.jpg" ));
 	cubeMapImages.push_back(driver->createImageFromFile( "cubemap/cubemap_posz.jpg" ));
 	cubeMapImages.push_back(driver->createImageFromFile( "cubemap/cubemap_negz.jpg" ));
+
+#if 0	// TEST - draw a 2d image
+	driver->beginScene(true, true);	driver->endScene();	// TEST - frame 0 just making trace easier to follow
+	video::ITexture * tex2d = driver->addTexture(io::path("tex2d"), cubeMapImages[0] );
+	//while(device->run())
+	{
+		driver->beginScene(true, true);	
+		driver->draw2DImage(tex2d, core::vector2di(1, 1));
+		driver->endScene();	// TEST - frame 0 just making trace easier to follow
+	}
+	return 0;
+#endif
+
 	video::ITexture* cubeMap = 0;
-	cubeMap = driver->addTextureCubemap("cm", cubeMapImages[0], cubeMapImages[1], cubeMapImages[2], cubeMapImages[3], cubeMapImages[4], cubeMapImages[5]);
+//	cubeMap = driver->addTextureCubemap("cm", cubeMapImages[0], cubeMapImages[1], cubeMapImages[2], cubeMapImages[3], cubeMapImages[4], cubeMapImages[5]);
 	for ( u32 i=0; i<cubeMapImages.size(); ++i )
 		cubeMapImages[i]->drop();
 	cubeMapImages.clear();
 //	writeCubeTextureToFile(driver, cubeMap, cubeOutName);
+
+	//return 0; // TEST
 
 	video::ITexture* dynamicCubeMap = 0;
 	video::ITexture* dynamicDebugRT = 0;
@@ -210,7 +282,7 @@ int main()
 	{
 		// Create cube map texture
 		dynamicCubeMap = driver->addRenderTargetTextureCubemap(512, "cube_rt");
-		dynamicDebugRT = driver->addRenderTargetTexture(core::dimension2du(512, 512), "cube_dbg_rt");
+//		dynamicDebugRT = driver->addRenderTargetTexture(core::dimension2du(512, 512), "cube_dbg_rt");
 
 		cubeMapCamera = smgr->addCameraSceneNode();
 		cubeMapCamera->setFOV(core::PI* 0.5f);	// 90°
@@ -231,12 +303,15 @@ int main()
 		sphereNode->setMaterialTexture( 0, dynamicCubeMap );
 		sphereNode->setMaterialType( (video::E_MATERIAL_TYPE)cubeMapReflectionMaterial );
 #if 1
-		sphereNode2 = smgr->addMeshSceneNode( sphereMesh );
-		sphereNode2->setPosition( core::vector3df(250,0,0) );
-		sphereNode2->updateAbsolutePosition();
-		sphereNode2->setMaterialFlag( video::EMF_LIGHTING, false );
-		sphereNode2->setMaterialTexture( 0, cubeMap );
-		sphereNode2->setMaterialType( (video::E_MATERIAL_TYPE)cubeMapReflectionMaterial );
+		if ( cubeMap )
+		{
+			sphereNode2 = smgr->addMeshSceneNode( sphereMesh );
+			sphereNode2->setPosition( core::vector3df(250,0,0) );
+			sphereNode2->updateAbsolutePosition();
+			sphereNode2->setMaterialFlag( video::EMF_LIGHTING, false );
+			sphereNode2->setMaterialTexture( 0, cubeMap );
+			sphereNode2->setMaterialType( (video::E_MATERIAL_TYPE)cubeMapReflectionMaterial );
+		}
 #endif
 
 		sphereMesh->drop();
@@ -267,12 +342,20 @@ int main()
 	}
 #endif
 
-	// RTT's are rendered upside down in OpenGL.
-	// Now comes the tricky part: In fixed function materials Irrlicht flips the texture-matrix for that.
-	// So this hack I use here would be bad then. The nicer solution imho would be if Irrlicht would 
-	// change the projection matrix if the target is a RTT on OpenGL. But maybe that has some problem I don't see.
-	// The bad part now is - because I fix it here - correct rendered RTT's will no longer work with fixed-function materials in OpenGL *sigh*
-	const float up = driverType == video::EDT_OPENGL ? 1.f : 1.f;
+#ifdef CUBEMAP_UPSIDE_DOWN_GL_PROJECTION
+	if ( driverType == video::EDT_OPENGL )
+	{
+		// Flip projection matrix (note this also flips front/backface culling)
+		core::matrix4 matProj = cubeMapCamera->getProjectionMatrix();
+		matProj[4] = -matProj[4];
+		matProj[5] = -matProj[5];
+		matProj[6] = -matProj[6];
+		matProj[7] = -matProj[7];
+		cubeMapCamera->setProjectionMatrix(matProj);
+	}
+#endif
+
+	driver->beginScene(true, true);	driver->endScene();	// TEST - frame 0 just making trace easier to follow
 
 	while(device->run())
 	{
@@ -287,86 +370,73 @@ int main()
 				justOnce = false;
 				smgr->setActiveCamera( cubeMapCamera );
 
+#ifdef CUBEMAP_UPSIDE_DOWN_GL_PROJECTION
+				core::array<scene::ISceneNode*> allNodes;
+				if ( driverType == video::EDT_OPENGL )
+				{
+					// Flipping projection matrix flips front/backface culling. 
+					// We only have a skybox so in this case this still would be fast, with more objects it's getting more ugly.
+					smgr->getSceneNodesFromType(scene::ESNT_ANY, allNodes);
+					flipCullingFlags(allNodes);
+				}
+#endif
+
 				sphereNode->setVisible( false );
 				const core::vector3df center( sphereNode->getAbsolutePosition() );
 				cubeMapCamera->setPosition( center );
 
 				// Render all 6 directions
-				cubeMapCamera->setUpVector( core::vector3df( 0,up,0 ) );
-				cubeMapCamera->setTarget( center + core::vector3df(1.f, 0.f, 0.f) );
-				cubeMapRT->setTexture(dynamicCubeMap, 0, video::ECS_POSX);
-				driver->setRenderTargetEx(cubeMapRT, video::ECBF_ALL);
-				smgr->drawAll();
+				const core::vector3df targetVecs[6] = {
+					core::vector3df(1.f, 0.f, 0.f),
+					core::vector3df(-1.f, 0.f, 0.f),
+					core::vector3df(0.f, 1.f, 0.f),
+					core::vector3df(0.f, -1.f, 0.f),
+					core::vector3df(0.f, 0.f, 1.f),
+					core::vector3df(0.f, 0.f, -1.f)
+				};
 
-				if ( dynamicDebugRT )
+				const core::vector3df upVecs[6] = {
+					core::vector3df( 0,1,0 ),
+					core::vector3df( 0,1,0 ),
+					core::vector3df( 0,0,-1 ),
+					core::vector3df( 0,0,1 ),
+					core::vector3df( 0,1,0 ),
+					core::vector3df( 0,1,0 )
+				};
+				for ( int s=0; s<6; ++s )
 				{
-					driver->setRenderTarget(dynamicDebugRT, true, true);
+					cubeMapCamera->setUpVector( upVecs[s] );
+					cubeMapCamera->setTarget( center + targetVecs[s] );
+					cubeMapRT->setTexture(dynamicCubeMap, 0, (video::E_CUBE_SURFACE)(video::ECS_POSX + s));
+					driver->setRenderTargetEx(cubeMapRT, video::ECBF_ALL);
 					smgr->drawAll();
-					writeTextureToFile(driver, dynamicDebugRT, 0, io::path("cubemap/cube_out_dbg1.jpg"));
+
+#ifdef CUBEMAP_USPIDE_DOWN_RTT
+					// This works because the lock for rtt's always flips in Irrlicht. Even if it shouldn't.
+					// So in this case lock() unlock will result in a flipped texture
+					driver->setRenderTarget(0);	// to avoid accessing active rt
+					dynamicCubeMap->lock(video::ETLM_READ_WRITE, s);
+					dynamicCubeMap->unlock();
+#endif
+
+					if ( dynamicDebugRT )
+					{
+						driver->setRenderTarget(dynamicDebugRT, true, true);
+						smgr->drawAll();
+						driver->setRenderTarget(0);	// to avoid accessing active rt
+						io::path dbgCubeName("cubemap/cube_out_dbg");
+						dbgCubeName += io::path(s+1);
+						dbgCubeName += io::path(".jpg");
+						writeTextureToFile(driver, dynamicDebugRT, 0, dbgCubeName);
+					}
 				}
 
-				cubeMapCamera->setTarget( center + core::vector3df(-1.f, 0.f, 0.f) );
-				cubeMapRT->setTexture(dynamicCubeMap, 0, video::ECS_NEGX);
-				driver->setRenderTargetEx(cubeMapRT, video::ECBF_ALL);
-				smgr->drawAll();
-
-				if ( dynamicDebugRT )
+#ifdef CUBEMAP_UPSIDE_DOWN_GL_PROJECTION
+				if ( driverType == video::EDT_OPENGL )
 				{
-					driver->setRenderTarget(dynamicDebugRT, true, true);
-					smgr->drawAll();
-					writeTextureToFile(driver, dynamicDebugRT, 1, io::path("cubemap/cube_out_dbg2.jpg"));
+					flipCullingFlags(allNodes);
 				}
-
-				cubeMapCamera->setUpVector( core::vector3df(0,0,-up) );
-				cubeMapCamera->setTarget( center + core::vector3df(0.f, 1.f, 0.f) );
-				cubeMapRT->setTexture(dynamicCubeMap, 0, video::ECS_POSY);
-				driver->setRenderTargetEx(cubeMapRT, video::ECBF_ALL);
-				smgr->drawAll();
-
-				if ( dynamicDebugRT )
-				{
-					driver->setRenderTarget(dynamicDebugRT, true, true);
-					smgr->drawAll();
-					writeTextureToFile(driver, dynamicDebugRT, 2, io::path("cubemap/cube_out_dbg3.jpg"));
-				}
-
-				cubeMapCamera->setUpVector( core::vector3df(0,0,up) );
-				cubeMapCamera->setTarget( center + core::vector3df(0.f, -1.f, 0.f) );
-				cubeMapRT->setTexture(dynamicCubeMap, 0, video::ECS_NEGY);
-				driver->setRenderTargetEx(cubeMapRT, video::ECBF_ALL);
-				smgr->drawAll();
-
-				if ( dynamicDebugRT )
-				{
-					driver->setRenderTarget(dynamicDebugRT, true, true);
-					smgr->drawAll();
-					writeTextureToFile(driver, dynamicDebugRT, 3, io::path("cubemap/cube_out_dbg4.jpg"));
-				}
-
-				cubeMapCamera->setUpVector( core::vector3df( 0,up,0 ) );
-				cubeMapCamera->setTarget( center + core::vector3df(0.f, 0.f, 1.f) );
-				cubeMapRT->setTexture(dynamicCubeMap, 0, video::ECS_POSZ);
-				driver->setRenderTargetEx(cubeMapRT, video::ECBF_ALL);
-				smgr->drawAll();
-
-				if ( dynamicDebugRT )
-				{
-					driver->setRenderTarget(dynamicDebugRT, true, true);
-					smgr->drawAll();
-					writeTextureToFile(driver, dynamicDebugRT, 4, io::path("cubemap/cube_out_dbg5.jpg"));
-				}
-
-				cubeMapCamera->setTarget( center + core::vector3df(0.f, 0.f, -1.f) );
-				cubeMapRT->setTexture(dynamicCubeMap, 0, video::ECS_NEGZ);
-				driver->setRenderTargetEx(cubeMapRT, video::ECBF_ALL);
-				smgr->drawAll();
-
-				if ( dynamicDebugRT )
-				{
-					driver->setRenderTarget(dynamicDebugRT, true, true);
-					smgr->drawAll();
-					writeTextureToFile(driver, dynamicDebugRT, 5, io::path("cubemap/cube_out_dbg6.jpg"));
-				}
+#endif
 
 				//dynamicCubeMap->regenerateMipMapLevels();
 
@@ -374,11 +444,15 @@ int main()
 				sphereNode->setVisible( true );
 				smgr->setActiveCamera( camera );
 			}
+#if 1
 			smgr->drawAll();
 			env->drawAll();
+#endif
 
 			driver->endScene();
+//break; // TEST, run just once
 
+#if 0
 			static bool first = true;
 			if ( first )
 			{
@@ -386,6 +460,7 @@ int main()
 				dynamicDebugRT = 0;
 				writeCubeTextureToFile(driver, dynamicCubeMap, cubeOutDynName);
 			}
+#endif
 		}
 	}
 
