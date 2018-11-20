@@ -21,28 +21,35 @@ using namespace irr;
 // I found no good way around this so far - it just seems messed up as we get a left-handed/right handed coordinate system change that way.
 // So... following 2 defines are the 2 workarounds I found. Both are ugly, which one is better in reality depends probably on the scene.
 // Only use one fo them
-//#define CUBEMAP_UPSIDE_DOWN_GL_PROJECTION
-#define CUBEMAP_USPIDE_DOWN_RTT
+#define CUBEMAP_UPSIDE_DOWN_GL_PROJECTION
+//#define CUBEMAP_USPIDE_DOWN_RTT
 
+// Callback for cubemap shader
 class CubeMapReflectionCallback : public video::IShaderConstantSetCallBack
 {
 public:
 	CubeMapReflectionCallback(scene::ISceneManager* smgr, int styleUVW) 
 		: SceneMgr(smgr) 
 		, StyleUVW(styleUVW)
-		, flipImage(1.f)
 		, styleUvwID(-1)
 		, worldViewProjID(-1)
 		, worldID(-1)
 		, cameraPosID(-1)
-		, flipImageID(-1)
 	{
+	}
+
+	void SetStyleUVW(int style)
+	{
+		StyleUVW = style;
+	}
+
+	int GetStyleUVW() const
+	{
+		return StyleUVW;
 	}
 
 	virtual void OnSetMaterial(const video::SMaterial& material)
 	{
-		video::ITexture * tex = material.getTexture(0);
-		flipImage = tex && tex->isRenderTarget() ? -1.f : 1.f;
 	}
 
 	virtual void OnSetConstants(video::IMaterialRendererServices* services, s32 userData)
@@ -55,32 +62,23 @@ public:
 			if( driver->getDriverType() == video::EDT_DIRECT3D9 )
 			{
 				worldViewProjID = services->getVertexShaderConstantID("WorldViewProj");
-				worldID = services->getVertexShaderConstantID("World");
 			}
-			else if ( driver->getDriverType() == video::EDT_OPENGL )
-			{
-				flipImageID = services->getVertexShaderConstantID("FlipRTT");
-			}
+			worldID = services->getVertexShaderConstantID("World");
 			cameraPosID = services->getVertexShaderConstantID("CameraPos");
 		}
 
 		services->setVertexShaderConstant(styleUvwID, &StyleUVW, 1 );
 
+		irr::core::matrix4 world = driver->getTransform(irr::video::ETS_WORLD);
+		services->setVertexShaderConstant(worldID, world.pointer(), 16);
+
 		if( driver->getDriverType() == video::EDT_DIRECT3D9 )
 		{
-			irr::core::matrix4 world = driver->getTransform(irr::video::ETS_WORLD);
-
 			irr::core::matrix4 worldViewProj;
 			worldViewProj = driver->getTransform(irr::video::ETS_PROJECTION);
 			worldViewProj *= driver->getTransform(irr::video::ETS_VIEW);
 			worldViewProj *= world;
 			services->setVertexShaderConstant(worldViewProjID, worldViewProj.pointer(), 16);
-
-			services->setVertexShaderConstant(worldID, world.pointer(), 16);
-		}
-		else if ( driver->getDriverType() == video::EDT_OPENGL )
-		{
-			services->setVertexShaderConstant(flipImageID, &flipImage, 1);
 		}
 		
 		core::vector3df cameraPos = SceneMgr->getActiveCamera()->getAbsolutePosition();
@@ -90,21 +88,18 @@ public:
 private:
 	scene::ISceneManager* SceneMgr;
 
-	int StyleUVW;
-	irr::f32 flipImage;	// 1.0 = original, -1.0 = flipped
+	int StyleUVW;		// 0 = specular, 1=diffuse, 2 = use model vertex coordinates for uvw.
 
 	irr::s32 styleUvwID;
 	irr::s32 worldViewProjID;
 	irr::s32 worldID;
 	irr::s32 cameraPosID;
-	irr::s32 flipImageID;
 };
 
-#if 0
 class MyEventReceiver : public IEventReceiver
 {
 public:
-	MyEventReceiver() : Step(0) { }
+	MyEventReceiver() : Driver(0), Shader(0) { }
 
 	virtual bool OnEvent(const SEvent& event)
 	{
@@ -113,7 +108,16 @@ public:
 			switch(event.KeyInput.Key )
 			{
 			case KEY_SPACE:
-				Step = (Step+1)%4;
+				if ( Shader )
+				{
+					Shader->SetStyleUVW( (Shader->GetStyleUVW()+1)%3 );
+				}
+				break;
+			case KEY_KEY_S:
+				if ( Driver )
+				{
+					Driver->disableFeature(video::EVDF_TEXTURE_CUBEMAP_SEAMLESS, Driver->queryFeature(video::EVDF_TEXTURE_CUBEMAP_SEAMLESS) );
+				}
 				break;
 			default:
 				break;
@@ -123,9 +127,9 @@ public:
 		return false;
 	}
 
-	int Step;
+	irr::video::IVideoDriver* Driver;
+	CubeMapReflectionCallback* Shader;
 };
-#endif
 
 //! Copy texture to an image and write that to a file
 void writeTextureToFile(irr::video::IVideoDriver* driver, irr::video::ITexture* texture, irr::u32 layer, const irr::io::path& name)
@@ -162,11 +166,7 @@ void writeCubeTextureToFile(irr::video::IVideoDriver* driver, irr::video::ITextu
 	}
 }
 
-//void debugLogGL(const char* msg)
-//{
-//	InsertEventMarkerEXT(0, msg);
-//}
-
+// Flip frontface/backface culling for all nodes
 void flipCullingFlags(const core::array<scene::ISceneNode*>& nodes)
 {
 	for ( irr::u32 n=0; n < nodes.size(); ++n )
@@ -185,7 +185,7 @@ void flipCullingFlags(const core::array<scene::ISceneNode*>& nodes)
 int main()
 {
 
-#if 0
+#if 1
 	video::E_DRIVER_TYPE driverType = video::EDT_DIRECT3D9;
 #else
 	video::E_DRIVER_TYPE driverType = video::EDT_OPENGL;
@@ -197,12 +197,13 @@ int main()
 	core::stringw cubeOutName( driverType == video::EDT_DIRECT3D9 ? "cubemap/cube_out_dx.jpg" : "cubemap/cube_out_gl.jpg");
 	core::stringw cubeOutDynName( driverType == video::EDT_DIRECT3D9 ? "cubemap/cube_out_dyn_dx.jpg" : "cubemap/cube_out_dyn_gl.jpg");
 
-	//MyEventReceiver eventReceiver;
-	//device->setEventReceiver(&eventReceiver);
+	MyEventReceiver eventReceiver;
+	device->setEventReceiver(&eventReceiver);
 
 	video::IVideoDriver* driver = device->getVideoDriver();
 	scene::ISceneManager* smgr = device->getSceneManager();
 	gui::IGUIEnvironment* env = device->getGUIEnvironment();
+	eventReceiver.Driver = driver;
 
 	c8* vsFileName = 0;
 	c8* psFileName = 0;
@@ -231,6 +232,7 @@ int main()
 			vsFileName, "VS", video::EVST_VS_1_1,
 			psFileName, "PS", video::EPST_PS_2_0,
 			cubeMapCB, video::EMT_SOLID );
+		eventReceiver.Shader = cubeMapCB;
 		cubeMapCB->drop();
 	}	
 
@@ -254,26 +256,12 @@ int main()
 	cubeMapImages.push_back(driver->createImageFromFile( "cubemap/cubemap_posz.jpg" ));
 	cubeMapImages.push_back(driver->createImageFromFile( "cubemap/cubemap_negz.jpg" ));
 
-#if 0	// TEST - draw a 2d image
-	driver->beginScene(true, true);	driver->endScene();	// TEST - frame 0 just making trace easier to follow
-	video::ITexture * tex2d = driver->addTexture(io::path("tex2d"), cubeMapImages[0] );
-	//while(device->run())
-	{
-		driver->beginScene(true, true);	
-		driver->draw2DImage(tex2d, core::vector2di(1, 1));
-		driver->endScene();	// TEST - frame 0 just making trace easier to follow
-	}
-	return 0;
-#endif
-
 	video::ITexture* cubeMap = 0;
-//	cubeMap = driver->addTextureCubemap("cm", cubeMapImages[0], cubeMapImages[1], cubeMapImages[2], cubeMapImages[3], cubeMapImages[4], cubeMapImages[5]);
+	cubeMap = driver->addTextureCubemap("cm", cubeMapImages[0], cubeMapImages[1], cubeMapImages[2], cubeMapImages[3], cubeMapImages[4], cubeMapImages[5]);
 	for ( u32 i=0; i<cubeMapImages.size(); ++i )
 		cubeMapImages[i]->drop();
 	cubeMapImages.clear();
 //	writeCubeTextureToFile(driver, cubeMap, cubeOutName);
-
-	//return 0; // TEST
 
 	video::ITexture* dynamicCubeMap = 0;
 	video::ITexture* dynamicDebugRT = 0;
@@ -412,18 +400,19 @@ int main()
 					smgr->drawAll();
 
 #ifdef CUBEMAP_USPIDE_DOWN_RTT
-					// This works because the lock for rtt's always flips in Irrlicht. Even if it shouldn't.
+					// This works because the lock for rtt's always flips in Irrlicht. 
 					// So in this case lock() unlock will result in a flipped texture
+					// TODO: Irrlicht should have a flag for this behavior
 					driver->setRenderTarget(0);	// to avoid accessing active rt
 					dynamicCubeMap->lock(video::ETLM_READ_WRITE, s);
 					dynamicCubeMap->unlock();
 #endif
 
-					if ( dynamicDebugRT )
+					if ( dynamicDebugRT )	// TEST - drawing each side into a (non-cubemap) rendertarget and saving to file
 					{
 						driver->setRenderTarget(dynamicDebugRT, true, true);
 						smgr->drawAll();
-						driver->setRenderTarget(0);	// to avoid accessing active rt
+						driver->setRenderTarget(0);	// to avoid accessing active rt when writing
 						io::path dbgCubeName("cubemap/cube_out_dbg");
 						dbgCubeName += io::path(s+1);
 						dbgCubeName += io::path(".jpg");
@@ -444,15 +433,14 @@ int main()
 				sphereNode->setVisible( true );
 				smgr->setActiveCamera( camera );
 			}
-#if 1
+
 			smgr->drawAll();
 			env->drawAll();
-#endif
 
 			driver->endScene();
 //break; // TEST, run just once
 
-#if 0
+#if 0	// write out dynamic cubemap texture to file once
 			static bool first = true;
 			if ( first )
 			{
