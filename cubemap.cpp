@@ -164,7 +164,7 @@ void writeTextureToFile(irr::video::IVideoDriver* driver, irr::video::ITexture* 
 	if (!texture)
 		return;
 
-	void* data = texture->lock(irr::video::ETLM_READ_ONLY, layer);
+	void* data = texture->lock(irr::video::ETLM_READ_ONLY, 0, layer);
 	if (!data)
 		return;
 
@@ -209,7 +209,7 @@ void flipCullingFlags(const core::array<scene::ISceneNode*>& nodes)
 	}
 }
 
-void renderCubeMap(irr::video::IVideoDriver* driver, irr::scene::ICameraSceneNode* cubeMapCamera, irr::scene::ISceneNode* cubeCenterNode, video::IRenderTarget* cubeMapRT, video::ITexture* dynamicCubeMapTexture)
+void renderCubeMap(irr::video::IVideoDriver* driver, irr::scene::ICameraSceneNode* cubeMapCamera, irr::scene::ISceneNode* cubeCenterNode, video::IRenderTarget* cubeMapRT, video::ITexture* dynamicCubeMapRTT)
 {
 	irr::scene::ISceneManager* smgr = cubeMapCamera->getSceneManager();
 	scene::ICameraSceneNode * oldCam = smgr->getActiveCamera();
@@ -241,7 +241,7 @@ void renderCubeMap(irr::video::IVideoDriver* driver, irr::scene::ICameraSceneNod
 	{
 		cubeMapCamera->setUpVector( upVecs[s] );
 		cubeMapCamera->setTarget( center + targetVecs[s] );
-		cubeMapRT->setTexture(dynamicCubeMapTexture, 0, (video::E_CUBE_SURFACE)(video::ECS_POSX + s));
+		cubeMapRT->setTexture(dynamicCubeMapRTT, 0, (video::E_CUBE_SURFACE)(video::ECS_POSX + s));
 		driver->setRenderTargetEx(cubeMapRT, video::ECBF_ALL);
 		smgr->drawAll();
 
@@ -250,12 +250,12 @@ void renderCubeMap(irr::video::IVideoDriver* driver, irr::scene::ICameraSceneNod
 		// So in this case lock() unlock will result in a flipped texture
 		// TODO: Irrlicht should have a flag for this behavior
 		driver->setRenderTarget(0);	// to avoid accessing active rt
-		dynamicCubeMapTexture->lock(video::ETLM_READ_WRITE, s);
-		dynamicCubeMapTexture->unlock();
+		dynamicCubeMapRTT->lock(video::ETLM_READ_WRITE, 0, s);
+		dynamicCubeMapRTT->unlock();
 #endif
 	}
 
-	//dynamicCubeMapTexture->regenerateMipMapLevels();	// Unfortunately we can't have mipmaps for rtt's
+	//dynamicCubeMapRTT->regenerateMipMapLevels();	// Unfortunately we can't have mipmaps for rtt's
 
 	driver->setRenderTarget(0);
 	cubeCenterNode->setVisible( true );
@@ -267,7 +267,7 @@ void renderCubeMap(irr::video::IVideoDriver* driver, irr::scene::ICameraSceneNod
 	{
 		first = false;
 		core::stringw cubeOutDynName( driver->getDriverType() == video::EDT_DIRECT3D9 ? "cubemap/cube_out_dyn_dx.jpg" : "cubemap/cube_out_dyn_gl.jpg");
-		writeCubeTextureToFile(driver, dynamicCubeMapTexture, cubeOutDynName);
+		writeCubeTextureToFile(driver, dynamicCubeMapRTT, cubeOutDynName);
 	}
 #endif
 }
@@ -284,8 +284,6 @@ int main()
 	if (!device)
 		return 1; 
 	
-	core::stringw cubeOutName( driverType == video::EDT_DIRECT3D9 ? "cubemap/cube_out_dx.jpg" : "cubemap/cube_out_gl.jpg");
-
 	MyEventReceiver eventReceiver;
 	device->setEventReceiver(&eventReceiver);
 
@@ -296,18 +294,17 @@ int main()
 
 	c8* vsFileName = 0;
 	c8* psFileName = 0;
-
 	switch( driverType )
 	{
-	case video::EDT_DIRECT3D9:
-		vsFileName = "cubemap/IS_cubeMapReflectionVS.hlsl";
-		psFileName = "cubemap/IS_cubeMapReflectionPS.hlsl";
-		break;
+		case video::EDT_DIRECT3D9:
+			vsFileName = "cubemap/IS_cubeMapReflectionVS.hlsl";
+			psFileName = "cubemap/IS_cubeMapReflectionPS.hlsl";
+			break;
 
-	case video::EDT_OPENGL:
-		vsFileName = "cubemap/IS_cubeMapReflection.vert";
-		psFileName = "cubemap/IS_cubeMapReflection.frag";
-		break;
+		case video::EDT_OPENGL:
+			vsFileName = "cubemap/IS_cubeMapReflection.vert";
+			psFileName = "cubemap/IS_cubeMapReflection.frag";
+			break;
 	}	
 
 	// create materials
@@ -345,22 +342,28 @@ int main()
 	cubeMapImages.push_back(driver->createImageFromFile( "cubemap/cubemap_posz.jpg" ));
 	cubeMapImages.push_back(driver->createImageFromFile( "cubemap/cubemap_negz.jpg" ));
 
-	video::ITexture* cubeMap = 0;
-	cubeMap = driver->addTextureCubemap("cm", cubeMapImages[0], cubeMapImages[1], cubeMapImages[2], cubeMapImages[3], cubeMapImages[4], cubeMapImages[5]);
+	video::ITexture* cubeMapStaticTex = 0;
+	cubeMapStaticTex = driver->addTextureCubemap("cm", cubeMapImages[0], cubeMapImages[1], cubeMapImages[2], cubeMapImages[3], cubeMapImages[4], cubeMapImages[5]);
 	for ( u32 i=0; i<cubeMapImages.size(); ++i )
 		cubeMapImages[i]->drop();
 	cubeMapImages.clear();
-//	writeCubeTextureToFile(driver, cubeMap, cubeOutName);
+//	core::stringw cubeOutName( driverType == video::EDT_DIRECT3D9 ? "cubemap/cube_out_dx.jpg" : "cubemap/cube_out_gl.jpg");
+//	writeCubeTextureToFile(driver, cubeMapStaticTex, cubeOutName);
 
-	video::ITexture* dynamicCubeMap = 0;
+	video::ITexture* dynamicCubeMapRTT = 0;
+	video::ITexture* dynamicCubeMapRTT_intermediate = 0;	// just for rendering, but not used in material
+	video::ITexture* dynamicCubeMapTex = 0;
 	scene::ICameraSceneNode* cubeMapCamera = 0;
 	if( driver->queryFeature( video::EVDF_RENDER_TO_TARGET ) )
 	{
-		// Create cube map texture
-		dynamicCubeMap = driver->addRenderTargetTextureCubemap(512, "cube_rt");
-	
+		// Create cube map textures
+		dynamicCubeMapRTT = driver->addRenderTargetTextureCubemap(512, "cube_rtr");
+
+		dynamicCubeMapRTT_intermediate = driver->addRenderTargetTextureCubemap(512, "cube_rtr");
+		dynamicCubeMapTex = driver->addTextureCubemap(512, "cube_tex");
+
 		cubeMapCamera = smgr->addCameraSceneNode();
-		cubeMapCamera->setFOV(core::PI* 0.5f);	// 90°
+		cubeMapCamera->setFOV(core::PI* 0.5f);	// 90° view angle
 		cubeMapCamera->setAspectRatio(1.f);
 		smgr->setActiveCamera( camera );
 	}
@@ -368,6 +371,7 @@ int main()
 	// add sphere to reflect scene
 	scene::ISceneNode* sphereNode = 0;
 	scene::ISceneNode* sphereNode2 = 0;
+	scene::ISceneNode* sphereNode3 = 0;
 	scene::IMesh* sphereMesh = smgr->getGeometryCreator()->createSphereMesh(100.f);
 	if( sphereMesh )
 	{
@@ -375,16 +379,26 @@ int main()
 		sphereNode->setPosition( core::vector3df(-250,0,0) );
 		sphereNode->updateAbsolutePosition();
 		sphereNode->setMaterialFlag( video::EMF_LIGHTING, false );
-		sphereNode->setMaterialTexture( 0, dynamicCubeMap );
+		sphereNode->setMaterialTexture( 0, dynamicCubeMapRTT );
 		sphereNode->setMaterialType( (video::E_MATERIAL_TYPE)cubeMapReflectionMaterial );
 
-		if ( cubeMap )
+		if ( dynamicCubeMapTex )
+		{
+			sphereNode3 = smgr->addMeshSceneNode( sphereMesh );
+			sphereNode3->setPosition( core::vector3df(0,0,250) );
+			sphereNode3->updateAbsolutePosition();
+			sphereNode3->setMaterialFlag( video::EMF_LIGHTING, false );
+			sphereNode3->setMaterialTexture( 0, dynamicCubeMapTex );
+			sphereNode3->setMaterialType( (video::E_MATERIAL_TYPE)cubeMapReflectionMaterial );
+		}
+
+		if ( cubeMapStaticTex )
 		{
 			sphereNode2 = smgr->addMeshSceneNode( sphereMesh );
 			sphereNode2->setPosition( core::vector3df(250,0,0) );
 			sphereNode2->updateAbsolutePosition();
 			sphereNode2->setMaterialFlag( video::EMF_LIGHTING, false );
-			sphereNode2->setMaterialTexture( 0, cubeMap );
+			sphereNode2->setMaterialTexture( 0, cubeMapStaticTex );
 			sphereNode2->setMaterialType( (video::E_MATERIAL_TYPE)cubeMapReflectionMaterial );
 		}
 
@@ -439,7 +453,7 @@ int main()
 
 			static bool justOnce = true;	// if nothing changes that's enough, if things the sphere "sees" then we have to update constantly.
 
-			if( dynamicCubeMap && sphereNode && justOnce )
+			if( dynamicCubeMapRTT && sphereNode && justOnce )
 			{
 				justOnce = false;
 
@@ -453,7 +467,22 @@ int main()
 					flipCullingFlags(allNodes);
 				}
 #endif
-				renderCubeMap(driver, cubeMapCamera, sphereNode, cubeMapRT, dynamicCubeMap);
+				// If render just once - then this node has still a white (or even undefined) texture at this point
+				// Just hiding it and render the background when rendering the cubemap for the other node is less noticable
+				// than having a big white dot in the texture.
+				sphereNode3->setVisible(false);	// the renderCubeMap below will make it visible again
+
+				renderCubeMap(driver, cubeMapCamera, sphereNode, cubeMapRT, dynamicCubeMapRTT);
+
+				renderCubeMap(driver, cubeMapCamera, sphereNode3, cubeMapRT, dynamicCubeMapRTT_intermediate);
+				for ( int i=0; i<6; ++i)
+				{
+					void * rtData = dynamicCubeMapRTT_intermediate->lock(video::ETLM_READ_ONLY, 0, i, video::ETLF_NONE);
+					void * tData = dynamicCubeMapTex->lock(video::ETLM_READ_WRITE, 0, i);
+					memcpy(tData, rtData, cubeMapStaticTex->getPitch()*cubeMapStaticTex->getSize().Width);
+					dynamicCubeMapRTT_intermediate->unlock();
+					dynamicCubeMapTex->unlock();
+				}
 
 #ifdef CUBEMAP_UPSIDE_DOWN_GL_PROJECTION
 				if ( driverType == video::EDT_OPENGL )
