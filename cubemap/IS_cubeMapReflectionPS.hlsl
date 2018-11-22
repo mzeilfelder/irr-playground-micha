@@ -1,11 +1,10 @@
 sampler cubeTex: register(s0);
+float Roughness;
 	
-float4 PS( float3 uvwTex : TEXCOORD0 ) : COLOR
+float4 PS( float4 uvwTex : TEXCOORD0 ) : COLOR
 {
-	//float4 normUvw = float4(normalize(uvwTex), 1.0);
-	float4 normUvw = float4(uvwTex, 1.0);
-	normUvw.w = 1.0;
-	return texCUBEbias( cubeTex, normUvw);
-	//return texCUBElod( cubeTex, normUvw);
-	//return texCUBE( cubeTex, normUvw);
+	uvwTex.w = Roughness;
+	//return texCUBEbias( cubeTex, uvwTex);
+	return texCUBElod( cubeTex, uvwTex);
+	//return texCUBE( cubeTex, uvwTex);
 }

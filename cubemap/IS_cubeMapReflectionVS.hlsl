@@ -9,7 +9,7 @@ void VS(
 	in float3 VNorm	: NORMAL,
 	in float3 VTex  : TEXCOORD0,
 	out float4 outPos	: POSITION,
-	out float3 outTex	: TEXCOORD0 )
+	out float4 outTex	: TEXCOORD0 )
 {
 	// vertex position from model-space to view-space
     outPos = mul( VPos, WorldViewProj );
@@ -23,16 +23,16 @@ void VS(
 		float4 normWorld = normalize(mul(float4(VNorm.x, VNorm.y, VNorm.z, 0.0), World));	// TODO: when objects are scaled non-uniform we need to multiply by WorldInverseTranspose instead
 		
 		// compute the reflection vector, and assign it to texcoord 0		
-		outTex = reflect( -normalize(view), normWorld.xyz );
+		outTex.xyz = reflect( -normalize(view), normWorld.xyz );
 	}
 	else if ( StyleUVW == 1 )
 	{
 		// just use the normal for the reflection vector
-		outTex = normalize(VNorm);
+		outTex.xyz = normalize(VNorm);
 	}
 	else if ( StyleUVW == 2 )
 	{
 		// use vertex-coordinates for texture coordinates
-		outTex = VPos.xyz;
+		outTex.xyz = VPos.xyz;
 	}
 }

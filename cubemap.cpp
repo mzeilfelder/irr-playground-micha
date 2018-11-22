@@ -31,6 +31,7 @@ public:
 	CubeMapReflectionCallback(scene::ISceneManager* smgr, int styleUVW) 
 		: SceneMgr(smgr) 
 		, StyleUVW(styleUVW)
+		, Roughness(0.f)
 		, styleUvwID(-1)
 		, worldViewProjID(-1)
 		, worldID(-1)
@@ -46,6 +47,16 @@ public:
 	int GetStyleUVW() const
 	{
 		return StyleUVW;
+	}
+
+	void SetRoughness(float roughness)
+	{
+		Roughness = roughness;
+	}
+
+	float getRoughness() const
+	{
+		return Roughness;
 	}
 
 	virtual void OnSetMaterial(const video::SMaterial& material)
@@ -65,6 +76,7 @@ public:
 			}
 			worldID = services->getVertexShaderConstantID("World");
 			cameraPosID = services->getVertexShaderConstantID("CameraPos");
+			roughnessID = services->getPixelShaderConstantID("Roughness");
 		}
 
 		services->setVertexShaderConstant(styleUvwID, &StyleUVW, 1 );
@@ -83,17 +95,20 @@ public:
 		
 		core::vector3df cameraPos = SceneMgr->getActiveCamera()->getAbsolutePosition();
 		services->setVertexShaderConstant(cameraPosID, &cameraPos.X, 3 );
+		services->setPixelShaderConstant(roughnessID, &Roughness, 1 );
 	}
 
 private:
 	scene::ISceneManager* SceneMgr;
 
 	int StyleUVW;		// 0 = specular, 1=diffuse, 2 = use model vertex coordinates for uvw.
+	float Roughness;	// cubemap 0 = specular ... highest value depends on number of mipmaps in the texture
 
 	irr::s32 styleUvwID;
 	irr::s32 worldViewProjID;
 	irr::s32 worldID;
 	irr::s32 cameraPosID;
+	irr::s32 roughnessID;
 };
 
 class MyEventReceiver : public IEventReceiver
@@ -119,6 +134,18 @@ public:
 					Driver->disableFeature(video::EVDF_TEXTURE_CUBEMAP_SEAMLESS, Driver->queryFeature(video::EVDF_TEXTURE_CUBEMAP_SEAMLESS) );
 				}
 				break;
+			case KEY_PLUS:
+			case KEY_ADD:
+				Shader->SetRoughness( Shader->getRoughness() + 1.f );
+				break;
+			case KEY_MINUS:
+			case KEY_SUBTRACT:
+			{
+				float roughness = Shader->getRoughness() - 1.f;
+				if ( roughness	>= 0.f )
+					Shader->SetRoughness( roughness );
+				break;
+			}
 			default:
 				break;
 			}
@@ -230,7 +257,7 @@ int main()
 		CubeMapReflectionCallback* cubeMapCB = new CubeMapReflectionCallback(smgr, 2);
 		cubeMapReflectionMaterial = gpu->addHighLevelShaderMaterialFromFiles(
 			vsFileName, "VS", video::EVST_VS_1_1,
-			psFileName, "PS", video::EPST_PS_2_0,
+			psFileName, "PS", video::EPST_PS_3_0,
 			cubeMapCB, video::EMT_SOLID );
 		eventReceiver.Shader = cubeMapCB;
 		cubeMapCB->drop();
