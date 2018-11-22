@@ -209,10 +209,73 @@ void flipCullingFlags(const core::array<scene::ISceneNode*>& nodes)
 	}
 }
 
+void renderCubeMap(irr::video::IVideoDriver* driver, irr::scene::ICameraSceneNode* cubeMapCamera, irr::scene::ISceneNode* cubeCenterNode, video::IRenderTarget* cubeMapRT, video::ITexture* dynamicCubeMapTexture)
+{
+	irr::scene::ISceneManager* smgr = cubeMapCamera->getSceneManager();
+	scene::ICameraSceneNode * oldCam = smgr->getActiveCamera();
+	smgr->setActiveCamera( cubeMapCamera );
+
+	cubeCenterNode->setVisible( false );
+	const core::vector3df center( cubeCenterNode->getAbsolutePosition() );
+	cubeMapCamera->setPosition( center );
+
+	// Render all 6 directions
+	const core::vector3df targetVecs[6] = {
+		core::vector3df(1.f, 0.f, 0.f),
+		core::vector3df(-1.f, 0.f, 0.f),
+		core::vector3df(0.f, 1.f, 0.f),
+		core::vector3df(0.f, -1.f, 0.f),
+		core::vector3df(0.f, 0.f, 1.f),
+		core::vector3df(0.f, 0.f, -1.f)
+	};
+
+	const core::vector3df upVecs[6] = {
+		core::vector3df( 0,1,0 ),
+		core::vector3df( 0,1,0 ),
+		core::vector3df( 0,0,-1 ),
+		core::vector3df( 0,0,1 ),
+		core::vector3df( 0,1,0 ),
+		core::vector3df( 0,1,0 )
+	};
+	for ( int s=0; s<6; ++s )
+	{
+		cubeMapCamera->setUpVector( upVecs[s] );
+		cubeMapCamera->setTarget( center + targetVecs[s] );
+		cubeMapRT->setTexture(dynamicCubeMapTexture, 0, (video::E_CUBE_SURFACE)(video::ECS_POSX + s));
+		driver->setRenderTargetEx(cubeMapRT, video::ECBF_ALL);
+		smgr->drawAll();
+
+#ifdef CUBEMAP_USPIDE_DOWN_RTT
+		// This works because the lock for rtt's always flips in Irrlicht. 
+		// So in this case lock() unlock will result in a flipped texture
+		// TODO: Irrlicht should have a flag for this behavior
+		driver->setRenderTarget(0);	// to avoid accessing active rt
+		dynamicCubeMapTexture->lock(video::ETLM_READ_WRITE, s);
+		dynamicCubeMapTexture->unlock();
+#endif
+	}
+
+	//dynamicCubeMapTexture->regenerateMipMapLevels();	// Unfortunately we can't have mipmaps for rtt's
+
+	driver->setRenderTarget(0);
+	cubeCenterNode->setVisible( true );
+	smgr->setActiveCamera( oldCam );
+
+#if 0	// write out dynamic cubemap texture to file once.
+	static bool first = true;
+	if ( first )
+	{
+		first = false;
+		core::stringw cubeOutDynName( driver->getDriverType() == video::EDT_DIRECT3D9 ? "cubemap/cube_out_dyn_dx.jpg" : "cubemap/cube_out_dyn_gl.jpg");
+		writeCubeTextureToFile(driver, dynamicCubeMapTexture, cubeOutDynName);
+	}
+#endif
+}
+
 int main()
 {
 
-#if 1
+#if 0
 	video::E_DRIVER_TYPE driverType = video::EDT_DIRECT3D9;
 #else
 	video::E_DRIVER_TYPE driverType = video::EDT_OPENGL;
@@ -222,7 +285,6 @@ int main()
 		return 1; 
 	
 	core::stringw cubeOutName( driverType == video::EDT_DIRECT3D9 ? "cubemap/cube_out_dx.jpg" : "cubemap/cube_out_gl.jpg");
-	core::stringw cubeOutDynName( driverType == video::EDT_DIRECT3D9 ? "cubemap/cube_out_dyn_dx.jpg" : "cubemap/cube_out_dyn_gl.jpg");
 
 	MyEventReceiver eventReceiver;
 	device->setEventReceiver(&eventReceiver);
@@ -291,14 +353,12 @@ int main()
 //	writeCubeTextureToFile(driver, cubeMap, cubeOutName);
 
 	video::ITexture* dynamicCubeMap = 0;
-	video::ITexture* dynamicDebugRT = 0;
 	scene::ICameraSceneNode* cubeMapCamera = 0;
 	if( driver->queryFeature( video::EVDF_RENDER_TO_TARGET ) )
 	{
 		// Create cube map texture
 		dynamicCubeMap = driver->addRenderTargetTextureCubemap(512, "cube_rt");
-//		dynamicDebugRT = driver->addRenderTargetTexture(core::dimension2du(512, 512), "cube_dbg_rt");
-
+	
 		cubeMapCamera = smgr->addCameraSceneNode();
 		cubeMapCamera->setFOV(core::PI* 0.5f);	// 90°
 		cubeMapCamera->setAspectRatio(1.f);
@@ -317,7 +377,7 @@ int main()
 		sphereNode->setMaterialFlag( video::EMF_LIGHTING, false );
 		sphereNode->setMaterialTexture( 0, dynamicCubeMap );
 		sphereNode->setMaterialType( (video::E_MATERIAL_TYPE)cubeMapReflectionMaterial );
-#if 1
+
 		if ( cubeMap )
 		{
 			sphereNode2 = smgr->addMeshSceneNode( sphereMesh );
@@ -327,7 +387,6 @@ int main()
 			sphereNode2->setMaterialTexture( 0, cubeMap );
 			sphereNode2->setMaterialType( (video::E_MATERIAL_TYPE)cubeMapReflectionMaterial );
 		}
-#endif
 
 		sphereMesh->drop();
 	}
@@ -383,7 +442,6 @@ int main()
 			if( dynamicCubeMap && sphereNode && justOnce )
 			{
 				justOnce = false;
-				smgr->setActiveCamera( cubeMapCamera );
 
 #ifdef CUBEMAP_UPSIDE_DOWN_GL_PROJECTION
 				core::array<scene::ISceneNode*> allNodes;
@@ -395,57 +453,7 @@ int main()
 					flipCullingFlags(allNodes);
 				}
 #endif
-
-				sphereNode->setVisible( false );
-				const core::vector3df center( sphereNode->getAbsolutePosition() );
-				cubeMapCamera->setPosition( center );
-
-				// Render all 6 directions
-				const core::vector3df targetVecs[6] = {
-					core::vector3df(1.f, 0.f, 0.f),
-					core::vector3df(-1.f, 0.f, 0.f),
-					core::vector3df(0.f, 1.f, 0.f),
-					core::vector3df(0.f, -1.f, 0.f),
-					core::vector3df(0.f, 0.f, 1.f),
-					core::vector3df(0.f, 0.f, -1.f)
-				};
-
-				const core::vector3df upVecs[6] = {
-					core::vector3df( 0,1,0 ),
-					core::vector3df( 0,1,0 ),
-					core::vector3df( 0,0,-1 ),
-					core::vector3df( 0,0,1 ),
-					core::vector3df( 0,1,0 ),
-					core::vector3df( 0,1,0 )
-				};
-				for ( int s=0; s<6; ++s )
-				{
-					cubeMapCamera->setUpVector( upVecs[s] );
-					cubeMapCamera->setTarget( center + targetVecs[s] );
-					cubeMapRT->setTexture(dynamicCubeMap, 0, (video::E_CUBE_SURFACE)(video::ECS_POSX + s));
-					driver->setRenderTargetEx(cubeMapRT, video::ECBF_ALL);
-					smgr->drawAll();
-
-#ifdef CUBEMAP_USPIDE_DOWN_RTT
-					// This works because the lock for rtt's always flips in Irrlicht. 
-					// So in this case lock() unlock will result in a flipped texture
-					// TODO: Irrlicht should have a flag for this behavior
-					driver->setRenderTarget(0);	// to avoid accessing active rt
-					dynamicCubeMap->lock(video::ETLM_READ_WRITE, s);
-					dynamicCubeMap->unlock();
-#endif
-
-					if ( dynamicDebugRT )	// TEST - drawing each side into a (non-cubemap) rendertarget and saving to file
-					{
-						driver->setRenderTarget(dynamicDebugRT, true, true);
-						smgr->drawAll();
-						driver->setRenderTarget(0);	// to avoid accessing active rt when writing
-						io::path dbgCubeName("cubemap/cube_out_dbg");
-						dbgCubeName += io::path(s+1);
-						dbgCubeName += io::path(".jpg");
-						writeTextureToFile(driver, dynamicDebugRT, 0, dbgCubeName);
-					}
-				}
+				renderCubeMap(driver, cubeMapCamera, sphereNode, cubeMapRT, dynamicCubeMap);
 
 #ifdef CUBEMAP_UPSIDE_DOWN_GL_PROJECTION
 				if ( driverType == video::EDT_OPENGL )
@@ -453,29 +461,14 @@ int main()
 					flipCullingFlags(allNodes);
 				}
 #endif
-
-				//dynamicCubeMap->regenerateMipMapLevels();
-
-				driver->setRenderTarget(0);
-				sphereNode->setVisible( true );
-				smgr->setActiveCamera( camera );
 			}
 
 			smgr->drawAll();
 			env->drawAll();
 
 			driver->endScene();
-//break; // TEST, run just once
 
-#if 0	// write out dynamic cubemap texture to file once
-			static bool first = true;
-			if ( first )
-			{
-				first = false;
-				dynamicDebugRT = 0;
-				writeCubeTextureToFile(driver, dynamicCubeMap, cubeOutDynName);
-			}
-#endif
+//break; // TEST, run just once
 		}
 	}
 
