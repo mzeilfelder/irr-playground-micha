@@ -1,6 +1,6 @@
 ﻿// Code is under the zlib license (same as Irrlicht)
 // Written by Michael Zeilfelder. 
-// Based originally on irrSpintz example EnvCubeMap.
+// Based originally on EnvCubeMap example from irrSpintz
 
 #ifdef _MSC_VER
 #pragma comment(lib, "Irrlicht.lib")
@@ -60,8 +60,7 @@ public:
 	}
 
 	virtual void OnSetMaterial(const video::SMaterial& material)
-	{
-	}
+	{}
 
 	virtual void OnSetConstants(video::IMaterialRendererServices* services, s32 userData)
 	{
@@ -274,7 +273,6 @@ void renderCubeMap(irr::video::IVideoDriver* driver, irr::scene::ICameraSceneNod
 
 int main()
 {
-
 #if 0
 	video::E_DRIVER_TYPE driverType = video::EDT_DIRECT3D9;
 #else
@@ -505,4 +503,3 @@ int main()
 	
 	return 0;
 }
-
