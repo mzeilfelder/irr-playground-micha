@@ -19,7 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectName>irr-playground-micha-vc2010</ProjectName>
+    <ProjectName>playground-vc2010</ProjectName>
     <ProjectGuid>{622C9DD7-0391-49FF-AF53-24F9D5A8EC53}</ProjectGuid>
     <RootNamespace>irr-playground-micha-vc2010</RootNamespace>
   </PropertyGroup>
@@ -80,6 +80,8 @@
     <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">.\Release\</IntDir>
     <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" />
     <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Release|x64'" />
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectName)</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectName)</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <Midl>
