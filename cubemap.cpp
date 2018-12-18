@@ -135,12 +135,12 @@ public:
 				break;
 			case KEY_PLUS:
 			case KEY_ADD:
-				Shader->SetRoughness( Shader->getRoughness() + 1.f );
+				Shader->SetRoughness( Shader->getRoughness() + 0.5f );
 				break;
 			case KEY_MINUS:
 			case KEY_SUBTRACT:
 			{
-				float roughness = Shader->getRoughness() - 1.f;
+				float roughness = Shader->getRoughness() - 0.5f;
 				if ( roughness	>= 0.f )
 					Shader->SetRoughness( roughness );
 				break;
@@ -281,7 +281,7 @@ int main()
 	IrrlichtDevice* device = createDevice( driverType, core::dimension2d<u32>( 1024, 768 ) );
 	if (!device)
 		return 1; 
-	
+
 	MyEventReceiver eventReceiver;
 	device->setEventReceiver(&eventReceiver);
 
@@ -290,8 +290,8 @@ int main()
 	gui::IGUIEnvironment* env = device->getGUIEnvironment();
 	eventReceiver.Driver = driver;
 
-	c8* vsFileName = 0;
-	c8* psFileName = 0;
+	const c8* vsFileName = 0;
+	const c8* psFileName = 0;
 	switch( driverType )
 	{
 		case video::EDT_DIRECT3D9:
@@ -387,6 +387,7 @@ int main()
 			sphereNode3->updateAbsolutePosition();
 			sphereNode3->setMaterialFlag( video::EMF_LIGHTING, false );
 			sphereNode3->setMaterialTexture( 0, dynamicCubeMapTex );
+			sphereNode3->getMaterial(0).TextureLayer[0].TrilinearFilter = false; // this is default anyway. It would be faster - but you can only access integer mip-levels - no filtering between mip-levels.
 			sphereNode3->setMaterialType( (video::E_MATERIAL_TYPE)cubeMapReflectionMaterial );
 		}
 
@@ -397,6 +398,7 @@ int main()
 			sphereNode2->updateAbsolutePosition();
 			sphereNode2->setMaterialFlag( video::EMF_LIGHTING, false );
 			sphereNode2->setMaterialTexture( 0, cubeMapStaticTex );
+			sphereNode2->getMaterial(0).TextureLayer[0].TrilinearFilter = true;		// this way smoothing happens between different mip-levels.
 			sphereNode2->setMaterialType( (video::E_MATERIAL_TYPE)cubeMapReflectionMaterial );
 		}
 
