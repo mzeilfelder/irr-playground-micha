@@ -350,7 +350,7 @@ int main()
 
 	video::ITexture* dynamicCubeMapRTT = 0;
 	video::ITexture* dynamicCubeMapRTT_intermediate = 0;	// just for rendering, but not used in material
-	video::ITexture* dynamicCubeMapTex = 0;
+	video::ITexture* dynamicCubeMapTex = 0;					// dynamic and with mipmaps
 	scene::ICameraSceneNode* cubeMapCamera = 0;
 	if( driver->queryFeature( video::EVDF_RENDER_TO_TARGET ) )
 	{
@@ -467,13 +467,14 @@ int main()
 					flipCullingFlags(allNodes);
 				}
 #endif
-				// If render just once - then this node has still a white (or even undefined) texture at this point
+				// If rendered just once then this node has still a white (or even undefined) texture at this point
 				// Just hiding it and render the background when rendering the cubemap for the other node is less noticable
 				// than having a big white dot in the texture.
 				sphereNode3->setVisible(false);	// the renderCubeMap below will make it visible again
 
 				renderCubeMap(driver, cubeMapCamera, sphereNode, cubeMapRT, dynamicCubeMapRTT);
 
+				// If we want mipmaps in the dynamic cubemap we have to copy it to a non-rtt texture.
 				renderCubeMap(driver, cubeMapCamera, sphereNode3, cubeMapRT, dynamicCubeMapRTT_intermediate);
 				for ( int i=0; i<6; ++i)
 				{
