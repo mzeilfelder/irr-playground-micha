@@ -208,9 +208,9 @@ void flipCullingFlags(const core::array<scene::ISceneNode*>& nodes)
 	}
 }
 
-void renderCubeMap(irr::video::IVideoDriver* driver, irr::scene::ICameraSceneNode* cubeMapCamera, irr::scene::ISceneNode* cubeCenterNode, video::IRenderTarget* cubeMapRT, video::ITexture* dynamicCubeMapRTT)
+void renderCubeMap(irr::video::IVideoDriver* driver, irr::scene::ICameraSceneNode* cubeMapCamera, irr::scene::ISceneNode* cubeCenterNode, video::IRenderTarget* cubeMapRT, video::ITexture* dynamicCubeMapRTT, video::ITexture* depthStencilRTT)
 {
-	irr::scene::ISceneManager* smgr = cubeMapCamera->getSceneManager();
+	scene::ISceneManager* smgr = cubeMapCamera->getSceneManager();
 	scene::ICameraSceneNode * oldCam = smgr->getActiveCamera();
 	smgr->setActiveCamera( cubeMapCamera );
 
@@ -240,7 +240,7 @@ void renderCubeMap(irr::video::IVideoDriver* driver, irr::scene::ICameraSceneNod
 	{
 		cubeMapCamera->setUpVector( upVecs[s] );
 		cubeMapCamera->setTarget( center + targetVecs[s] );
-		cubeMapRT->setTexture(dynamicCubeMapRTT, 0, (video::E_CUBE_SURFACE)(video::ECS_POSX + s));
+		cubeMapRT->setTexture(dynamicCubeMapRTT, depthStencilRTT, (video::E_CUBE_SURFACE)(video::ECS_POSX + s));
 		driver->setRenderTargetEx(cubeMapRT, video::ECBF_ALL);
 		smgr->drawAll();
 
@@ -349,16 +349,19 @@ int main()
 //	writeCubeTextureToFile(driver, cubeMapStaticTex, cubeOutName);
 
 	video::ITexture* dynamicCubeMapRTT = 0;
+	video::ITexture* depthStencilRTT = 0;
 	video::ITexture* dynamicCubeMapRTT_intermediate = 0;	// just for rendering, but not used in material
 	video::ITexture* dynamicCubeMapTex = 0;					// dynamic and with mipmaps
 	scene::ICameraSceneNode* cubeMapCamera = 0;
 	if( driver->queryFeature( video::EVDF_RENDER_TO_TARGET ) )
 	{
 		// Create cube map textures
-		dynamicCubeMapRTT = driver->addRenderTargetTextureCubemap(512, "cube_rtr");
+		const u32 dynamicCubeMapSize = 512;
+		dynamicCubeMapRTT = driver->addRenderTargetTextureCubemap(dynamicCubeMapSize, "cube_rtr");
+		depthStencilRTT = driver->addRenderTargetTexture(irr::core::dimension2du(dynamicCubeMapSize, dynamicCubeMapSize), "cubemap_ds", irr::video::ECF_G32R32F);
 
-		dynamicCubeMapRTT_intermediate = driver->addRenderTargetTextureCubemap(512, "cube_rtr");
-		dynamicCubeMapTex = driver->addTextureCubemap(512, "cube_tex");
+		dynamicCubeMapRTT_intermediate = driver->addRenderTargetTextureCubemap(dynamicCubeMapSize, "cube_rtr");
+		dynamicCubeMapTex = driver->addTextureCubemap(dynamicCubeMapSize, "cube_tex");
 
 		cubeMapCamera = smgr->addCameraSceneNode();
 		cubeMapCamera->setFOV(core::PI* 0.5f);	// 90° view angle
@@ -472,15 +475,15 @@ int main()
 				// than having a big white dot in the texture.
 				sphereNode3->setVisible(false);	// the renderCubeMap below will make it visible again
 
-				renderCubeMap(driver, cubeMapCamera, sphereNode, cubeMapRT, dynamicCubeMapRTT);
+				renderCubeMap(driver, cubeMapCamera, sphereNode, cubeMapRT, dynamicCubeMapRTT, depthStencilRTT);
 
 				// If we want mipmaps in the dynamic cubemap we have to copy it to a non-rtt texture.
-				renderCubeMap(driver, cubeMapCamera, sphereNode3, cubeMapRT, dynamicCubeMapRTT_intermediate);
+				renderCubeMap(driver, cubeMapCamera, sphereNode3, cubeMapRT, dynamicCubeMapRTT_intermediate, depthStencilRTT);
 				for ( int i=0; i<6; ++i)
 				{
 					void * rtData = dynamicCubeMapRTT_intermediate->lock(video::ETLM_READ_ONLY, 0, i, video::ETLF_NONE);
 					void * tData = dynamicCubeMapTex->lock(video::ETLM_READ_WRITE, 0, i);
-					memcpy(tData, rtData, cubeMapStaticTex->getPitch()*cubeMapStaticTex->getSize().Width);
+					memcpy(tData, rtData, dynamicCubeMapTex->getPitch()*dynamicCubeMapTex->getSize().Width);
 					dynamicCubeMapRTT_intermediate->unlock();
 					dynamicCubeMapTex->unlock();
 				}
