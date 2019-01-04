@@ -247,9 +247,8 @@ void renderCubeMap(irr::video::IVideoDriver* driver, irr::scene::ICameraSceneNod
 #ifdef CUBEMAP_USPIDE_DOWN_RTT
 		// This works because the lock for rtt's always flips in Irrlicht. 
 		// So in this case lock() unlock will result in a flipped texture
-		// TODO: Irrlicht should have a flag for this behavior
 		driver->setRenderTarget(0);	// to avoid accessing active rt
-		dynamicCubeMapRTT->lock(video::ETLM_READ_WRITE, 0, s);
+		dynamicCubeMapRTT->lock(video::ETLM_READ_WRITE, 0, s, video::ETLF_FLIP_Y_UP_RTT);
 		dynamicCubeMapRTT->unlock();
 #endif
 	}
