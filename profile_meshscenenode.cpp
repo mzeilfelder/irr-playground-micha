@@ -1,4 +1,4 @@
-// Code is under the zlib license (same as Irrlicht)
+﻿// Code is under the zlib license (same as Irrlicht)
 // Written by Michael Zeilfelder
 // 
 // Test for profiling rendering of simple static MeshSceneNodes
@@ -19,6 +19,8 @@ using namespace core;
 int main(int argc, char* argv[])
 {
 	IrrlichtDevice *  device = createDevice(irr::video::EDT_OPENGL, irr::core::dimension2d<irr::u32>(800,600));
+	//IrrlichtDevice * device = createDevice(irr::video::EDT_DIRECT3D9, irr::core::dimension2d<irr::u32>(800,600));
+	//IrrlichtDevice * device = createDevice(irr::video::EDT_BURNINGSVIDEO, irr::core::dimension2d<irr::u32>(800,600));
 	if (!device)
 		return 0;
    
@@ -82,6 +84,8 @@ int main(int argc, char* argv[])
 	camera->setPosition(irr::core::vector3df(halfSizeX+extent.X, halfSizeY+extent.Y, halfSizeZ+extent.Z));
 	camera->updateAbsolutePosition();
 
+	s32 oldFPS = 0;
+
 	while ( device->run() )
 	{
 		if ( device->isWindowActive() )
@@ -93,14 +97,21 @@ int main(int argc, char* argv[])
 			videoDriver->endScene();
 			
 			// update information about current frame-rate
-			core::stringw str(L"FPS: ");
-			str.append(core::stringw(videoDriver->getFPS()));
-			str += L" Tris: ";
-			str.append(core::stringw(videoDriver->getPrimitiveCountDrawn()));
-			device->setWindowCaption( str.c_str() );
+			s32 fps = videoDriver->getFPS();
+			if ( fps != oldFPS )
+			{
+				oldFPS = fps;
+				core::stringw str(L"FPS: ");
+				str.append(core::stringw(fps));
+				str += L" Tris: ";
+				str.append(core::stringw(videoDriver->getPrimitiveCountDrawn()));
+				device->setWindowCaption( str.c_str() );
+			}
 		}
-
-		device->sleep( 5 );
+		else
+		{
+			device->sleep( 5 );
+		}
 	}
 
 	device->closeDevice();

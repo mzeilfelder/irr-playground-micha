@@ -255,6 +255,7 @@ int main(int argc, char* argv[])
 	camera->setPosition(irr::core::vector3df(halfSizeX+extent.X, halfSizeY+extent.Y, halfSizeZ+extent.Z));
 	camera->updateAbsolutePosition();
 
+	s32 oldFPS = 0;
 	while ( device->run() )
 	{
 		if ( device->isWindowActive() )
@@ -266,14 +267,21 @@ int main(int argc, char* argv[])
 			videoDriver->endScene();
 			
 			// update information about current frame-rate
-			core::stringw str(L"FPS: ");
-			str.append(core::stringw(videoDriver->getFPS()));
-			str += L" Tris: ";
-			str.append(core::stringw(videoDriver->getPrimitiveCountDrawn()));
-			device->setWindowCaption( str.c_str() );
+			s32 fps = videoDriver->getFPS();
+			if ( fps != oldFPS )
+			{
+				oldFPS = fps;
+				core::stringw str(L"FPS: ");
+				str.append(core::stringw(fps));
+				str += L" Tris: ";
+				str.append(core::stringw(videoDriver->getPrimitiveCountDrawn()));
+				device->setWindowCaption( str.c_str() );
+			}
 		}
-
-		device->sleep( 5 );
+		else
+		{
+			device->sleep( 5 );
+		}
 	}
 
 	device->closeDevice();
