@@ -15,6 +15,8 @@ using namespace core;
 #ifdef _MSC_VER
 #pragma comment(lib, "Irrlicht.lib")
 #endif
+
+#define TARGET_APITRACE	// change tests somewhat to make them easier to check with apitrace tool (https://github.com/apitrace/apitrace)
  
 int main(int argc, char* argv[])
 {
@@ -35,10 +37,16 @@ int main(int argc, char* argv[])
 		return 0;
 	mesh->setHardwareMappingHint(scene::EHM_STATIC);
 	
-	int nodesX = 10;
-	int nodesY = 3;
-	int nodesZ = 10;
-
+#ifdef TARGET_APITRACE
+	int nodesX = 2;
+	int nodesY = 1;
+	int nodesZ = 2;
+#else
+	int nodesX = 30;
+	int nodesY = 5;
+	int nodesZ = 30;
+#endif
+	
 	if ( argc > 1 )
 		nodesX = atoi(argv[1]);
 	if ( argc > 2 )
@@ -59,6 +67,7 @@ int main(int argc, char* argv[])
 	f32 halfSizeY = 0.5f * (nodesY*extent.Y + GAP*(nodesY-1));
 	f32 halfSizeZ = 0.5f * (nodesZ*extent.Z + GAP*(nodesZ-1));
 	
+	irr::f32 changeMat = 0.f;
 	for ( int x = 0; x < nodesX; ++x )
 	{
 		irr::f32 gapX = x > 0 ? (x-1)*GAP : 0.f;
@@ -73,6 +82,10 @@ int main(int argc, char* argv[])
 				irr::f32 posZ = -halfSizeZ + z*extent.Z + gapZ;
 				scene::IMeshSceneNode * node = smgr->addMeshSceneNode (mesh, NULL, -1, vector3df(posX, posY, posZ) );
 				node->setMaterialFlag(video::EMF_LIGHTING, false);
+#if 1
+				node->getMaterial(0).MaterialTypeParam = changeMat;
+				changeMat += 0.1f;	// enforce each material is different
+#endif
 			}
 		}
 	}
@@ -86,7 +99,12 @@ int main(int argc, char* argv[])
 
 	s32 oldFPS = 0;
 
+#ifdef TARGET_APITRACE
+	videoDriver->beginScene(true, true);
+	videoDriver->endScene();
+#else	
 	while ( device->run() )
+#endif
 	{
 		if ( device->isWindowActive() )
 		{
