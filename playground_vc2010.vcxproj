@@ -158,14 +158,15 @@
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <AdditionalLibraryDirectories>..\..\lib\Win64-visualstudio;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <ProgramDatabaseFile>.\Debug/playground_vc2010.pdb</ProgramDatabaseFile>
+      <ProgramDatabaseFile>$(TargetDir)$(TargetName).pdb</ProgramDatabaseFile>
       <SubSystem>Console</SubSystem>
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
       <DataExecutionPrevention>
       </DataExecutionPrevention>
     </Link>
     <PostBuildEvent>
-      <Command>copy /Y "..\..\bin\Win64-VisualStudio\Irrlicht.dll" "Irrlicht.dll"</Command>
+      <Command>copy /Y "..\..\bin\Win64-VisualStudio\Irrlicht.dll" "Irrlicht.dll"
+copy /Y "..\..\bin\Win64-VisualStudio\Irrlicht.pdb" "Irrlicht.pdb"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -243,14 +244,16 @@
       <OutputFile>$(ProjectName).exe</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <AdditionalLibraryDirectories>..\..\lib\Win64-visualstudio;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <ProgramDatabaseFile>.\Release/playground_vc2010.pdb</ProgramDatabaseFile>
+      <ProgramDatabaseFile>$(TargetName).pdb</ProgramDatabaseFile>
       <SubSystem>Console</SubSystem>
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
       <DataExecutionPrevention>
       </DataExecutionPrevention>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <PostBuildEvent>
-      <Command>copy /Y "..\..\bin\Win64-VisualStudio\Irrlicht.dll" "Irrlicht.dll"</Command>
+      <Command>copy /Y "..\..\bin\Win64-VisualStudio\Irrlicht.dll" "Irrlicht.dll"
+copy /Y "..\..\bin\Win64-VisualStudio\Irrlicht.pdb" "Irrlicht.pdb"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
