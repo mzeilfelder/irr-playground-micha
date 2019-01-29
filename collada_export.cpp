@@ -1,4 +1,4 @@
-// Code is under the zlib license (same as Irrlicht)
+﻿// Code is under the zlib license (same as Irrlicht)
 // Written by Michael Zeilfelder
 // 
 // Testing collada export with custom export settings.
@@ -30,6 +30,7 @@ public:
 	{
 		MITSUBA,
 		MAX3D,
+		SKETCHUP
 	};
 
 	MyColladaMeshWriterProperties::MyColladaMeshWriterProperties(IVideoDriver* driver, irr::scene::IColladaMeshWriterProperties * defaultProperties)
@@ -48,6 +49,11 @@ public:
 	virtual irr::scene::E_COLLADA_TECHNIQUE_FX getTechniqueFx(const irr::video::SMaterial& material) const
 	{
 		// Different tools support different types here
+		if ( ExportTarget == SKETCHUP )
+		{
+			return irr::scene::ECTF_LAMBERT;
+		}
+
 		if ( isTransparent(material) )
 		{
 			if ( ExportTarget == MAX3D )
@@ -60,8 +66,17 @@ public:
 	//! Which texture index should be used when writing the texture of the given sampler color.
 	virtual irr::s32 getTextureIdx(const irr::video::SMaterial & material, irr::scene::E_COLLADA_COLOR_SAMPLER cs) const
 	{
-		return 0;
-//		return DefaultProperties->getTextureIdx(material, cs);
+		if ( ExportTarget == SKETCHUP )
+		{
+			switch (cs)
+			{
+			case irr::scene::ECCS_DIFFUSE:
+				return 0;
+			}
+			return -1;
+		}
+
+		return DefaultProperties->getTextureIdx(material, cs);
 	}
 
 	//! Return which color from Irrlicht should be used for the color requested by collada
@@ -170,26 +185,26 @@ public:
 	{
 	}
 
-	irr::core::stringw nameForMesh(const scene::IMesh* mesh, int instance)
+	irr::core::stringc nameForMesh(const scene::IMesh* mesh, int instance)
 	{
 		return DefaultNames->nameForMesh(mesh, instance);
 	}
 
-	irr::core::stringw nameForNode(const scene::ISceneNode* node)
+	irr::core::stringc nameForNode(const scene::ISceneNode* node)
 	{
 		return DefaultNames->nameForNode(node);
 	}
 
-	irr::core::stringw nameForMaterial(const video::SMaterial & material, int materialId, const scene::IMesh* mesh, const scene::ISceneNode* node)
+	irr::core::stringc nameForMaterial(const video::SMaterial & material, int materialId, const scene::IMesh* mesh, const scene::ISceneNode* node)
 	{
 //		return DefaultNames->nameForMaterial(material, materialId, mesh, node);
 
 		// Some optimization not done by Irrlicht so far (slower export but less materials exported)
-		core::stringw strMat = findExported(material);
+		core::stringc strMat = findExported(material);
 		if ( ! strMat.empty() )
 			return strMat;
 
-		strMat = L"mat";
+		strMat = "mat";
 
 		if ( node && ( (node->getType() != ESNT_MESH )	||	
 					   (node->getType() == ESNT_MESH && !static_cast<const IMeshSceneNode*>(node)->isReadOnlyMaterials())
@@ -205,25 +220,25 @@ public:
 	}
 
 protected:
-	irr::core::stringw findExported(const irr::video::SMaterial& material) const
+	irr::core::stringc findExported(const irr::video::SMaterial& material) const
 	{
 		for ( u32 i=0; i<MaterialsExported.size(); ++i )
 		{
 			if ( MaterialsExported[i].Material == material )
 				return MaterialsExported[i].Name;
 		}
-		return irr::core::stringw();
+		return irr::core::stringc();
 	}
 
 private:
 	IColladaMeshWriterNames* DefaultNames;
 	struct MaterialExported
 	{
-		MaterialExported(const video::SMaterial & material, const irr::core::stringw& name) 
+		MaterialExported(const video::SMaterial & material, const irr::core::stringc& name) 
 			: Material(material), Name(name) 
 		{}
 		video::SMaterial Material;
-		irr::core::stringw Name;
+		irr::core::stringc Name;
 	};
 	core::array< MaterialExported > MaterialsExported;
 };
@@ -235,42 +250,60 @@ void createScene(IVideoDriver* driver, ISceneManager* smgr)
 
 	// simple meshes 
 	IMesh * cubeMesh = smgr->getGeometryCreator()->createCubeMesh();
-	cubeMesh->getMeshBuffer(0)->getMaterial().setTexture(0, driver->getTexture("blue.jpg"));
+	cubeMesh->getMeshBuffer(0)->getMaterial().setTexture(0, driver->getTexture("my_media/blue.jpg"));
 	IMesh * cubeMesh2 = smgr->getGeometryCreator()->createCubeMesh();
-	cubeMesh2->getMeshBuffer(0)->getMaterial().setTexture(0, driver->getTexture("blue.jpg"));
+	cubeMesh2->getMeshBuffer(0)->getMaterial().setTexture(0, driver->getTexture("my_media/blue.jpg"));
 
 	// three nodes using the same mesh but overriding it with 2 different materials
 	//IMeshSceneNode * cube1 = smgr->addMeshSceneNode( cubeMesh, 0, -1, vector3df(-20, 0, 0), vector3df(45.f, 0.f, 0.f)  );
-	//cube1->getMaterial(0).setTexture(0, driver->getTexture("red.jpg"));
+	//cube1->getMaterial(0).setTexture(0, driver->getTexture("my_media/red.jpg"));
 
 	//IMeshSceneNode * cube2 = smgr->addMeshSceneNode( cubeMesh, 0, -1, vector3df(0, 0, 0) );
-	//cube2->getMaterial(0).setTexture(0, driver->getTexture("green.jpg"));
+	//cube2->getMaterial(0).setTexture(0, driver->getTexture("my_media/green.jpg"));
 
 	//IMeshSceneNode * cube3 = smgr->addMeshSceneNode( cubeMesh, 0, -1, vector3df(20, 0, 0) );
-	//cube3->getMaterial(0).setTexture(0, driver->getTexture("red.jpg"));
+	//cube3->getMaterial(0).setTexture(0, driver->getTexture("my_media/red.jpg"));
 
 	// two nodes sharing the same mesh and material (deliberately unsymetric position to find placement bugs)
-	IMeshSceneNode * cube4 = smgr->addMeshSceneNode( cubeMesh2, 0, -1, vector3df(-25, -20, 0), vector3df(0.f, 0.f, 0.f)  );
+	IMeshSceneNode * cube4 = smgr->addMeshSceneNode( cubeMesh2, 0, -1, vector3df(-25, -10, 0), vector3df(0.f, 0.f, 0.f)  );
 //	cube4->setReadOnlyMaterials(true);
-	cube4->getMaterial(0).setTexture(0, driver->getTexture("green.jpg"));
+	cube4->getMaterial(0).setTexture(0, driver->getTexture("my_media/green.jpg"));
 
-	IMeshSceneNode * cube5 = smgr->addMeshSceneNode( cubeMesh2, 0, -1, vector3df(20, -20, 0), vector3df(60.f, 0.f, 0.f)  );
+	IMeshSceneNode * cube5 = smgr->addMeshSceneNode( cubeMesh2, 0, -1, vector3df(20, -10, 0), vector3df(60.f, 0.f, 0.f)  );
 //	cube5->setReadOnlyMaterials(true);
-	cube5->getMaterial(0).setTexture(0, driver->getTexture("red.jpg"));
+	cube5->getMaterial(0).setTexture(0, driver->getTexture("my_media/red.jpg"));
 
 	cubeMesh->drop();
 	cubeMesh2->drop();
+
+
+	scene::IAnimatedMesh* aniMeshArc = smgr->getMesh( "my_media/asymetric_arc.obj" );
+	if (aniMeshArc)
+	{
+		scene::IMeshSceneNode * nodeArc = smgr->addMeshSceneNode (aniMeshArc, NULL, -1, vector3df(0.f, 0.f, 0.f) );
+		nodeArc->setMaterialFlag(video::EMF_LIGHTING, false);
+	}
 }
 
 void exportScene(IrrlichtDevice *device, IVideoDriver* driver, ISceneManager* smgr)
 {
+	const MyColladaMeshWriterProperties::EExportTarget exportTarget = MyColladaMeshWriterProperties::SKETCHUP;
 	scene::IMeshWriter* writer = 0;
 	writer = smgr->createMeshWriter(scene::EMWT_COLLADA);
 	irr::scene::IColladaMeshWriter * colladaWriter = static_cast<irr::scene::IColladaMeshWriter *>(writer);
 	colladaWriter->setWriteDefaultScene(true);
-	colladaWriter->setGeometryWriting(ECGI_PER_MESH_AND_MATERIAL);
+
+	if ( exportTarget == MyColladaMeshWriterProperties::SKETCHUP )
+	{
+		colladaWriter->SetParamNamesUV("S", "T");	// Sketchup needs that, not sure about others.
+	}
+	else
+	{
+		colladaWriter->setGeometryWriting(ECGI_PER_MESH_AND_MATERIAL);
+	}
 
 	MyColladaMeshWriterProperties* myProperties = new MyColladaMeshWriterProperties(driver, colladaWriter->getDefaultProperties());
+	myProperties->setExportTarget(exportTarget);
 	colladaWriter->setProperties( myProperties );
 	myProperties->drop();
 
@@ -281,7 +314,7 @@ void exportScene(IrrlichtDevice *device, IVideoDriver* driver, ISceneManager* sm
 	io::IWriteFile * meshFile = device->getFileSystem()->createAndWriteFile(COLLADA_FILENAME);
 	if ( meshFile )
 	{
-		colladaWriter->writeScene(meshFile, smgr->getRootSceneNode() );
+		colladaWriter->writeScene(meshFile, smgr->getRootSceneNode(), 2);
 		meshFile->drop();
 	}
 	writer->drop();
@@ -304,18 +337,13 @@ void importScene(IrrlichtDevice *device, ISceneManager* smgr)
 
 void addCamera(ISceneManager* smgr)
 {
+	//irr::scene::ICameraSceneNode * cam = smgr->addCameraSceneNodeFPS(0, 20.f, 0.1f );
 	irr::scene::ICameraSceneNode * cam = smgr->addCameraSceneNode();
-//	cam->bindTargetAndRotation(true);
 	cam->updateAbsolutePosition();
-	cam->setPosition( irr::core::vector3df( 0, 0, 100) );
+	cam->setPosition( irr::core::vector3df( 0, 0, 30) );
 	cam->updateAbsolutePosition();
 	cam->setTarget( irr::core::vector3df( 0, 0, 0) );
 	cam->updateAbsolutePosition();
-
-	const core::matrix4& mat = cam->getProjectionMatrix();
-	irr::core::vector3df p = mat.getTranslation();
-	irr::core::vector3df r = mat.getRotationDegrees();
-	int dbg = 1;
 }
 
 void printScene(ISceneNode* node, int depth)
