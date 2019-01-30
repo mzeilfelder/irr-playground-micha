@@ -163,7 +163,7 @@ public:
 	{
 		return DefaultProperties->useNodeMaterial(node);
 	}
-
+	
 protected:
 	bool isTransparent(const irr::video::SMaterial& material) const
 	{
@@ -184,7 +184,7 @@ public:
 		: DefaultNames(defaultNames)
 	{
 	}
-
+	
 	irr::core::stringc nameForMesh(const scene::IMesh* mesh, int instance)
 	{
 		return DefaultNames->nameForMesh(mesh, instance);
@@ -255,33 +255,53 @@ void createScene(IVideoDriver* driver, ISceneManager* smgr)
 	cubeMesh2->getMeshBuffer(0)->getMaterial().setTexture(0, driver->getTexture("my_media/blue.jpg"));
 
 	// three nodes using the same mesh but overriding it with 2 different materials
-	//IMeshSceneNode * cube1 = smgr->addMeshSceneNode( cubeMesh, 0, -1, vector3df(-20, 0, 0), vector3df(45.f, 0.f, 0.f)  );
-	//cube1->getMaterial(0).setTexture(0, driver->getTexture("my_media/red.jpg"));
+	IMeshSceneNode * cube1 = smgr->addMeshSceneNode( cubeMesh, 0, -1, vector3df(-20, 0, 0), vector3df(45.f, 0.f, 0.f)  );
+	cube1->getMaterial(0).setTexture(0, driver->getTexture("my_media/red.jpg"));
 
-	//IMeshSceneNode * cube2 = smgr->addMeshSceneNode( cubeMesh, 0, -1, vector3df(0, 0, 0) );
-	//cube2->getMaterial(0).setTexture(0, driver->getTexture("my_media/green.jpg"));
+	IMeshSceneNode * cube2 = smgr->addMeshSceneNode( cubeMesh, 0, -1, vector3df(0, 0, 0) );
+	cube2->getMaterial(0).setTexture(0, driver->getTexture("my_media/green.jpg"));
 
-	//IMeshSceneNode * cube3 = smgr->addMeshSceneNode( cubeMesh, 0, -1, vector3df(20, 0, 0) );
-	//cube3->getMaterial(0).setTexture(0, driver->getTexture("my_media/red.jpg"));
+	IMeshSceneNode * cube3 = smgr->addMeshSceneNode( cubeMesh, 0, -1, vector3df(20, 0, 0) );
+	cube3->getMaterial(0).setTexture(0, driver->getTexture("my_media/red.jpg"));
 
 	// two nodes sharing the same mesh and material (deliberately unsymetric position to find placement bugs)
-	IMeshSceneNode * cube4 = smgr->addMeshSceneNode( cubeMesh2, 0, -1, vector3df(-25, -10, 0), vector3df(0.f, 0.f, 0.f)  );
-//	cube4->setReadOnlyMaterials(true);
+	IMeshSceneNode * cube4 = smgr->addMeshSceneNode( cubeMesh2, 0, -1, vector3df(-25, 10, 20), vector3df(0.f, 0.f, 0.f)  );
+	cube4->setReadOnlyMaterials(true);
 	cube4->getMaterial(0).setTexture(0, driver->getTexture("my_media/green.jpg"));
 
 	IMeshSceneNode * cube5 = smgr->addMeshSceneNode( cubeMesh2, 0, -1, vector3df(20, -10, 0), vector3df(60.f, 0.f, 0.f)  );
-//	cube5->setReadOnlyMaterials(true);
+	cube5->setReadOnlyMaterials(true);
 	cube5->getMaterial(0).setTexture(0, driver->getTexture("my_media/red.jpg"));
 
 	cubeMesh->drop();
 	cubeMesh2->drop();
-
-
+	
+	
 	scene::IAnimatedMesh* aniMeshArc = smgr->getMesh( "my_media/asymetric_arc.obj" );
 	if (aniMeshArc)
 	{
-		scene::IMeshSceneNode * nodeArc = smgr->addMeshSceneNode (aniMeshArc, NULL, -1, vector3df(0.f, 0.f, 0.f) );
+		scene::IMeshSceneNode * nodeArc = smgr->addMeshSceneNode (aniMeshArc, NULL, -1, vector3df(0.f, 0.f, 0.f), vector3df(45.f, 30.f, 60.f));
 		nodeArc->setMaterialFlag(video::EMF_LIGHTING, false);
+		nodeArc->setMaterialType(EMT_TRANSPARENT_ALPHA_CHANNEL);
+
+		scene::IDummyTransformationSceneNode* dummyTransformationNode = smgr->addDummyTransformationSceneNode();
+		core::matrix4& dm = dummyTransformationNode->getRelativeTransformationMatrix();
+		dm.setTranslation(vector3df(0.f, 0.f, 10.f));
+		dm.setRotationDegrees(vector3df(45.f, 30.f, 60.f));
+		core::matrix4 sm;
+		sm.setScale(vector3df(2.f,3.f, 4.f));
+		dm *= sm;
+		scene::IMeshSceneNode * nodeArcD = smgr->addMeshSceneNode (aniMeshArc, dummyTransformationNode, -1);
+		nodeArcD->setMaterialFlag(video::EMF_LIGHTING, false);
+
+		scene::IMeshSceneNode * nodeArc2 = smgr->addMeshSceneNode (aniMeshArc, NULL, -1, vector3df(15.f, 0.f, 0.f), vector3df(45.f, 0.f, 0.f), vector3df(1.f, 1.f, 1.f) );
+		nodeArc2->setMaterialFlag(video::EMF_LIGHTING, false);
+
+		scene::IMeshSceneNode * nodeArc3 = smgr->addMeshSceneNode (aniMeshArc, NULL, -1, vector3df(0.f, 10.f, 0.f), vector3df(0.f, 45.f, 0.f), vector3df(1.f, 1.f, 1.f) );
+		nodeArc3->setMaterialFlag(video::EMF_LIGHTING, false);
+
+		scene::IMeshSceneNode * nodeArc4 = smgr->addMeshSceneNode (aniMeshArc, NULL, -1, vector3df(0.f, -15.f, 0.f),vector3df(0.f, 0.f, 45.f), vector3df(1.f, 1.f, 1.f) );
+		nodeArc4->setMaterialFlag(video::EMF_LIGHTING, false);
 	}
 }
 
@@ -292,6 +312,7 @@ void exportScene(IrrlichtDevice *device, IVideoDriver* driver, ISceneManager* sm
 	writer = smgr->createMeshWriter(scene::EMWT_COLLADA);
 	irr::scene::IColladaMeshWriter * colladaWriter = static_cast<irr::scene::IColladaMeshWriter *>(writer);
 	colladaWriter->setWriteDefaultScene(true);
+//	colladaWriter->setWriteTextures(false);
 
 	if ( exportTarget == MyColladaMeshWriterProperties::SKETCHUP )
 	{
@@ -340,7 +361,7 @@ void addCamera(ISceneManager* smgr)
 	//irr::scene::ICameraSceneNode * cam = smgr->addCameraSceneNodeFPS(0, 20.f, 0.1f );
 	irr::scene::ICameraSceneNode * cam = smgr->addCameraSceneNode();
 	cam->updateAbsolutePosition();
-	cam->setPosition( irr::core::vector3df( 0, 0, 30) );
+	cam->setPosition( irr::core::vector3df( 0, 0, -30) );
 	cam->updateAbsolutePosition();
 	cam->setTarget( irr::core::vector3df( 0, 0, 0) );
 	cam->updateAbsolutePosition();
@@ -446,10 +467,26 @@ int main()
 
 	while ( device->run() && eventReceiver.KeepRunning )
 	{
-		driver->beginScene(true, true);
-		smgr->drawAll();
-		guienv->drawAll();
-		driver->endScene();
+		if ( device->isWindowActive() )
+		{
+			driver->beginScene(true, true, SColor(255, 50, 50, 50));
+			smgr->drawAll();
+			guienv->drawAll();
+
+			SMaterial matLines;
+			matLines.Lighting = false;
+			driver->setMaterial(matLines);
+			driver->setTransform(video::ETS_WORLD, core::IdentityMatrix);
+			driver->draw3DLine(vector3df(-10000,0,0), vector3df(10000,0,0), SColor(255, 255, 0, 0));
+			driver->draw3DLine(vector3df(0,-10000,0), vector3df(0,10000,0), SColor(255, 0, 255, 0));
+			driver->draw3DLine(vector3df(0,0,-10000), vector3df(0,0,10000), SColor(255, 0, 0, 255));
+
+			driver->endScene();
+		}
+		else
+		{
+			device->sleep(10);
+		}
 	}
 
 	device->closeDevice();
