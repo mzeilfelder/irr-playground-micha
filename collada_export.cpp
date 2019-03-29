@@ -248,6 +248,7 @@ void createScene(IVideoDriver* driver, ISceneManager* smgr)
 	// some light
 	smgr->setAmbientLight( irr::video::SColorf( 1.f, 1.f, 1.f, 1.f)  );
 
+#if 1	// cubes
 	// simple meshes 
 	IMesh * cubeMesh = smgr->getGeometryCreator()->createCubeMesh();
 	cubeMesh->getMeshBuffer(0)->getMaterial().setTexture(0, driver->getTexture("my_media/blue.jpg"));
@@ -264,7 +265,7 @@ void createScene(IVideoDriver* driver, ISceneManager* smgr)
 	IMeshSceneNode * cube3 = smgr->addMeshSceneNode( cubeMesh, 0, -1, vector3df(20, 0, 0) );
 	cube3->getMaterial(0).setTexture(0, driver->getTexture("my_media/red.jpg"));
 
-	// two nodes sharing the same mesh and material (deliberately unsymetric position to find placement bugs)
+	// two nodes sharing the same mesh and material (deliberately asymmetric position to find placement bugs)
 	IMeshSceneNode * cube4 = smgr->addMeshSceneNode( cubeMesh2, 0, -1, vector3df(-25, 10, 20), vector3df(0.f, 0.f, 0.f)  );
 	cube4->setReadOnlyMaterials(true);
 	cube4->getMaterial(0).setTexture(0, driver->getTexture("my_media/green.jpg"));
@@ -275,15 +276,19 @@ void createScene(IVideoDriver* driver, ISceneManager* smgr)
 
 	cubeMesh->drop();
 	cubeMesh2->drop();
+#endif
 	
 	
 	scene::IAnimatedMesh* aniMeshArc = smgr->getMesh( "my_media/asymetric_arc.obj" );
 	if (aniMeshArc)
 	{
 		scene::IMeshSceneNode * nodeArc = smgr->addMeshSceneNode (aniMeshArc, NULL, -1, vector3df(0.f, 0.f, 0.f), vector3df(45.f, 30.f, 60.f));
+
+		nodeArc->getMaterial(0).setTexture(0, driver->getTexture("my_media/text_color_alpha_512x512.png"));
+
 		nodeArc->setMaterialFlag(video::EMF_LIGHTING, false);
 		nodeArc->setMaterialType(EMT_TRANSPARENT_ALPHA_CHANNEL);
-
+		
 		scene::IDummyTransformationSceneNode* dummyTransformationNode = smgr->addDummyTransformationSceneNode();
 		core::matrix4& dm = dummyTransformationNode->getRelativeTransformationMatrix();
 		dm.setTranslation(vector3df(0.f, 0.f, 10.f));
@@ -302,6 +307,7 @@ void createScene(IVideoDriver* driver, ISceneManager* smgr)
 
 		scene::IMeshSceneNode * nodeArc4 = smgr->addMeshSceneNode (aniMeshArc, NULL, -1, vector3df(0.f, -15.f, 0.f),vector3df(0.f, 0.f, 45.f), vector3df(1.f, 1.f, 1.f) );
 		nodeArc4->setMaterialFlag(video::EMF_LIGHTING, false);
+		nodeArc4->getMaterial(0).setTexture(0, driver->getTexture("my_media/stupid white space file name.png"));
 	}
 }
 
@@ -320,6 +326,7 @@ void exportScene(IrrlichtDevice *device, IVideoDriver* driver, ISceneManager* sm
 	}
 	else
 	{
+		// NOTE: Irrlicht is one of those which needs to have this.
 		colladaWriter->setGeometryWriting(ECGI_PER_MESH_AND_MATERIAL);
 	}
 
