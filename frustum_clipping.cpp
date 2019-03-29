@@ -1,18 +1,18 @@
 ﻿// Code is under the zlib license (same as Irrlicht)
 // Written by Michael Zeilfelder
-// 
+//
 
 #include <irrlicht.h>
 #include <iostream>
 #include <cassert>
- 
+
 using namespace irr;
 using namespace core;
- 
+
 #ifdef _MSC_VER
 #pragma comment(lib, "Irrlicht.lib")
 #endif
- 
+
 void drawFrustum(irr::video::IVideoDriver * videoDriver, const irr::scene::SViewFrustum& frustum,  irr::video::SColor col)
 {
 	videoDriver->draw3DLine(frustum.getNearLeftUp(), frustum.getNearRightUp(), col);
@@ -36,10 +36,10 @@ int main()
 	IrrlichtDevice *  Device = createDevice(irr::video::EDT_OPENGL, irr::core::dimension2d<irr::u32>(800,600));
 	if (!Device)
 		return false;
-   
+
 	scene::ISceneManager* smgr = Device->getSceneManager();
 	video::IVideoDriver * videoDriver = Device->getVideoDriver ();
-   
+
 	video::SMaterial material;
 	material.NormalizeNormals = true;
 	material.setTexture(0, 0);
@@ -54,7 +54,7 @@ int main()
 
 	camera->setNearValue(100.f);	// get a smaller frustum
 	camera->setFarValue(500.f);
-	camera->updateMatrices();
+	camera->render();
 	scene::SViewFrustum origFrustum = *(camera->getViewFrustum());
 
 	camera->setNearValue(1.f);
@@ -81,7 +81,7 @@ int main()
 
 			smgr->drawAll();
 
-			videoDriver->setMaterial(material);            
+			videoDriver->setMaterial(material);
 			videoDriver->setTransform(video::ETS_WORLD, core::matrix4());
 
 			videoDriver->draw3DBox( aabbox3df(-5.f, -5.f, -5.f, 5.f, 5.f, 5.f), video::SColor(255, 127, 127, 127));
