@@ -1,4 +1,5 @@
-﻿// Hunting trouble with alpha-materials reported by mnunesvsc at http://irrlicht.sourceforge.net/forum/viewtopic.php?f=4&t=52466
+﻿// About http://irrlicht.sourceforge.net/forum/viewtopic.php?f=4&t=52466
+// solved now
 
 #include <irrlicht.h>
 
@@ -20,16 +21,16 @@ class ILineNode :  public scene::ISceneNode
     video::SMaterial Material;
     video::IVideoDriver* Driver;
 
-    void createLine(core::vector3df center, f32 lheight, f32 lwidth, core::vector3df normal)
+    void createLine(core::vector3df center, f32 lheight, f32 lwidth)
 	{
-		normal.normalize();
+		core::vector3df normal(0,0,1);
 
 		lstVertices.clear();
 
 		Box.reset(center);
 
 		// Set the color
-		irr::video::SColor lColor(255, 0, 0xC0, 0);
+		irr::video::SColor lColor(50, 0, 0xC0, 0);
 
 		// Construct the vertices
 		video::S3DVertex vertex;
@@ -47,20 +48,18 @@ class ILineNode :  public scene::ISceneNode
 	}
 
   public:
-	ILineNode(core::vector3df center, f32 lheight, f32 lwidth, core::vector3df normal, ISceneNode* parent, ISceneManager* smgr, s32 id=-1)
+	ILineNode(core::vector3df center, f32 lheight, f32 lwidth, ISceneNode* parent, ISceneManager* smgr, s32 id=-1)
 	:	ISceneNode(parent,smgr,id)
 	{
 		Driver = SceneManager->getVideoDriver();
 
-		createLine(center, lheight, lwidth, normal);
+		createLine(center, lheight, lwidth);
 
 		AutomaticCullingState = irr::scene::EAC_OFF;
 
 		Material.Lighting = false;
 		Material.BackfaceCulling = false;
 		Material.MaterialType = EMT_TRANSPARENT_VERTEX_ALPHA;
-//		Material.ZWriteFineControl = EZI_ZBUFFER_FLAG;
-//		Material.BlendOperation = EBO_ADD;
 	}
 
     virtual void OnRegisterSceneNode()
@@ -86,7 +85,7 @@ class ILineNode :  public scene::ISceneNode
 		return Box;
 	}
 
-    virtual u32 getMaterialCount()
+    virtual u32 getMaterialCount() const
 	{
 		return 1;
 	}
@@ -115,7 +114,7 @@ int main()
     scene::ISceneManager* smgr = device->getSceneManager();
 
     // add a first person shooter style user controlled camera
-    irr::scene::ICameraSceneNode * cameraNode = smgr->addCameraSceneNodeFPS( NULL, 20.0f, 0.02f, -1);
+    irr::scene::ICameraSceneNode * cameraNode = smgr->addCameraSceneNodeFPS( NULL, 20.0f, 0.02f);
     cameraNode->setPosition(vector3df(0,-10, -30));
 
 	// Some floor
@@ -140,9 +139,7 @@ int main()
         node->setMaterialTexture( 0, driver->getTexture( "../../media/sydney.bmp") );
     }
 
-
-	// Linenode
-	ILineNode* lineNode = new ILineNode(vector3df(20, 25, 0), 250, 150, core::vector3df(0,0,1), smgr->getRootSceneNode(), smgr);
+	ILineNode* lineNode = new ILineNode(vector3df(20, 25, 0), 250, 150, smgr->getRootSceneNode(), smgr);
 
     while(device->run())
     {
