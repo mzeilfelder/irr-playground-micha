@@ -17,7 +17,12 @@ using namespace gui;
 #pragma comment(lib, "Irrlicht.lib")
 #endif
 
+// test should run on older Irrlicht versions as well for comparison
 #if IRRLICHT_VERSION_MAJOR == 1 && IRRLICHT_VERSION_MINOR < 9 
+	#define PRE_IRR_1_9
+#endif
+
+#ifdef PRE_IRR_1_9
 	const c8* const ColorFormatNames[] =
 	{
 		"A1R5G5B5",
@@ -51,7 +56,9 @@ bool compareData(stringw& logText,  irr::u8* data1, irr::u8* data2, ECOLOR_FORMA
 		return false;
 	}
 
-	u32 dataSize = IImage::getDataSizeFromFormat(format1, dim1.Width, dim1.Height);
+	u32 bitsPerPixel = IImage::getBitsPerPixelFromFormat(format1);
+	u32 bytesPerPixel = bitsPerPixel/8;
+	u32 dataSize = dim1.Width * dim1.Height * bytesPerPixel;
 
 	for ( u32 i=0; i < dataSize; ++i )
 	{
@@ -60,8 +67,6 @@ bool compareData(stringw& logText,  irr::u8* data1, irr::u8* data2, ECOLOR_FORMA
 			logText += L"different data at pos ";
 			logText += i;
 
-			u32 bitsPerPixel = IImage::getBitsPerPixelFromFormat(format1);
-			u32 bytesPerPixel = bitsPerPixel/8;
 			u32 end = core::min_(i+bytesPerPixel*10, dataSize);
 
 			for ( u32 a=i; a<end; ++a )	// next 10 pixels
@@ -105,7 +110,9 @@ int main()
 	driver->setTextureCreationFlag(ETCF_ALWAYS_32_BIT, false);
 	//driver->setTextureCreationFlag(ETCF_ALWAYS_16_BIT, true);
 	//driver->setTextureCreationFlag(ETCF_NO_ALPHA_CHANNEL, true);
+#ifndef PRE_IRR_1_9
 	driver->setTextureCreationFlag(ETCF_ALLOW_MEMORY_COPY, false);
+#endif
 
 	ITexture * rgbwbTex = driver->getTexture("my_media/redgreenbluewhiteblack_64x64.png");
 	ITexture * rgbwbaTex = driver->getTexture("my_media/redgreenbluewhiteblackalpha_64x64.png");
@@ -131,7 +138,7 @@ int main()
 		u32 bytesPerPixel = bitsPerPixel/8;
 		if ( bytesPerPixel*8 != bitsPerPixel )
 			continue;
-		u32 dataSize = IImage::getDataSizeFromFormat(format, imgSize.Width, imgSize.Height);
+		u32 dataSize = imgSize.Width* imgSize.Height * bytesPerPixel;	// Irrlicht 1.9 could use getDataSizeFromFormat
 		u8* data = new u8[dataSize];
 
 		// fill with all colors (or a good selection of as many colors as we can fit into those pixels)
@@ -275,8 +282,8 @@ int main()
 		TexturesFromRttData.push_back( tex2 );
 	}
 
-// to enable disable alpha drawing. Done with define because 1.8 didn't have this parameter yet
-#if IRRLICHT_VERSION_MAJOR == 1 && IRRLICHT_VERSION_MINOR < 9 
+// To enable disable alpha drawing. Done with define because 1.8 didn't have this parameter yet
+#ifdef PRE_IRR_1_9
 	#define ALPHA
 #else
 	#define ALPHA ,true
