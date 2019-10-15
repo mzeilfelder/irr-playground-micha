@@ -18,6 +18,7 @@ irrExport.dae
 *.ilk
 *.exe
 *.o
+*.pdb
 Irrlicht.dll
 Debug\*
 Release\*
