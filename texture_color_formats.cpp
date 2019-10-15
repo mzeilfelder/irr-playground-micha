@@ -30,7 +30,7 @@ using namespace gui;
 		"R8G8B8",
 		"A8R8G8B8",
 		0
-	}
+	};
 #endif
 
 bool compareData(stringw& logText,  irr::u8* data1, irr::u8* data2, ECOLOR_FORMAT format1, ECOLOR_FORMAT format2, const irr::core::dimension2du& dim1, const irr::core::dimension2du& dim2)
