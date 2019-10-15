@@ -19,6 +19,7 @@ irrExport.dae
 *.exe
 *.o
 *.pdb
+*.trace
 Irrlicht.dll
 Debug\*
 Release\*
