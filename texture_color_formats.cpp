@@ -17,6 +17,17 @@ using namespace gui;
 #pragma comment(lib, "Irrlicht.lib")
 #endif
 
+#if IRRLICHT_VERSION_MAJOR == 1 && IRRLICHT_VERSION_MINOR < 9 
+	const c8* const ColorFormatNames[] =
+	{
+		"A1R5G5B5",
+		"R5G6B5",
+		"R8G8B8",
+		"A8R8G8B8",
+		0
+	}
+#endif
+
 bool compareData(stringw& logText,  irr::u8* data1, irr::u8* data2, ECOLOR_FORMAT format1, ECOLOR_FORMAT format2, const irr::core::dimension2du& dim1, const irr::core::dimension2du& dim2)
 {
 	if( !data1 || !data2 )
@@ -264,7 +275,13 @@ int main()
 		TexturesFromRttData.push_back( tex2 );
 	}
 
-	const bool drawAlpha = true;
+// to enable disable alpha drawing. Done with define because 1.8 didn't have this parameter yet
+#if IRRLICHT_VERSION_MAJOR == 1 && IRRLICHT_VERSION_MINOR < 9 
+	#define ALPHA
+#else
+	#define ALPHA ,true
+#endif
+
 	while(device->run() && driver)
 	{
 		if (device->isWindowActive())
@@ -274,7 +291,7 @@ int main()
 			irr::core::vector2di destPos(10, logBox->getAbsolutePosition().LowerRightCorner.Y + 10);
 			for ( u32 i=0; i<TexturesFromImages.size(); ++i )
 			{
-				driver->draw2DImage(TexturesFromImages[i], destPos, drawAlpha);
+				driver->draw2DImage(TexturesFromImages[i], destPos ALPHA);
 				destPos.X += TexturesFromImages[i]->getSize().Width + 10;
 			}
 
@@ -282,7 +299,7 @@ int main()
 			destPos.Y += imgSize.Height;
 			for ( u32 i=0; i<copiedTextures.size(); ++i )
 			{
-				driver->draw2DImage(copiedTextures[i], destPos, drawAlpha);
+				driver->draw2DImage(copiedTextures[i], destPos ALPHA);
 				destPos.X += copiedTextures[i]->getSize().Width + 10;
 			}
 
@@ -290,7 +307,7 @@ int main()
 			destPos.Y += imgSize.Height;
 			for ( u32 i=0; i<TexturesFromData.size(); ++i )
 			{
-				driver->draw2DImage(TexturesFromData[i], destPos, drawAlpha);
+				driver->draw2DImage(TexturesFromData[i], destPos ALPHA);
 				destPos.X += TexturesFromData[i]->getSize().Width + 10;
 			}
 
@@ -300,7 +317,7 @@ int main()
 			{
 				if ( rttTextures[i] )
 				{
-					driver->draw2DImage(rttTextures[i], destPos, drawAlpha);
+					driver->draw2DImage(rttTextures[i], destPos ALPHA);
 				}
 				destPos.X += imgSize.Width + 10;
 			}
@@ -311,16 +328,16 @@ int main()
 			{
 				if ( TexturesFromRttData[i] )
 				{
-					driver->draw2DImage(TexturesFromRttData[i], destPos, drawAlpha);
+					driver->draw2DImage(TexturesFromRttData[i], destPos ALPHA);
 				}
 				destPos.X += imgSize.Width + 10;
 			}
 
 			destPos.X = 10;
 			destPos.Y += 2*imgSize.Height;
-			driver->draw2DImage(rgbwbTex, destPos, drawAlpha);
+			driver->draw2DImage(rgbwbTex, destPos ALPHA);
 			destPos.X += rgbwbTex->getSize().Width + 10;
-			driver->draw2DImage(rgbwbaTex, destPos, drawAlpha);
+			driver->draw2DImage(rgbwbaTex, destPos ALPHA);
 
 			env->drawAll();
 
