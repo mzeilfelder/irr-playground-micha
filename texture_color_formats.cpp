@@ -1,6 +1,6 @@
 ﻿// Code is under the zlib license (same as Irrlicht)
 // Written by Michael Zeilfelder
-// 
+//
 // Test using textures with different color formats
 
 #include <irrlicht.h>
@@ -18,7 +18,7 @@ using namespace gui;
 #endif
 
 // test should run on older Irrlicht versions as well for comparison
-#if IRRLICHT_VERSION_MAJOR == 1 && IRRLICHT_VERSION_MINOR < 9 
+#if IRRLICHT_VERSION_MAJOR == 1 && IRRLICHT_VERSION_MINOR < 9
 	#define PRE_IRR_1_9
 #endif
 
@@ -116,13 +116,13 @@ int main()
 
 	ITexture * rgbwbTex = driver->getTexture("my_media/redgreenbluewhiteblack_64x64.png");
 	ITexture * rgbwbaTex = driver->getTexture("my_media/redgreenbluewhiteblackalpha_64x64.png");
-	
+
 
 	array<ECOLOR_FORMAT> colorFormatsToTest;
 
 	// common formats
 	colorFormatsToTest.push_back(ECF_A1R5G5B5);
-	colorFormatsToTest.push_back(ECF_R5G6B5);   
+	colorFormatsToTest.push_back(ECF_R5G6B5);
 	colorFormatsToTest.push_back(ECF_R8G8B8);
 	colorFormatsToTest.push_back(ECF_A8R8G8B8);
 
@@ -182,16 +182,21 @@ int main()
 		// Note - it's not perfect. It's somewhat tricky having all colors in regular intervals without accidentally
 		// stepping over certain bits. And not having completely chaotic results which are hard to interpret.
 		// I haven't really found a mix yet which works super good.
+		u32 byteStep = bytesPerPixel;
 		u64 valMax = (u64)pow(2.0, (double)bitsPerPixel);	// as many as possible of that format
+		if ( bitsPerPixel >= 64 )
+		{
+			byteStep = 4;
+			valMax = (u64)pow(2.0, 32);
+		}
 		u64 numPixels = imgSize.Width * imgSize.Height;
 		u64 stepVal = core::max_<u64>(1, valMax / numPixels);	// gives as regular values, but can step over bits or even bytes completely
 		u64 fixVal = stepVal > 256 ? core::max_((u64)1, numPixels / 256) : 0xffff; // give each bit a bit more of a chance to be set
 
 		u64 val = 0;
-		u64 val2 = 0;
-		for ( u32 a=0; a < dataSize; a += bytesPerPixel)
+		for ( u32 a=0; a < dataSize; a += byteStep)
 		{
-			for ( u32 b=0; b < bytesPerPixel; ++b )
+			for ( u32 b=0; b < byteStep; ++b )
 			{
 				u8 n = (val >> (b*8)) & 255;
 				n += (u8)(a/fixVal);		// results are nicer and sometimes easier to compare without this line, but then it can skip colors.
@@ -210,7 +215,7 @@ int main()
 			if ( texFromData->getColorFormat() == format && imgSize == texFromData->getSize() )
 			{
 				u8* lockData = (u8*)texFromData->lock();
-				if ( lockData ) 
+				if ( lockData )
 					memcpy(lockData, data, dataSize);
 
 				stringw logTxt(i);
@@ -266,6 +271,8 @@ int main()
 					copiedTextures.push_back( tex );
 					img2->drop();
 				}
+				else
+					copiedTextures.push_back(0);
 
 				ITexture * texRt = driver->addRenderTargetTexture(imgSize, name + "rt", format);
 				rttTextures.push_back(texRt);
@@ -307,7 +314,7 @@ int main()
 	{
 		ITexture * tex = rttTextures[i];
 		ITexture * tex2 = 0;
-		
+
 		if ( tex )
 		{
 			u8* lockData = (u8*)tex->lock(ETLM_READ_ONLY);
@@ -342,7 +349,7 @@ int main()
 		if (device->isWindowActive())
 		{
 			driver->beginScene(true, true, bkCol);
-	
+
 			irr::core::vector2di destPos(LEFT, logBox->getAbsolutePosition().LowerRightCorner.Y + GAP_Y);
 			for ( u32 i=0; i<TexturesFromImages.size(); ++i )
 			{
@@ -354,8 +361,11 @@ int main()
 			destPos.Y += imgSize.Height + GAP_Y;
 			for ( u32 i=0; i<copiedTextures.size(); ++i )
 			{
-				driver->draw2DImage(copiedTextures[i], destPos ALPHA);
-				destPos.X += copiedTextures[i]->getSize().Width + GAP_X;
+				if ( copiedTextures[i] )
+				{
+					driver->draw2DImage(copiedTextures[i], destPos ALPHA);
+				}
+				destPos.X += imgSize.Width + GAP_X;
 			}
 
 			destPos.X = LEFT;
