@@ -96,7 +96,7 @@ int main()
 	//deviceParams.DriverType = video::EDT_DIRECT3D9;
 	//deviceParams.DriverType = video::EDT_BURNINGSVIDEO;
 	//deviceParams.DriverType = video::EDT_SOFTWARE;
-	deviceParams.WindowSize = core::dimension2d<u32>(640, 600);
+	deviceParams.WindowSize = core::dimension2d<u32>(1600, 800);
 	IrrlichtDevice * device = createDeviceEx(deviceParams);
 	if (device == 0)
 		return 1; // could not create selected driver.
@@ -119,10 +119,47 @@ int main()
 	
 
 	array<ECOLOR_FORMAT> colorFormatsToTest;
+
+	// common formats
 	colorFormatsToTest.push_back(ECF_A1R5G5B5);
 	colorFormatsToTest.push_back(ECF_R5G6B5);   
 	colorFormatsToTest.push_back(ECF_R8G8B8);
 	colorFormatsToTest.push_back(ECF_A8R8G8B8);
+
+	//// Compressed image formats.
+	colorFormatsToTest.push_back(ECF_DXT1);
+	colorFormatsToTest.push_back(ECF_DXT2);
+	colorFormatsToTest.push_back(ECF_DXT3);
+	colorFormatsToTest.push_back(ECF_DXT4);
+	colorFormatsToTest.push_back(ECF_DXT5);
+	colorFormatsToTest.push_back(ECF_PVRTC_RGB2);
+	colorFormatsToTest.push_back(ECF_PVRTC_ARGB2);
+	colorFormatsToTest.push_back(ECF_PVRTC_RGB4);
+	colorFormatsToTest.push_back(ECF_PVRTC_ARGB4);
+	colorFormatsToTest.push_back(ECF_PVRTC2_ARGB2);
+	colorFormatsToTest.push_back(ECF_PVRTC2_ARGB4);
+	colorFormatsToTest.push_back(ECF_ETC1);
+	colorFormatsToTest.push_back(ECF_ETC2_RGB);
+	colorFormatsToTest.push_back(ECF_ETC2_ARGB);
+
+	// float formats
+	colorFormatsToTest.push_back(ECF_R16F);
+	colorFormatsToTest.push_back(ECF_G16R16F);
+	colorFormatsToTest.push_back(ECF_A16B16G16R16F);
+	colorFormatsToTest.push_back(ECF_R32F);
+	colorFormatsToTest.push_back(ECF_G32R32F);
+	colorFormatsToTest.push_back(ECF_A32B32G32R32F);
+
+	// Unsigned normalized integer formats.
+	colorFormatsToTest.push_back(ECF_R8);
+	colorFormatsToTest.push_back(ECF_R8G8);
+	colorFormatsToTest.push_back(ECF_R16);
+	colorFormatsToTest.push_back(ECF_R16G16);
+
+	// Depth and stencil formats.
+	colorFormatsToTest.push_back(ECF_D16);
+	colorFormatsToTest.push_back(ECF_D32);
+	colorFormatsToTest.push_back(ECF_D24S8);
 
 	const core::dimension2d<u32> imgSize(64, 64);
 	array<ITexture*> TexturesFromImages;
@@ -141,19 +178,26 @@ int main()
 		u32 dataSize = imgSize.Width* imgSize.Height * bytesPerPixel;	// Irrlicht 1.9 could use getDataSizeFromFormat
 		u8* data = new u8[dataSize];
 
-		// fill with all colors (or a good selection of as many colors as we can fit into those pixels)
+		// Fill with all colors (or a good selection of as many colors as we can fit into those pixels)
+		// Note - it's not perfect. It's somewhat tricky having all colors in regular intervals without accidentally
+		// stepping over certain bits. And not having completely chaotic results which are hard to interpret.
+		// I haven't really found a mix yet which works super good.
 		u64 valMax = (u64)pow(2.0, (double)bitsPerPixel);	// as many as possible of that format
 		u64 numPixels = imgSize.Width * imgSize.Height;
-		u64 stepVal = core::max_<u64>(1, valMax / numPixels);
+		u64 stepVal = core::max_<u64>(1, valMax / numPixels);	// gives as regular values, but can step over bits or even bytes completely
+		u64 fixVal = stepVal > 256 ? core::max_((u64)1, numPixels / 256) : 0xffff; // give each bit a bit more of a chance to be set
+
 		u64 val = 0;
+		u64 val2 = 0;
 		for ( u32 a=0; a < dataSize; a += bytesPerPixel)
 		{
-			val = (val+stepVal)%valMax;
 			for ( u32 b=0; b < bytesPerPixel; ++b )
 			{
 				u8 n = (val >> (b*8)) & 255;
+				n += (u8)(a/fixVal);		// results are nicer and sometimes easier to compare without this line, but then it can skip colors.
 				data[a+b] = n;
 			}
+			val = (val+stepVal)%valMax;
 		}
 
 		irr::io::path name(i);
@@ -289,61 +333,65 @@ int main()
 	#define ALPHA ,true
 #endif
 
+	const s32 LEFT = 10;
+	const s32 GAP_X = 5;
+	const s32 GAP_Y = 5;
+
 	while(device->run() && driver)
 	{
 		if (device->isWindowActive())
 		{
 			driver->beginScene(true, true, bkCol);
 	
-			irr::core::vector2di destPos(10, logBox->getAbsolutePosition().LowerRightCorner.Y + 10);
+			irr::core::vector2di destPos(LEFT, logBox->getAbsolutePosition().LowerRightCorner.Y + GAP_Y);
 			for ( u32 i=0; i<TexturesFromImages.size(); ++i )
 			{
 				driver->draw2DImage(TexturesFromImages[i], destPos ALPHA);
-				destPos.X += TexturesFromImages[i]->getSize().Width + 10;
+				destPos.X += TexturesFromImages[i]->getSize().Width + GAP_X;
 			}
 
-			destPos.X = 10;
-			destPos.Y += imgSize.Height;
+			destPos.X = LEFT;
+			destPos.Y += imgSize.Height + GAP_Y;
 			for ( u32 i=0; i<copiedTextures.size(); ++i )
 			{
 				driver->draw2DImage(copiedTextures[i], destPos ALPHA);
-				destPos.X += copiedTextures[i]->getSize().Width + 10;
+				destPos.X += copiedTextures[i]->getSize().Width + GAP_X;
 			}
 
-			destPos.X = 10;
-			destPos.Y += imgSize.Height;
+			destPos.X = LEFT;
+			destPos.Y += imgSize.Height + GAP_Y;
 			for ( u32 i=0; i<TexturesFromData.size(); ++i )
 			{
 				driver->draw2DImage(TexturesFromData[i], destPos ALPHA);
-				destPos.X += TexturesFromData[i]->getSize().Width + 10;
+				destPos.X += TexturesFromData[i]->getSize().Width + GAP_X;
 			}
 
-			destPos.X = 10;
-			destPos.Y += imgSize.Height;
+			destPos.X = LEFT;
+			destPos.Y += imgSize.Height + GAP_Y;
 			for ( u32 i=0; i<rttTextures.size(); ++i )
 			{
 				if ( rttTextures[i] )
 				{
 					driver->draw2DImage(rttTextures[i], destPos ALPHA);
 				}
-				destPos.X += imgSize.Width + 10;
+				destPos.X += imgSize.Width + GAP_X;
 			}
 
-			destPos.X = 10;
-			destPos.Y += imgSize.Height;
+			destPos.X = LEFT;
+			destPos.Y += imgSize.Height + GAP_Y;
 			for ( u32 i=0; i<TexturesFromRttData.size(); ++i )
 			{
 				if ( TexturesFromRttData[i] )
 				{
 					driver->draw2DImage(TexturesFromRttData[i], destPos ALPHA);
 				}
-				destPos.X += imgSize.Width + 10;
+				destPos.X += imgSize.Width + GAP_X;
 			}
 
-			destPos.X = 10;
+			destPos.X = LEFT;
 			destPos.Y += 2*imgSize.Height;
 			driver->draw2DImage(rgbwbTex, destPos ALPHA);
-			destPos.X += rgbwbTex->getSize().Width + 10;
+			destPos.X += core::max_(rgbwbTex->getSize().Width, imgSize.Width) + GAP_X;
 			driver->draw2DImage(rgbwbaTex, destPos ALPHA);
 
 			env->drawAll();
@@ -356,4 +404,3 @@ int main()
 
 	return 0;
 }
-
