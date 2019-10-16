@@ -46,6 +46,8 @@
 	- CGUITTGlyphPage::updateTexture works with ::texture->getSize() instead of getOriginalSize. Same result in this case, but more correct.
 	- Irrlichtify code (variable naming etc)
 	- Add support for outlines (lot of code got changed for that, I guess original code now barely recognizable)
+	- Ensure Texture is grab()'ed. It's dangerous to remove it from driver otherwise (which might have cleared it's cache already)
+	- Rename "use" functions to "get" so we have setters and getters
 	
 	TODO:
 	- Hinting should be one enum with explanation (have to figure it out first, results are strange currently when I enable it)
@@ -197,8 +199,7 @@ namespace gui
 				{
 					if (Driver)
 						Driver->removeTexture(Texture);
-					else 
-						Texture->drop();
+					Texture->drop();
 				}
 			}
 
@@ -252,7 +253,7 @@ namespace gui
 			//! \param filename The filename of the font.
 			//! \param size The size of the font glyphs in pixels.  Since this is the size of the individual glyphs, the true height of the font may change depending on the characters used.
 			//! \param antialias set the use_monochrome (opposite to antialias) flag
-			//! \param transparency set the use_transparency flag
+			//! \param transparency Control if alpha-value of font-color is used or ignored.
 			//! \param invisibleChars Set characters which don't need drawing (speed optimization)
 			//! \param logger Irrlicht logging, for printing out additinal warnings/errors
 			//! \param outline Render an outline with a different color (default white) behind the text
@@ -306,19 +307,19 @@ namespace gui
 			//! Get the font size.
 			u32 getFontSize() const { return Size; }
 
-			//! Check the font's transparency.
-			bool isTransparent() const { return UseTransparency; }
+			//! Check if font uses or ignores the alpha-channel of the color in draw calls
+			bool getTransparency() const { return UseTransparency; }
 
 			//! Check if the font auto-hinting is enabled.
 			//! Auto-hinting is FreeType's built-in font hinting engine.
-			bool useAutoHinting() const { return UseAutoHinting; }
+			bool getAutoHinting() const { return UseAutoHinting; }
 
 			//! Check if the font hinting is enabled.
-			bool useHinting()	 const { return UseHinting; }
+			bool getHinting()	 const { return UseHinting; }
 
 			//! Check if the font is being loaded as a monochrome font.
 			//! The font can either be a 256 color grayscale font, or a 2 color monochrome font.
-			bool useMonochrome()  const { return UseMonochrome; }
+			bool getMonochrome()  const { return UseMonochrome; }
 
 			//! Tells the font to allow transparency when rendering.
 			//! Default: true.

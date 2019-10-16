@@ -265,15 +265,17 @@ void SGUITTGlyph::preload(CGUITTFont& font, u32 char_index, FT_Face face, u32 fo
 	TopLayer.Advance = glyph->advance;
 
 
-	// reserve a spot on the glyhp page
+	// reserve a spot on the glyph page
 	TopLayer.GlyphPage = font.getGlyphPageSpot(TopLayer.SourceRect, colorFormat, bits.width, bits.rows);
+	if ( TopLayer.GlyphPage )
+	{
+		// Create image with glyph
+		irr::video::IImage* surface = createGlyphImageFromBitmap(colorFormat, bits, font.Driver);
 
-	// Create image with glyph
-	irr::video::IImage* surface = createGlyphImageFromBitmap(colorFormat, bits, font.Driver);
-
-	// Request paging
-	TopLayer.GlyphPage->pushGlyphLayerToBePaged(surface, TopLayer.SourceRect);
-	surface->drop();
+		// Request paging
+		TopLayer.GlyphPage->pushGlyphLayerToBePaged(surface, TopLayer.SourceRect);
+		surface->drop();
+	}
 
 
 	// Outlines don't work with bitmaps bug with pixel-strips. We render those into their own Surface (as it can have another color later on)
@@ -322,15 +324,17 @@ void SGUITTGlyph::preload(CGUITTFont& font, u32 char_index, FT_Face face, u32 fo
 				PixelOutlineSpans[s].Y = height - 1 - PixelOutlineSpans[s].Y;
 			}
 
-			// reserve a spot on the glyhp page
+			// reserve a spot on the glyph page
 			OutlineLayer.GlyphPage = font.getGlyphPageSpot(OutlineLayer.SourceRect, colorFormat, width, height);
+			if (OutlineLayer.GlyphPage)
+			{
+				// We grab the glyph bitmap here so the data won't be removed when the next glyph is loaded.
+				irr::video::IImage* outlineSurface = createGlyphImageFromPixelSpans(colorFormat, font.Driver, width, height);
 
-			// We grab the glyph bitmap here so the data won't be removed when the next glyph is loaded.
-			surface = createGlyphImageFromPixelSpans(colorFormat, font.Driver, width, height);
-
-			// Request paging
-			OutlineLayer.GlyphPage->pushGlyphLayerToBePaged(surface, OutlineLayer.SourceRect);
-			surface->drop();
+				// Request paging
+				OutlineLayer.GlyphPage->pushGlyphLayerToBePaged(outlineSurface, OutlineLayer.SourceRect);
+				outlineSurface->drop();
+			}
 		}
 	}
 }
@@ -354,18 +358,12 @@ bool CGUITTGlyphPage::createPageTexture(const irr::video::ECOLOR_FORMAT colorFor
 	bool flgmip = Driver->getTextureCreationFlag(video::ETCF_CREATE_MIP_MAPS);
 	Driver->setTextureCreationFlag(video::ETCF_CREATE_MIP_MAPS, false);
 
-#if (IRRLICHT_VERSION_MAJOR > 1) || (IRRLICHT_VERSION_MAJOR == 1 && IRRLICHT_VERSION_MINOR >= 9)
-	bool allowMemCpy = Driver->getTextureCreationFlag(video::ETCF_ALLOW_MEMORY_COPY);
-	Driver->setTextureCreationFlag(video::ETCF_ALLOW_MEMORY_COPY, true);
-#endif
-
 	// Set the texture color format.
 	Texture = Driver->addTexture(textureSize, Name, colorFormat);
+	if (Texture)
+		Texture->grab();
 
-	// Restore our texture creation flags.
-#if (IRRLICHT_VERSION_MAJOR > 1) || (IRRLICHT_VERSION_MAJOR == 1 && IRRLICHT_VERSION_MINOR >= 9)
-	Driver->setTextureCreationFlag(video::ETCF_ALLOW_MEMORY_COPY, allowMemCpy);
-#endif
+	// Restore texture creation flags.
 	Driver->setTextureCreationFlag(video::ETCF_CREATE_MIP_MAPS, flgmip);
 
 	return Texture ? true : false;
@@ -376,23 +374,26 @@ void CGUITTGlyphPage::updateTexture()
 	if (GlyphLayersToBePaged.empty())
 		return;
 
-	void* ptr = Texture->lock();
-	video::ECOLOR_FORMAT format = Texture->getColorFormat();
-	core::dimension2du size = Texture->getSize();
-
-	video::IImage* pageholder = Driver->createImageFromData(format, size, ptr, true, false);
-
-	for (u32 i = 0; i < GlyphLayersToBePaged.size(); ++i)
+	if ( Texture )
 	{
-		PagedGlyphTextures& pgt = GlyphLayersToBePaged[i];
-		if (pgt.Surface)
-		{
-			pgt.Surface->copyTo(pageholder, pgt.PageRect.UpperLeftCorner);
-		}
-	}
+		void* ptr = Texture->lock();
+		video::ECOLOR_FORMAT format = Texture->getColorFormat();
+		core::dimension2du size = Texture->getSize();
 
-	Texture->unlock();
-	pageholder->drop();
+		video::IImage* pageholder = Driver->createImageFromData(format, size, ptr, true, false);
+
+		for (u32 i = 0; i < GlyphLayersToBePaged.size(); ++i)
+		{
+			PagedGlyphTextures& pgt = GlyphLayersToBePaged[i];
+			if (pgt.Surface)
+			{
+				pgt.Surface->copyTo(pageholder, pgt.PageRect.UpperLeftCorner);
+			}
+		}
+
+		Texture->unlock();
+		pageholder->drop();
+	}
 	GlyphLayersToBePaged.clear();
 }
 
@@ -446,6 +447,8 @@ CGUITTFont* CGUITTFont::createTTFont(irr::video::IVideoDriver* driver, irr::io::
 		if (FT_Init_FreeType(&c_library))
 			return 0;
 		c_libraryLoaded = true;
+		if (logger)
+			logger->log(L"CGUITTFont", L"Freetype got initialized", irr::ELL_INFORMATION);
 	}
 
 	CGUITTFont* font = new CGUITTFont(driver, fileSystem);
@@ -554,6 +557,13 @@ bool CGUITTFont::load(const io::path& filename, u32 size, bool antialias, bool t
 
 	// Store our face.
 	TTface = face->Face;
+	if ( !TTface )
+	{
+		// memory corruption?
+		if (Logger) 
+			Logger->log(L"CGUITTFont", L"Got a face but TTface is suddenly 0.", irr::ELL_INFORMATION);
+		return false;
+	}
 
 	// Store font metrics.
 	FT_Set_Pixel_Sizes(TTface, Size, 0);
@@ -596,6 +606,9 @@ CGUITTFont::~CGUITTFont()
 		{
 			FT_Done_FreeType(c_library);
 			c_libraryLoaded = false;
+
+			if (Logger)
+				Logger->log(L"CGUITTFont", L"Freetype got released", irr::ELL_INFORMATION);
 		}
 	}
 }
@@ -761,13 +774,12 @@ void CGUITTFont::draw(const core::stringw& text, const core::rect<s32>& position
 	}
 
 	// Start parsing characters.
-	u32 n;
 	wchar_t previousChar = 0;
 	const wchar_t * iter = text.c_str();
 	while (*iter)
 	{
 		wchar_t currentChar = *iter;
-		n = getGlyphIndexByChar(currentChar);
+		u32 n = getGlyphIndexByChar(currentChar);
 		bool visible = (Invisible.findFirst(currentChar) == -1);
 		if (visible)
 		{
@@ -833,7 +845,7 @@ void CGUITTFont::draw(const core::stringw& text, const core::rect<s32>& position
 		++iter;
 	}
 
-	// some glyphs might be now, so update texture pages
+	// some glyphs might be changed, so update texture pages
 	update_glyph_pages();
 
 	if (!UseTransparency)
@@ -972,11 +984,11 @@ inline u32 CGUITTFont::getHeightFromCharacter(wchar_t c) const
 u32 CGUITTFont::getGlyphIndexByChar(wchar_t c) const
 {
 	// Get the glyph.
-	u32 glyph = FT_Get_Char_Index(TTface, c);
+	u32 glyphIndex = FT_Get_Char_Index(TTface, c);
 
 	// If our glyph is already loaded, don't bother doing any batch loading code.
-	if (glyph != 0 && Glyphs[glyph - 1].IsLoaded())
-		return glyph;
+	if (glyphIndex != 0 && Glyphs[glyphIndex - 1].IsLoaded())
+		return glyphIndex;
 
 	// Determine our batch loading positions.
 	u32 half_size = (BatchLoadSize / 2);
@@ -1006,7 +1018,7 @@ u32 CGUITTFont::getGlyphIndexByChar(wchar_t c) const
 	while (++start_pos < end_pos);
 
 	// Return our original character.
-	return glyph;
+	return glyphIndex;
 }
 
 s32 CGUITTFont::getCharacterFromPos(const wchar_t* text, s32 pixel_x) const
