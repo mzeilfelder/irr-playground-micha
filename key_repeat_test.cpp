@@ -37,7 +37,7 @@ int main()
 	SIrrlichtCreationParameters params;
 	params.WindowSize = core::dimension2d<u32>(640, 480);
 	params.DriverType = video::EDT_OPENGL;
-	params.DeviceType = EIDT_SDL;
+	//params.DeviceType = EIDT_SDL;
 	IrrlichtDevice * device = createDeviceEx(params);
 	if (device == 0)
 		return 1; // could not create selected driver.
