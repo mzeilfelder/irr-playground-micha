@@ -88,7 +88,8 @@ public:
 		MeshNodes.push_back(SceneManager->addCubeSceneNode (500.f, 0, -1, core::vector3df(500, 0, 1000)));
 		MeshNodes.push_back(SceneManager->addCubeSceneNode (depth, 0, -1, core::vector3df(0, -depth*0.7f, depth / 2.f)));
 
-		MeshNodes.push_back(SceneManager->addSphereSceneNode(50.f, 32, 0, -1, core::vector3df(300, 100, 500)));
+		for ( int i = 0; i < 4; ++i )
+			MeshNodes.push_back(SceneManager->addSphereSceneNode(50.f + i * 10.f, 32, 0, -1, core::vector3df(300 - i * 150, 100, 500)));
 
 		const f32 cubeSize = 100.f;
 		for ( float d = near + cubeSize/2 + 1.f; d < far - (cubeSize/2 + 1.f); d+= (depth-cubeSize) / 12.f )
