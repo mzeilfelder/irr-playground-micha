@@ -6,7 +6,8 @@
 #pragma comment(lib, "Irrlicht.lib")
 #endif
 
-#include "irrlicht.h"
+#include <irrlicht.h>
+#include "driverChoice.h"
 
 using namespace irr;
 
@@ -272,12 +273,12 @@ void renderCubeMap(irr::video::IVideoDriver* driver, irr::scene::ICameraSceneNod
 
 int main()
 {
-#if 0
-	video::E_DRIVER_TYPE driverType = video::EDT_DIRECT3D9;
-#else
-	video::E_DRIVER_TYPE driverType = video::EDT_OPENGL;
-#endif
-	IrrlichtDevice* device = createDevice( driverType, core::dimension2d<u32>( 1024, 768 ) );
+	// ask user for driver
+	video::E_DRIVER_TYPE driverType = driverChoiceConsole();
+	if (driverType==video::EDT_COUNT)
+		return 1;
+
+	IrrlichtDevice* device = createDevice( driverType, core::dimension2d<u32>(1021, 768) );
 	if (!device)
 		return 1; 
 
@@ -288,6 +289,11 @@ int main()
 	scene::ISceneManager* smgr = device->getSceneManager();
 	gui::IGUIEnvironment* env = device->getGUIEnvironment();
 	eventReceiver.Driver = driver;
+
+	core::stringw strCaption(L"Cubemap example - Irrlicht Engine [");
+	strCaption += driver->getName();
+	strCaption += L"]";
+	device->setWindowCaption(strCaption.c_str());
 
 	const c8* vsFileName = 0;
 	const c8* psFileName = 0;
@@ -318,10 +324,10 @@ int main()
 		eventReceiver.Shader = cubeMapCB;
 		cubeMapCB->drop();
 	}	
-
+	
 	driver->setTextureCreationFlag(video::ETCF_ALWAYS_32_BIT, true);
 	driver->setTextureCreationFlag(video::ETCF_CREATE_MIP_MAPS, true);
-
+	
 	// add fps camera
 	scene::ICameraSceneNode* camera = smgr->addCameraSceneNodeFPS(0, 100.f, 1.f);
 	camera->setPosition( core::vector3df( 0,10,-200 ) );
@@ -346,7 +352,7 @@ int main()
 	cubeMapImages.clear();
 //	core::stringw cubeOutName( driverType == video::EDT_DIRECT3D9 ? "cubemap/cube_out_dx.jpg" : "cubemap/cube_out_gl.jpg");
 //	writeCubeTextureToFile(driver, cubeMapStaticTex, cubeOutName);
-
+	
 	video::ITexture* dynamicCubeMapRTT = 0;
 	video::ITexture* depthStencilRTT = 0;
 	video::ITexture* dynamicCubeMapRTT_intermediate = 0;	// just for rendering, but not used in material
@@ -416,7 +422,7 @@ int main()
 	driver->getTexture("cubemap/cubemap_posx.jpg"), // front
 	driver->getTexture("cubemap/cubemap_negx.jpg")); // back
 #else
-	scene::IAnimatedMesh* cubeMesh = (scene::IAnimatedMesh*)smgr->getMesh( "cubemap/cubeBoxTest.ms3d" );
+	scene::IAnimatedMesh* cubeMesh = smgr->getMesh( "cubemap/cubeBoxTest.ms3d" );
 	if( cubeMesh )
 	{
 		smgr->getMeshManipulator()->setVertexColors( cubeMesh->getMeshBuffer(0), cubeMesh->getMeshBuffer(0)->getMaterial().DiffuseColor );
@@ -446,7 +452,7 @@ int main()
 #endif
 
 	driver->beginScene(true, true);	driver->endScene();	// TEST - frame 0 just making trace easier to follow
-
+	
 	while(device->run())
 	{
 		if (device->isWindowActive())
@@ -458,7 +464,7 @@ int main()
 			if( dynamicCubeMapRTT && sphereNode && justOnce )
 			{
 				justOnce = false;
-
+				
 #ifdef CUBEMAP_UPSIDE_DOWN_GL_PROJECTION
 				core::array<scene::ISceneNode*> allNodes;
 				if ( driverType == video::EDT_OPENGL )
@@ -472,21 +478,26 @@ int main()
 				// If rendered just once then this node has still a white (or even undefined) texture at this point
 				// Just hiding it and render the background when rendering the cubemap for the other node is less noticable
 				// than having a big white dot in the texture.
-				sphereNode3->setVisible(false);	// the renderCubeMap below will make it visible again
-
+				if (sphereNode3)
+					sphereNode3->setVisible(false);	// the renderCubeMap below will make it visible again
+				
 				renderCubeMap(driver, cubeMapCamera, sphereNode, cubeMapRT, dynamicCubeMapRTT, depthStencilRTT);
 
 				// If we want mipmaps in the dynamic cubemap we have to copy it to a non-rtt texture.
-				renderCubeMap(driver, cubeMapCamera, sphereNode3, cubeMapRT, dynamicCubeMapRTT_intermediate, depthStencilRTT);
-				for ( int i=0; i<6; ++i)
+				if ( sphereNode3 )
 				{
-					void * rtData = dynamicCubeMapRTT_intermediate->lock(video::ETLM_READ_ONLY, 0, i, video::ETLF_NONE);
-					void * tData = dynamicCubeMapTex->lock(video::ETLM_READ_WRITE, 0, i);
-					memcpy(tData, rtData, dynamicCubeMapTex->getPitch()*dynamicCubeMapTex->getSize().Width);
-					dynamicCubeMapRTT_intermediate->unlock();
-					dynamicCubeMapTex->unlock();
+					renderCubeMap(driver, cubeMapCamera, sphereNode3, cubeMapRT, dynamicCubeMapRTT_intermediate, depthStencilRTT);
+					for ( int i=0; i<6; ++i)
+					{
+						void * rtData = dynamicCubeMapRTT_intermediate->lock(video::ETLM_READ_ONLY, 0, i, video::ETLF_NONE);
+						void * tData = dynamicCubeMapTex->lock(video::ETLM_READ_WRITE, 0, i);
+						memcpy(tData, rtData, dynamicCubeMapTex->getPitch()*dynamicCubeMapTex->getSize().Width);
+						dynamicCubeMapRTT_intermediate->unlock();
+						dynamicCubeMapTex->unlock();
+						dynamicCubeMapTex->regenerateMipMapLevels();
+					}
 				}
-
+				
 #ifdef CUBEMAP_UPSIDE_DOWN_GL_PROJECTION
 				if ( driverType == video::EDT_OPENGL )
 				{
@@ -494,13 +505,11 @@ int main()
 				}
 #endif
 			}
-
+			
 			smgr->drawAll();
 			env->drawAll();
 
 			driver->endScene();
-
-//break; // TEST, run just once
 		}
 	}
 
