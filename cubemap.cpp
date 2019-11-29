@@ -116,7 +116,9 @@ class MyEventReceiver : public IEventReceiver
 public:
 	MyEventReceiver() : Driver(0), Shader(0) 
 		,BackgroundSkybox(0), BackgroundCube(0)
+		, CubemapUpdates(0)
 		, CurrentStyleUVW(0), CurrentRoughness(0)
+		, NeedCubemapUpdate(true)
 	{ 
 		StyleNamesUVW.push_back( L"specular" );
 		StyleNamesUVW.push_back( L"diffuse" );
@@ -149,6 +151,7 @@ public:
 						BackgroundSkybox->setVisible(true);
 						BackgroundCube->setVisible(false);
 					}
+					NeedCubemapUpdate = true;
 				}
 				break;
 			case KEY_KEY_S:
@@ -157,6 +160,10 @@ public:
 					Driver->disableFeature(video::EVDF_TEXTURE_CUBEMAP_SEAMLESS, Driver->queryFeature(video::EVDF_TEXTURE_CUBEMAP_SEAMLESS) );
 					updateSeamless();
 				}
+				break;
+			case KEY_KEY_U:
+				CubemapUpdates = (CubemapUpdates+1) % 2;
+				updateCubemapUpdates();
 				break;
 			case KEY_PLUS:
 			case KEY_ADD:
@@ -210,17 +217,42 @@ public:
 		}
 	}
 
+	void updateCubemapUpdates()
+	{
+		if ( CurrentCubemapUpdates )
+		{
+			CurrentCubemapUpdates->setText( CubemapUpdates == 0 ? L"static" : L"dynamic" );
+		}
+	}
+
+	// Should cubemap textures be updated?
+	bool CheckCubemapUpdate()
+	{
+		if ( NeedCubemapUpdate || CubemapUpdates == 1)
+		{
+			NeedCubemapUpdate = false;
+			return true;
+		}
+		return false;
+	}
+
 	irr::video::IVideoDriver* Driver;
 	CubeMapReflectionCallback* Shader;
 
 	scene::ISceneNode* BackgroundSkybox;
 	scene::ISceneNode* BackgroundCube;
 
+	int CubemapUpdates;	// 0 = static, 1 = dynamic
+
 	irr::core::array<irr::core::stringw> StyleNamesUVW;
 
 	irr::gui::IGUIStaticText* CurrentStyleUVW;
 	irr::gui::IGUIStaticText* CurrentRoughness;
 	irr::gui::IGUIStaticText* CurrentSeamlessCubemap;
+	irr::gui::IGUIStaticText* CurrentCubemapUpdates;
+
+private:
+	bool NeedCubemapUpdate;
 };
 
 //! Copy texture to an image and write that to a file
@@ -528,7 +560,7 @@ int main()
 	{
 		skin->setColor(gui::EGDC_3D_FACE, video::SColor(50, 160, 120, 120));
 
-		u32 top = dimDevice.Height - 160;
+		u32 top = dimDevice.Height - 180;
 		const u32 left = dimDevice.Width - 350;
 		const u32 right = dimDevice.Width - 10;
 		irr::gui::IGUIStaticText * stextUVW = env->addStaticText(L" Style of generating texture coordinates:\n Change with (space)", core::recti(left, top, right, top+35), false, true, 0, -1, true);
@@ -547,8 +579,12 @@ int main()
 		eventReceiver.CurrentSeamlessCubemap = env->addStaticText( L"", core::recti(240,0, 400, 20), false, false, stextSeamlessCupemap);
 		eventReceiver.updateSeamless();
 
-		irr::gui::IGUIStaticText * stextBackground = env->addStaticText(L" Change background with (b)", core::recti(left, top, right, top+15), false, true, 0, -1, true);
+		irr::gui::IGUIStaticText * stextUpdates = env->addStaticText(L" Cubemap updates:\nChange with (u)", core::recti(left, top, right, top+35), false, true, 0, -1, true);
 		top += 40;
+		eventReceiver.CurrentCubemapUpdates = env->addStaticText( L"", core::recti(240,0, 400, 20), false, false, stextUpdates);
+		eventReceiver.updateCubemapUpdates();
+
+		env->addStaticText(L" Change background with (b)", core::recti(left, top, right, top+15), false, true, 0, -1, true);
 	}
 
 
@@ -559,12 +595,8 @@ int main()
 		{
 			driver->beginScene(true, true);
 
-			static bool justOnce = true;	// if nothing changes that's enough, if things the sphere "sees" then we have to update constantly.
-
-			if( dynamicCubeMapRTT && sphereNode && justOnce )
+			if( dynamicCubeMapRTT && sphereNode && eventReceiver.CheckCubemapUpdate() )
 			{
-				justOnce = false;
-				
 #ifdef CUBEMAP_UPSIDE_DOWN_GL_PROJECTION
 				core::array<scene::ISceneNode*> allNodes;
 				if ( driverType == video::EDT_OPENGL )
