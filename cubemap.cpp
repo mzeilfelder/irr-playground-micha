@@ -154,6 +154,10 @@ public:
 					NeedCubemapUpdate = true;
 				}
 				break;
+			case KEY_KEY_I:
+				for (u32 i=0; i<InfoTextNodes.size(); ++i )
+					InfoTextNodes[i]->setVisible(!InfoTextNodes[i]->isVisible());
+				break;
 			case KEY_KEY_S:
 				if ( Driver )
 				{
@@ -226,7 +230,7 @@ public:
 	}
 
 	// Should cubemap textures be updated?
-	bool CheckCubemapUpdate()
+	bool checkCubemapUpdate()
 	{
 		if ( NeedCubemapUpdate || CubemapUpdates == 1)
 		{
@@ -236,11 +240,24 @@ public:
 		return false;
 	}
 
+	void addInfoTextNode(irr::gui::IGUIFont* font,wchar_t* text, irr::scene::ISceneNode* parent)
+	{
+		if ( parent )
+		{
+			const video::SColor infoTextCol(250, 70, 90, 90);
+			core::dimension2du dim(font->getDimension(text));
+			core::dimension2df dimf((f32)dim.Width, (f32)dim.Height);
+			scene::IBillboardTextSceneNode* infoNode = parent->getSceneManager()->addBillboardTextSceneNode( font, text, parent, dimf, core::vector3df(0, 120, 0), -1, infoTextCol, infoTextCol);
+			InfoTextNodes.push_back(infoNode);
+		}
+	}
+
 	irr::video::IVideoDriver* Driver;
 	CubeMapReflectionCallback* Shader;
 
 	scene::ISceneNode* BackgroundSkybox;
 	scene::ISceneNode* BackgroundCube;
+	irr::core::array<scene::ISceneNode*> InfoTextNodes;
 
 	int CubemapUpdates;	// 0 = static, 1 = dynamic
 
@@ -351,7 +368,7 @@ void renderCubeMap(irr::video::IVideoDriver* driver, irr::scene::ICameraSceneNod
 #endif
 	}
 
-	//dynamicCubeMapRTT->regenerateMipMapLevels();	// Unfortunately we can't have mipmaps for rtt's
+	//dynamicCubeMapRTT->regenerateMipMapLevels();	// Unfortunately we can't seem to have mipmaps for rtt's
 
 	driver->setRenderTarget(0);
 	cubeCenterNode->setVisible( true );
@@ -376,13 +393,11 @@ int main()
 		return 1;
 
 	// Create device
+	MyEventReceiver eventReceiver;
 	const core::dimension2d<u32> dimDevice(1024, 768);
-	IrrlichtDevice* device = createDevice( driverType, dimDevice );
+	IrrlichtDevice* device = createDevice( driverType, dimDevice, 32, false, false, false, &eventReceiver );
 	if (!device)
 		return 1; 
-
-	MyEventReceiver eventReceiver;
-	device->setEventReceiver(&eventReceiver);
 
 	video::IVideoDriver* driver = device->getVideoDriver();
 	scene::ISceneManager* smgr = device->getSceneManager();
@@ -394,6 +409,12 @@ int main()
 	strCaption += driver->getName();
 	strCaption += L"]";
 	device->setWindowCaption(strCaption.c_str());
+
+	// set a nicer font
+	gui::IGUISkin* skin = env->getSkin();
+	gui::IGUIFont* font = env->getFont(getExampleMediaPath() + "fonthaettenschweiler.bmp");
+	if (font)
+		skin->setFont(font);
 
 	// Decide on shader to use based on active driver 
 	const c8* vsFileName = 0;
@@ -425,16 +446,12 @@ int main()
 		cubeMapCB->drop();
 	}	
 
-	
 	// add fps camera
 	scene::ICameraSceneNode* camera = smgr->addCameraSceneNodeFPS(0, 100.f, 1.f);
 	camera->setPosition( core::vector3df( 0,10,-200 ) );
 	device->getCursorControl()->setVisible(false);
 
-
-	// Create Cube Map Render Target and Camera for Render To Texture
-	video::IRenderTarget* cubeMapRT = driver->addRenderTarget();
-
+	// Get 6 images forming a cubemap
 	core::array<video::IImage*> cubeMapImages;
 	cubeMapImages.push_back(driver->createImageFromFile( "cubemap/cubemap_posx.jpg" ));
 	cubeMapImages.push_back(driver->createImageFromFile( "cubemap/cubemap_negx.jpg" ));
@@ -443,6 +460,7 @@ int main()
 	cubeMapImages.push_back(driver->createImageFromFile( "cubemap/cubemap_posz.jpg" ));
 	cubeMapImages.push_back(driver->createImageFromFile( "cubemap/cubemap_negz.jpg" ));
 
+	// Create a cubemap texture from those images
 	video::ITexture* cubeMapStaticTex = 0;
 	cubeMapStaticTex = driver->addTextureCubemap("cm", cubeMapImages[0], cubeMapImages[1], cubeMapImages[2], cubeMapImages[3], cubeMapImages[4], cubeMapImages[5]);
 	for ( u32 i=0; i<cubeMapImages.size(); ++i )
@@ -450,7 +468,10 @@ int main()
 	cubeMapImages.clear();
 //	core::stringw cubeOutName( driverType == video::EDT_DIRECT3D9 ? "cubemap/cube_out_dx.jpg" : "cubemap/cube_out_gl.jpg");
 //	writeCubeTextureToFile(driver, cubeMapStaticTex, cubeOutName);
-	
+
+	// Create Cube Map Render Target and Camera for Render To Texture
+	video::IRenderTarget* cubeMapRT = driver->addRenderTarget();
+
 	video::ITexture* dynamicCubeMapRTT = 0;
 	video::ITexture* depthStencilRTT = 0;
 	video::ITexture* dynamicCubeMapRTT_intermediate = 0;	// just for rendering, but not used in material
@@ -485,6 +506,7 @@ int main()
 		sphereNode->setMaterialFlag( video::EMF_LIGHTING, false );
 		sphereNode->setMaterialTexture( 0, dynamicCubeMapRTT );
 		sphereNode->setMaterialType( (video::E_MATERIAL_TYPE)cubeMapReflectionMaterial );
+		eventReceiver.addInfoTextNode(font, L"Cubemap dynamic rtt, no mip-maps", sphereNode);
 
 		if ( dynamicCubeMapTex )
 		{
@@ -495,6 +517,7 @@ int main()
 			sphereNode3->setMaterialTexture( 0, dynamicCubeMapTex );
 			sphereNode3->getMaterial(0).TextureLayer[0].TrilinearFilter = false; // this is default anyway. It would be faster - but you can only access integer mip-levels - no filtering between mip-levels.
 			sphereNode3->setMaterialType( (video::E_MATERIAL_TYPE)cubeMapReflectionMaterial );
+			eventReceiver.addInfoTextNode(font, L"Cubemap dynamic with mip-maps", sphereNode3);
 		}
 
 		if ( cubeMapStaticTex )
@@ -506,6 +529,7 @@ int main()
 			sphereNode2->setMaterialTexture( 0, cubeMapStaticTex );
 			sphereNode2->getMaterial(0).TextureLayer[0].TrilinearFilter = true;		// this way smoothing happens between different mip-levels.
 			sphereNode2->setMaterialType( (video::E_MATERIAL_TYPE)cubeMapReflectionMaterial );
+			eventReceiver.addInfoTextNode(font, L"Cubemap fixed images", sphereNode2);
 		}
 
 		sphereMesh->drop();
@@ -548,19 +572,12 @@ int main()
 	}
 #endif
 
-
-	// set a nicer font
-	gui::IGUISkin* skin = env->getSkin();
-	gui::IGUIFont* font = env->getFont(getExampleMediaPath() + "fonthaettenschweiler.bmp");
-	if (font)
-		skin->setFont(font);
-	
 	// Add some UI
 	if ( eventReceiver.Shader )
 	{
 		skin->setColor(gui::EGDC_3D_FACE, video::SColor(50, 160, 120, 120));
 
-		u32 top = dimDevice.Height - 180;
+		u32 top = dimDevice.Height - 200;
 		const u32 left = dimDevice.Width - 350;
 		const u32 right = dimDevice.Width - 10;
 		irr::gui::IGUIStaticText * stextUVW = env->addStaticText(L" Style of generating texture coordinates:\n Change with (space)", core::recti(left, top, right, top+35), false, true, 0, -1, true);
@@ -579,12 +596,15 @@ int main()
 		eventReceiver.CurrentSeamlessCubemap = env->addStaticText( L"", core::recti(240,0, 400, 20), false, false, stextSeamlessCupemap);
 		eventReceiver.updateSeamless();
 
-		irr::gui::IGUIStaticText * stextUpdates = env->addStaticText(L" Cubemap updates:\nChange with (u)", core::recti(left, top, right, top+35), false, true, 0, -1, true);
+		irr::gui::IGUIStaticText * stextUpdates = env->addStaticText(L" Cubemap updates:\n Change with (u)", core::recti(left, top, right, top+35), false, true, 0, -1, true);
 		top += 40;
 		eventReceiver.CurrentCubemapUpdates = env->addStaticText( L"", core::recti(240,0, 400, 20), false, false, stextUpdates);
 		eventReceiver.updateCubemapUpdates();
 
 		env->addStaticText(L" Change background with (b)", core::recti(left, top, right, top+15), false, true, 0, -1, true);
+		top += 20;
+
+		env->addStaticText(L" Show/hide info nodes with (i)", core::recti(left, top, right, top+15), false, true, 0, -1, true);
 	}
 
 
@@ -595,7 +615,7 @@ int main()
 		{
 			driver->beginScene(true, true);
 
-			if( dynamicCubeMapRTT && sphereNode && eventReceiver.CheckCubemapUpdate() )
+			if( dynamicCubeMapRTT && sphereNode && eventReceiver.checkCubemapUpdate() )
 			{
 #ifdef CUBEMAP_UPSIDE_DOWN_GL_PROJECTION
 				core::array<scene::ISceneNode*> allNodes;
