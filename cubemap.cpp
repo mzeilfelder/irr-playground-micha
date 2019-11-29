@@ -442,7 +442,8 @@ int main()
 			vsFileName, "VS", video::EVST_VS_1_1,
 			psFileName, "PS", video::EPST_PS_3_0,
 			cubeMapCB, video::EMT_SOLID );
-		eventReceiver.Shader = cubeMapCB;
+		if ( cubeMapReflectionMaterial >= 0 )
+			eventReceiver.Shader = cubeMapCB;
 		cubeMapCB->drop();
 	}	
 
@@ -459,7 +460,7 @@ int main()
 	cubeMapImages.push_back(driver->createImageFromFile( "cubemap/cubemap_negy.jpg" ));
 	cubeMapImages.push_back(driver->createImageFromFile( "cubemap/cubemap_posz.jpg" ));
 	cubeMapImages.push_back(driver->createImageFromFile( "cubemap/cubemap_negz.jpg" ));
-
+	
 	// Create a cubemap texture from those images
 	video::ITexture* cubeMapStaticTex = 0;
 	cubeMapStaticTex = driver->addTextureCubemap("cm", cubeMapImages[0], cubeMapImages[1], cubeMapImages[2], cubeMapImages[3], cubeMapImages[4], cubeMapImages[5]);
@@ -469,9 +470,8 @@ int main()
 //	core::stringw cubeOutName( driverType == video::EDT_DIRECT3D9 ? "cubemap/cube_out_dx.jpg" : "cubemap/cube_out_gl.jpg");
 //	writeCubeTextureToFile(driver, cubeMapStaticTex, cubeOutName);
 
-	// Create Cube Map Render Target and Camera for Render To Texture
+	// Create Cube Map Render Targe and Camera for Render To Texture
 	video::IRenderTarget* cubeMapRT = driver->addRenderTarget();
-
 	video::ITexture* dynamicCubeMapRTT = 0;
 	video::ITexture* depthStencilRTT = 0;
 	video::ITexture* dynamicCubeMapRTT_intermediate = 0;	// just for rendering, but not used in material
@@ -493,13 +493,14 @@ int main()
 		smgr->setActiveCamera( camera );
 	}
 
-	// add sphere to reflect scene
+	// add spheres using the cubemaps
 	scene::ISceneNode* sphereNode = 0;
 	scene::ISceneNode* sphereNode2 = 0;
 	scene::ISceneNode* sphereNode3 = 0;
 	scene::IMesh* sphereMesh = smgr->getGeometryCreator()->createSphereMesh(100.f);
 	if( sphereMesh )
 	{
+		// Nothing really special here except they need the shader material to display cubemaps.
 		sphereNode = smgr->addMeshSceneNode( sphereMesh );
 		sphereNode->setPosition( core::vector3df(-250,0,0) );
 		sphereNode->updateAbsolutePosition();
@@ -535,25 +536,36 @@ int main()
 		sphereMesh->drop();
 	}
 
+	/* Add some background which can be used to reflect on the cubemaps
+	   For first one we use the same textures as used in the spheres.
+	   Note the difference between a skybox and a cubemap is that the skybox really uses 6 different
+	   textures. While the cubemap uses a single texture created from 6 images. */
 	eventReceiver.BackgroundSkybox = smgr->addSkyBoxSceneNode(
-	driver->getTexture("cubemap/cubemap_posy.jpg"), // top
-	driver->getTexture("cubemap/cubemap_negy.jpg"),	// bottom
-	driver->getTexture("cubemap/cubemap_posz.jpg"),	// left
-	driver->getTexture("cubemap/cubemap_negz.jpg"), // right
-	driver->getTexture("cubemap/cubemap_posx.jpg"), // front
-	driver->getTexture("cubemap/cubemap_negx.jpg")); // back
+		driver->getTexture("cubemap/cubemap_posy.jpg"), // top
+		driver->getTexture("cubemap/cubemap_negy.jpg"),	// bottom
+		driver->getTexture("cubemap/cubemap_posz.jpg"),	// left
+		driver->getTexture("cubemap/cubemap_negz.jpg"), // right
+		driver->getTexture("cubemap/cubemap_posx.jpg"), // front
+		driver->getTexture("cubemap/cubemap_negx.jpg")); // back
 
-	scene::IAnimatedMesh* cubeMesh = smgr->getMesh( "cubemap/cubeBoxTest.ms3d" );
+
+
+	/* Another background for comparison and to make it more obvious 
+	when the spheres reflect the background and when they use static cubemaps. */
+	scene::IMesh * cubeMesh = smgr->getGeometryCreator()->createCubeMesh( core::vector3df(10.f, 10.f, 10.f), scene::ECMT_6BUF_4VTX_NP);
+	smgr->getMeshManipulator()->scale(cubeMesh, core::vector3df(-1, 1, 1));
 	if( cubeMesh )
 	{
-		smgr->getMeshManipulator()->setVertexColors( cubeMesh->getMeshBuffer(0), cubeMesh->getMeshBuffer(0)->getMaterial().DiffuseColor );
-		smgr->getMeshManipulator()->setVertexColors( cubeMesh->getMeshBuffer(1), cubeMesh->getMeshBuffer(1)->getMaterial().DiffuseColor );
-		smgr->getMeshManipulator()->setVertexColors( cubeMesh->getMeshBuffer(2), cubeMesh->getMeshBuffer(2)->getMaterial().DiffuseColor );
-		smgr->getMeshManipulator()->setVertexColors( cubeMesh->getMeshBuffer(3), cubeMesh->getMeshBuffer(3)->getMaterial().DiffuseColor );
-		smgr->getMeshManipulator()->setVertexColors( cubeMesh->getMeshBuffer(4), cubeMesh->getMeshBuffer(4)->getMaterial().DiffuseColor );
-		smgr->getMeshManipulator()->setVertexColors( cubeMesh->getMeshBuffer(5), cubeMesh->getMeshBuffer(5)->getMaterial().DiffuseColor );
+		smgr->getMeshManipulator()->setVertexColors( cubeMesh->getMeshBuffer(0), video::SColor(255, 240, 10, 10) );
+		smgr->getMeshManipulator()->setVertexColors( cubeMesh->getMeshBuffer(1), video::SColor(255, 240, 130, 10) );
+		smgr->getMeshManipulator()->setVertexColors( cubeMesh->getMeshBuffer(2), video::SColor(255, 50, 250, 10)  );
+		smgr->getMeshManipulator()->setVertexColors( cubeMesh->getMeshBuffer(3), video::SColor(255, 70, 10, 250) );
+		smgr->getMeshManipulator()->setVertexColors( cubeMesh->getMeshBuffer(4), video::SColor(255, 240, 250, 10) );
+		smgr->getMeshManipulator()->setVertexColors( cubeMesh->getMeshBuffer(5), video::SColor(255, 85, 250, 250)  );
 
 		eventReceiver.BackgroundCube = smgr->addMeshSceneNode( cubeMesh );
+		cubeMesh->drop();
+
 		eventReceiver.BackgroundCube->setScale( core::vector3df( 200, 200, 200 ) );
 		eventReceiver.BackgroundCube->setMaterialFlag( video::EMF_LIGHTING, false );
 		eventReceiver.BackgroundCube->setVisible(false);
@@ -613,7 +625,7 @@ int main()
 	{
 		if (device->isWindowActive())
 		{
-			driver->beginScene(true, true);
+			driver->beginScene(true, true, video::SColor(255, 127, 127, 255));
 
 			if( dynamicCubeMapRTT && sphereNode && eventReceiver.checkCubemapUpdate() )
 			{
