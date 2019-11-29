@@ -8,20 +8,21 @@
 
 #include <irrlicht.h>
 #include "driverChoice.h"
+#include "exampleHelper.h"
 
 using namespace irr;
 
 // Texture origins in OpenGL are usually left-bottom instead of the more common left-top.
 // Irrlicht ignores that and uses textures with left-top origin and then flips all texture-matrices in the fixed-function pipeline.
 // For shaders it's left to the users to handle those uv-flips for the texture-matrix.
-// RTT's are rendered "correctly" with  left-bottom origin. 
+// RTT's are rendered "correctly" with left-bottom origin. 
 // In fixed function pipeline Irrlicht handles this by flipping the RTT's texture matrix once more (so all textures are upside down).
-// (not sure why it doesn't to the original flip instead - haven't tried yet changing that - maybe there's more going on)
+// (not sure why it doesn't use the original instead - haven't tried yet changing that)
 // Cubemaps are once more different. Basically each side has left-top as origin. So not flipping textures for those would be fine.
 // Except - OpenGL RTT's still seems to render left-bottom - even when the target is a cubemap RTT.
 // I found no good way around this so far - it just seems messed up as we get a left-handed/right handed coordinate system change that way.
 // So... following 2 defines are the 2 workarounds I found. Both are ugly, which one is better in reality depends probably on the scene.
-// Only use one fo them
+// Only use one of those:
 #define CUBEMAP_UPSIDE_DOWN_GL_PROJECTION
 //#define CUBEMAP_USPIDE_DOWN_RTT
 
@@ -37,8 +38,7 @@ public:
 		, worldViewProjID(-1)
 		, worldID(-1)
 		, cameraPosID(-1)
-	{
-	}
+	{}
 
 	void SetStyleUVW(int style)
 	{
@@ -114,7 +114,14 @@ private:
 class MyEventReceiver : public IEventReceiver
 {
 public:
-	MyEventReceiver() : Driver(0), Shader(0) { }
+	MyEventReceiver() : Driver(0), Shader(0) 
+		,BackgroundSkybox(0), BackgroundCube(0)
+		, CurrentStyleUVW(0), CurrentRoughness(0)
+	{ 
+		StyleNamesUVW.push_back( L"specular" );
+		StyleNamesUVW.push_back( L"diffuse" );
+		StyleNamesUVW.push_back( L"model coordinates" );
+	}
 
 	virtual bool OnEvent(const SEvent& event)
 	{
@@ -125,25 +132,52 @@ public:
 			case KEY_SPACE:
 				if ( Shader )
 				{
-					Shader->SetStyleUVW( (Shader->GetStyleUVW()+1)%3 );
+					Shader->SetStyleUVW((Shader->GetStyleUVW()+1)%StyleNamesUVW.size());
+					updateStyleUVW();
+				}
+				break;
+			case KEY_KEY_B:
+				if ( BackgroundSkybox && BackgroundCube )
+				{
+					if ( BackgroundSkybox->isVisible() )
+					{
+						BackgroundSkybox->setVisible(false);
+						BackgroundCube->setVisible(true);
+					}
+					else
+					{
+						BackgroundSkybox->setVisible(true);
+						BackgroundCube->setVisible(false);
+					}
 				}
 				break;
 			case KEY_KEY_S:
 				if ( Driver )
 				{
 					Driver->disableFeature(video::EVDF_TEXTURE_CUBEMAP_SEAMLESS, Driver->queryFeature(video::EVDF_TEXTURE_CUBEMAP_SEAMLESS) );
+					updateSeamless();
 				}
 				break;
 			case KEY_PLUS:
 			case KEY_ADD:
-				Shader->SetRoughness( Shader->getRoughness() + 0.5f );
+				if ( Shader )
+				{
+					Shader->SetRoughness( Shader->getRoughness() + 0.5f );
+					updateRoughness();
+				}
 				break;
 			case KEY_MINUS:
 			case KEY_SUBTRACT:
 			{
-				float roughness = Shader->getRoughness() - 0.5f;
-				if ( roughness	>= 0.f )
-					Shader->SetRoughness( roughness );
+				if ( Shader )
+				{
+					float roughness = Shader->getRoughness() - 0.5f;
+					if ( roughness >= 0.f )
+					{
+						Shader->SetRoughness(roughness);
+						updateRoughness();
+					}
+				}
 				break;
 			}
 			default:
@@ -154,8 +188,39 @@ public:
 		return false;
 	}
 
+	void updateStyleUVW()
+	{
+		if ( CurrentStyleUVW && Shader)
+			CurrentStyleUVW->setText(StyleNamesUVW[Shader->GetStyleUVW()].c_str());
+	}
+
+	void updateRoughness()
+	{
+		if ( CurrentRoughness && Shader )
+		{
+			CurrentRoughness->setText( irr::core::stringw(Shader->getRoughness()).c_str() );
+		}
+	}
+
+	void updateSeamless() 
+	{
+		if ( CurrentSeamlessCubemap && Driver )
+		{
+			CurrentSeamlessCubemap->setText( Driver->queryFeature(video::EVDF_TEXTURE_CUBEMAP_SEAMLESS) ? L"ON" : L"OFF" );
+		}
+	}
+
 	irr::video::IVideoDriver* Driver;
 	CubeMapReflectionCallback* Shader;
+
+	scene::ISceneNode* BackgroundSkybox;
+	scene::ISceneNode* BackgroundCube;
+
+	irr::core::array<irr::core::stringw> StyleNamesUVW;
+
+	irr::gui::IGUIStaticText* CurrentStyleUVW;
+	irr::gui::IGUIStaticText* CurrentRoughness;
+	irr::gui::IGUIStaticText* CurrentSeamlessCubemap;
 };
 
 //! Copy texture to an image and write that to a file
@@ -278,7 +343,9 @@ int main()
 	if (driverType==video::EDT_COUNT)
 		return 1;
 
-	IrrlichtDevice* device = createDevice( driverType, core::dimension2d<u32>(1021, 768) );
+	// Create device
+	const core::dimension2d<u32> dimDevice(1024, 768);
+	IrrlichtDevice* device = createDevice( driverType, dimDevice );
 	if (!device)
 		return 1; 
 
@@ -290,11 +357,13 @@ int main()
 	gui::IGUIEnvironment* env = device->getGUIEnvironment();
 	eventReceiver.Driver = driver;
 
+	// Set window title
 	core::stringw strCaption(L"Cubemap example - Irrlicht Engine [");
 	strCaption += driver->getName();
 	strCaption += L"]";
 	device->setWindowCaption(strCaption.c_str());
 
+	// Decide on shader to use based on active driver 
 	const c8* vsFileName = 0;
 	const c8* psFileName = 0;
 	switch( driverType )
@@ -310,9 +379,8 @@ int main()
 			break;
 	}	
 
-	// create materials
+	// create shader material
 	video::IGPUProgrammingServices* gpu = driver->getGPUProgrammingServices();
-
 	s32 cubeMapReflectionMaterial = 0;
 	if( gpu )
 	{
@@ -324,9 +392,7 @@ int main()
 		eventReceiver.Shader = cubeMapCB;
 		cubeMapCB->drop();
 	}	
-	
-	driver->setTextureCreationFlag(video::ETCF_ALWAYS_32_BIT, true);
-	driver->setTextureCreationFlag(video::ETCF_CREATE_MIP_MAPS, true);
+
 	
 	// add fps camera
 	scene::ICameraSceneNode* camera = smgr->addCameraSceneNodeFPS(0, 100.f, 1.f);
@@ -413,15 +479,14 @@ int main()
 		sphereMesh->drop();
 	}
 
-#if 1
-	scene::ISceneNode* skybox = smgr->addSkyBoxSceneNode(
+	eventReceiver.BackgroundSkybox = smgr->addSkyBoxSceneNode(
 	driver->getTexture("cubemap/cubemap_posy.jpg"), // top
 	driver->getTexture("cubemap/cubemap_negy.jpg"),	// bottom
 	driver->getTexture("cubemap/cubemap_posz.jpg"),	// left
 	driver->getTexture("cubemap/cubemap_negz.jpg"), // right
 	driver->getTexture("cubemap/cubemap_posx.jpg"), // front
 	driver->getTexture("cubemap/cubemap_negx.jpg")); // back
-#else
+
 	scene::IAnimatedMesh* cubeMesh = smgr->getMesh( "cubemap/cubeBoxTest.ms3d" );
 	if( cubeMesh )
 	{
@@ -432,11 +497,11 @@ int main()
 		smgr->getMeshManipulator()->setVertexColors( cubeMesh->getMeshBuffer(4), cubeMesh->getMeshBuffer(4)->getMaterial().DiffuseColor );
 		smgr->getMeshManipulator()->setVertexColors( cubeMesh->getMeshBuffer(5), cubeMesh->getMeshBuffer(5)->getMaterial().DiffuseColor );
 
-		scene::ISceneNode* coloredCubeNode = smgr->addMeshSceneNode( cubeMesh );
-		coloredCubeNode->setScale( core::vector3df( 200, 200, 200 ) );
-		coloredCubeNode->setMaterialFlag( video::EMF_LIGHTING, false );
+		eventReceiver.BackgroundCube = smgr->addMeshSceneNode( cubeMesh );
+		eventReceiver.BackgroundCube->setScale( core::vector3df( 200, 200, 200 ) );
+		eventReceiver.BackgroundCube->setMaterialFlag( video::EMF_LIGHTING, false );
+		eventReceiver.BackgroundCube->setVisible(false);
 	}
-#endif
 
 #ifdef CUBEMAP_UPSIDE_DOWN_GL_PROJECTION
 	if ( driverType == video::EDT_OPENGL )
@@ -451,8 +516,43 @@ int main()
 	}
 #endif
 
-	driver->beginScene(true, true);	driver->endScene();	// TEST - frame 0 just making trace easier to follow
+
+	// set a nicer font
+	gui::IGUISkin* skin = env->getSkin();
+	gui::IGUIFont* font = env->getFont(getExampleMediaPath() + "fonthaettenschweiler.bmp");
+	if (font)
+		skin->setFont(font);
 	
+	// Add some UI
+	if ( eventReceiver.Shader )
+	{
+		skin->setColor(gui::EGDC_3D_FACE, video::SColor(50, 160, 120, 120));
+
+		u32 top = dimDevice.Height - 160;
+		const u32 left = dimDevice.Width - 350;
+		const u32 right = dimDevice.Width - 10;
+		irr::gui::IGUIStaticText * stextUVW = env->addStaticText(L" Style of generating texture coordinates:\n Change with (space)", core::recti(left, top, right, top+35), false, true, 0, -1, true);
+		top += 40;
+		stextUVW->setTextAlignment(gui::EGUIA_UPPERLEFT, gui::EGUIA_UPPERLEFT);
+		eventReceiver.CurrentStyleUVW = env->addStaticText(L"", core::recti(240,0, 400, 20), false, false, stextUVW);
+		eventReceiver.updateStyleUVW();
+
+		irr::gui::IGUIStaticText * stextRoughness = env->addStaticText(L" Roughness:\n Change with (+) and (-)", core::recti(left, top, right, top+35), false, true, 0, -1, true);
+		top += 40;
+		eventReceiver.CurrentRoughness = env->addStaticText( L"", core::recti(240,0, 400, 20), false, false, stextRoughness);
+		eventReceiver.updateRoughness();
+
+		irr::gui::IGUIStaticText * stextSeamlessCupemap = env->addStaticText(L" Seamless cubemap (with roughness):\n Change with (s)", core::recti(left, top, right, top+35), false, true, 0, -1, true);
+		top += 40;
+		eventReceiver.CurrentSeamlessCubemap = env->addStaticText( L"", core::recti(240,0, 400, 20), false, false, stextSeamlessCupemap);
+		eventReceiver.updateSeamless();
+
+		irr::gui::IGUIStaticText * stextBackground = env->addStaticText(L" Change background with (b)", core::recti(left, top, right, top+15), false, true, 0, -1, true);
+		top += 40;
+	}
+
+
+	// Main loop
 	while(device->run())
 	{
 		if (device->isWindowActive())
