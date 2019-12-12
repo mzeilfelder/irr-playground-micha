@@ -8,6 +8,11 @@
 
 #include <irrlicht.h>
 
+#ifdef _MSC_VER
+#pragma comment(lib, "Irrlicht.lib")
+#endif
+
+
 using namespace irr;
 using namespace video;
 using namespace core;
@@ -29,11 +34,11 @@ class LynxEventReceiver: public IEventReceiver
 					{
 						IGUIToolBar * tb = gui->addToolBar();
 						
-						// Workaround needed up to Irrlicht 1.8 (will fix it for 1.9)
-						core::rect<s32> rr =tb->getRelativePosition();
-						rr.LowerRightCorner.Y -= rr.UpperLeftCorner.Y;
-						rr.UpperLeftCorner.Y = 0;
-						tb->setRelativePosition(rr);
+						//// Workaround needed up to Irrlicht 1.8 (fixed for 1.9)
+						//core::rect<s32> rr =tb->getRelativePosition();
+						//rr.LowerRightCorner.Y -= rr.UpperLeftCorner.Y;
+						//rr.UpperLeftCorner.Y = 0;
+						//tb->setRelativePosition(rr);
 
 
 						break;
@@ -52,7 +57,7 @@ class LynxEventReceiver: public IEventReceiver
 		return false;
   }
 
-	IGUIEnvironment* gui = 0;
+	IGUIEnvironment* gui;
 };
 
 int main() {
@@ -73,12 +78,16 @@ int main() {
 	IGUIEnvironment* gui = device->getGUIEnvironment();
 	receiver.gui = gui;
 
-	//gui->addToolBar();	// this one shows up
+//	gui->addToolBar();	// this one shows up
+
+	IGUIContextMenu* contextMenu = gui->addMenu();	// menus don't care - but ignoring that for now. Just set them first.
+	contextMenu->addItem(L"menu");
+
+	gui->addToolBar();	// this one shows up
 
 	gui->addFileOpenDialog();
 
-	stringw windowName(L"Toolbar bug test");
-	device->setWindowCaption(windowName.c_str());
+	device->setWindowCaption(L"Toolbar bug test");
 
 	IVideoDriver* driver = device->getVideoDriver();
 
