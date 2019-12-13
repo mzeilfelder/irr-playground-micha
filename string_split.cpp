@@ -2,6 +2,7 @@
 // Written by Michael Zeilfelder
 // 
 // Testing string::split
+// This is about stuff manni63 mentioned in thread http://irrlicht.sourceforge.net/forum/viewtopic.php?f=7&t=51584&p=299634#p299634
 
 #include <irrlicht.h>
 #include <iostream>
@@ -72,6 +73,8 @@ int main()
 	stringc splitTest4(".");
 	stringc splitTest5("");
 	stringc splitTest6("For once a normal string.");
+	stringc manni63nums1("1;2;3;4;5");
+	stringc manni63nums2("1;2;3;4;");
 
     splitTest(splitTest1, ".", 1, true, true);
     splitTest(splitTest1, ".", 1, true, false);
@@ -107,6 +110,11 @@ int main()
     splitTest(splitTest6, ". ", 2, true, false);
     splitTest(splitTest6, ". ", 2, false, false);
     splitTest(splitTest6, ". ", 2, false, true);			
- 
+
+	splitTest(manni63nums1, ";", 1, false, false);
+	splitTest(manni63nums2, ";", 1, false, false);
+
+	std::cin.get();
+
     return 0;
 }
