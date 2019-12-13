@@ -1,7 +1,7 @@
 // Code is under the zlib license (same as Irrlicht)
 // Written by Michael Zeilfelder
 // 
-// Template for a minimal Irrlicht scene - just a camera, light + node.
+// Test-case for manipulating texture-matrix
 
 #include <irrlicht.h>
 #include <iostream>
