@@ -1,10 +1,9 @@
 // Code is under the zlib license (same as Irrlicht)
 // Written by Michael Zeilfelder
 // 
-// 2 bugs: 
-// 1. When setting no material (aka solid) then OpenGL still uses a second texture.
-// 2. Coordinates of second textures set with EMT_TRANSPARENT_REFLECTION_2_LAYER are really strange. Flipped v coordinate and too big on opengl and too small on D3D. 
-//    Also u coordinate is changing on resizing
+// Several strange material behaviors:
+// EMT_SPHERE_MAP is different on GL and D3D 
+// On d3d it seems up-side-down on first view, but that might be correct. As both REFLECTION_2_LAYER materials also show up upside-down.
 
 #include <irrlicht.h>
 #include <iostream>
@@ -19,8 +18,9 @@ using namespace scene;
  
 int main(int argc, char* argv[])
 {
-	IrrlichtDevice *  device = createDevice(irr::video::EDT_DIRECT3D9, irr::core::dimension2d<irr::u32>(800,600));
-	//IrrlichtDevice *  device = createDevice(irr::video::EDT_OPENGL, irr::core::dimension2d<irr::u32>(800,600));
+	//IrrlichtDevice *  device = createDevice(irr::video::EDT_DIRECT3D9, irr::core::dimension2d<irr::u32>(800,600));
+	IrrlichtDevice *  device = createDevice(irr::video::EDT_OPENGL, irr::core::dimension2d<irr::u32>(800,600));
+	//IrrlichtDevice *  device = createDevice(irr::video::EDT_BURNINGSVIDEO, irr::core::dimension2d<irr::u32>(800,600));
 	if (!device)
 		return 0;
    
@@ -29,13 +29,17 @@ int main(int argc, char* argv[])
    
 	video::SMaterial material;
 	IMeshSceneNode * backCube = smgr->addCubeSceneNode();
+
+
 	backCube->setPosition(vector3df(0, 0, 10));
 	backCube->setMaterialTexture(0, driver->getTexture("../../media/wall.bmp"));
 	//backCube->setMaterialTexture(0, driver->getTexture("../../media/irrlichtlogo3.png"));
 	//backCube->setMaterialTexture(1, driver->getTexture("../../media/water.jpg"));
 	backCube->setMaterialTexture(1, driver->getTexture("../../media/irrlichtlogo3.png"));
 	// vertex color has alpha 255, hence solid
-	backCube->setMaterialType(video::EMT_TRANSPARENT_REFLECTION_2_LAYER);
+	backCube->setMaterialType(video::EMT_REFLECTION_2_LAYER);
+	//backCube->setMaterialType(video::EMT_SPHERE_MAP);
+	//backCube->setMaterialType(video::EMT_TRANSPARENT_REFLECTION_2_LAYER);
 //	backCube->setMaterialType(video::EMT_SOLID_2_LAYER);
 	backCube->setMaterialFlag(video::EMF_LIGHTING, false);
 //	driver->getMeshManipulator()->setVertexColorAlpha(backCube->getMesh(), 45);
@@ -49,6 +53,8 @@ int main(int argc, char* argv[])
 	{
 		if ( device->isWindowActive() )
 		{
+			smgr->getMeshManipulator()->setVertexColorAlpha(backCube->getMesh()->getMeshBuffer(0), s * 50);
+
 			backCube->setScale(vector3df(s, s, 1));
 
 			if ( grow )
@@ -64,7 +70,7 @@ int main(int argc, char* argv[])
 					grow = true;
 			}
 
-			driver->beginScene(true, true);
+			driver->beginScene(true, true, video::SColor(255, 20, 30, 40));
 
 			smgr->drawAll();
 
