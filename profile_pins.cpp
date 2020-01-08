@@ -1,17 +1,17 @@
 // Code is under the zlib license (same as Irrlicht)
 // Written by Michael Zeilfelder
-// 
+//
 // Similar to profile_meshscenenode.cpp for now, but want to try some other experiments with this one.
 // You can pass 3 parameters for the number of nodes created in x, y and z direction
-// So have x*y*z nodes in the end
+// So you have x*y*z nodes in the end
 
 #include <irrlicht.h>
 #include <iostream>
 #include <cassert>
- 
+
 using namespace irr;
 using namespace core;
- 
+
 #ifdef _MSC_VER
 #pragma comment(lib, "Irrlicht.lib")
 #endif
@@ -19,7 +19,7 @@ using namespace core;
 // TODO: try with sorting materials
 
 // Show a simple mesh several times.
-// Bassic idea is to test how much faster it can get when knowing exacly what is needed (and also testing which flexibility costs most)
+// Bassic idea is to test how much faster it can get when knowing exactly what is needed (and also testing which flexibility costs most)
 // - single material per mesh instance
 // - not animated
 // - no transpareny
@@ -32,12 +32,12 @@ public:
 	{
 		irr::video::SMaterial Material;
 		irr::core::matrix4 Transform;
-		
+
 		bool operator < (const Instance& other) const
 		{
 			return (Material.EmissiveColor < other.Material.EmissiveColor);
 		}
-	
+
 	};
 
 	SimpleMeshArray(scene::IMesh * mesh, scene::ISceneNode* parent, scene::ISceneManager* mgr, s32 id=-1)
@@ -63,12 +63,12 @@ public:
 
 		//driver->setMaterial(Instances[0].Material);	// test with setting just one material for all
 		// scene::IMeshBuffer* mb = Mesh->getMeshBuffer(0);
-		
+
 		for ( u32 i=0; i < Instances.size(); ++i )
 		{
 			driver->setTransform(video::ETS_WORLD, Instances[i].Transform);
 			driver->setMaterial(Instances[i].Material);
-			
+
 			//driver->drawMeshBuffer(mb);
 			for (u32 m=0; m<Mesh->getMeshBufferCount(); ++m)
 			{
@@ -91,8 +91,8 @@ public:
 	virtual video::SMaterial& getMaterial(u32 i)
 	{
 		return Instances[i].Material;
-	}	
-	
+	}
+
 	//! Sets a new mesh to display
 	void setMesh(irr::scene::IMesh* mesh)
 	{
@@ -107,7 +107,7 @@ public:
 			Mesh = mesh;
 			if ( Mesh )
 			{
-				Box = Mesh->getBoundingBox(); // not correct yet - have to modify in addInstance				
+				Box = Mesh->getBoundingBox(); // not correct yet - have to modify in addInstance
 				//std::cout << "meshbuffers: " << Mesh->getMeshBufferCount() << "\n";
 			}
 		}
@@ -118,18 +118,18 @@ public:
 	{
 		return Mesh;
 	}
-	
+
 	irr::u32 addInstance(const Instance& instance)
 	{
 		Instances.push_back(instance);
 		return Instances.size()-1;
 	}
-	
+
 	void sortInstancesByEmissiveColor()
 	{
 		Instances.sort();
 	}
-	
+
 private:
 	scene::IMesh * Mesh;
 	core::aabbox3d<f32> Box;
@@ -137,43 +137,52 @@ private:
 };
 
 
- 
+
 int main(int argc, char* argv[])
 {
 	IrrlichtDevice *  device = createDevice(irr::video::EDT_OPENGL, irr::core::dimension2d<irr::u32>(800,600));
 	if (!device)
 		return 0;
-   
+
 	scene::ISceneManager* smgr = device->getSceneManager();
 	video::IVideoDriver * videoDriver = device->getVideoDriver ();
 	videoDriver->setMinHardwareBufferVertexCount(10);
 	IRandomizer* randomizer = device->getRandomizer();
 
+#if 1 // using some loaded mesh (a pin model)
 	scene::IAnimatedMesh* aniMesh = smgr->getMesh( "my_media/pin.obj" );
 	if (!aniMesh)
 		return 0;
 	scene::IMesh * mesh = aniMesh->getMesh (0);
+#else	// using cubes
+	scene::IMesh * mesh = smgr->getGeometryCreator()->createCubeMesh();
+#endif
 	if ( !mesh )
 		return 0;
 	mesh->setHardwareMappingHint(scene::EHM_STATIC);
-	
+
+	// Amount of 3d objects to create
 	int nodesX = 100;
 	int nodesY = 1;
 	int nodesZ = 100;
 
+	// can also pass them from command-line
 	if ( argc > 1 )
 		nodesX = atoi(argv[1]);
 	if ( argc > 2 )
 		nodesY = atoi(argv[2]);
 	if ( argc > 3 )
 		nodesZ = atoi(argv[3]);
+
+	// at least 1
 	if ( nodesX < 1 )
 		nodesX = 1;
 	if ( nodesY < 1 )
 		nodesY = 1;
 	if ( nodesZ < 1 )
 		nodesZ = 1;
-	
+
+	// Make sure there's some gaps between each of them
 	aabbox3df bbox = mesh->getBoundingBox();
 	vector3df extent = bbox.getExtent();
 	const f32 GAP = 10.f;
@@ -181,6 +190,7 @@ int main(int argc, char* argv[])
 	f32 halfSizeY = 0.5f * (nodesY*extent.Y + GAP*(nodesY-1));
 	f32 halfSizeZ = 0.5f * (nodesZ*extent.Z + GAP*(nodesZ-1));
 
+	// Some colors - we later use randomly one of them per mesh
 	irr::core::array<irr::video::SColor> Colors;
 	Colors.push_back( irr::video::SColor(255, 0,   0,  139) );
 	Colors.push_back( irr::video::SColor(255, 0,   0,  255) );
@@ -199,14 +209,18 @@ int main(int argc, char* argv[])
 	Colors.push_back( irr::video::SColor(255, 255, 255, 255) );
 	Colors.push_back( irr::video::SColor(255, 165, 42, 42) );
 	Colors.push_back( irr::video::SColor(255, 255, 215, 0) );
-	
+
+#if 0	// using nodes
 	SimpleMeshArray * arrayNode = NULL;
-	//SimpleMeshArray * arrayNode = new SimpleMeshArray(mesh, smgr->getRootSceneNode(), smgr);
+#else	// using a single array for all meshes
+	SimpleMeshArray * arrayNode = new SimpleMeshArray(mesh, smgr->getRootSceneNode(), smgr);
 	if ( arrayNode )
 	{
 		arrayNode->setAutomaticCulling(0);
 	}
-		
+#endif
+
+	// creating the 3d objects
 	for ( int x = 0; x < nodesX; ++x )
 	{
 		irr::f32 gapX = x > 0 ? (x-1)*GAP : 0.f;
@@ -221,7 +235,7 @@ int main(int argc, char* argv[])
 				irr::f32 posZ = -halfSizeZ + z*extent.Z + gapZ;
 				irr::video::SColor randCol = Colors[ randomizer->rand() % Colors.size() ];
 				//irr::video::SColor randCol = video::SColor(randomizer->rand());
-				
+
 				if ( arrayNode )
 				{
 					SimpleMeshArray::Instance instance;
@@ -238,16 +252,19 @@ int main(int argc, char* argv[])
 			}
 		}
 	}
-	
+
+	// Test how much sorting by material improves things (less state-switches for material changes)
 	if ( arrayNode )
 	{
 		arrayNode->sortInstancesByEmissiveColor();
 	}
-	
+
+	// some light (for testing with/without lighting)
 	/*scene::ILightSceneNode* nodeLight = */smgr->addLightSceneNode(0, core::vector3df(0, 300, 0),
 														video::SColorf(1.0f, 1.0f, 1.0f),
-														500.0f); 
-	
+														500.0f);
+
+	// just a simple fps camera
 	irr::scene::ICameraSceneNode * camera = smgr->addCameraSceneNodeFPS(0, 20.f, 0.5f );
 	camera->updateAbsolutePosition();
 	camera->setTarget( vector3df(0,0,0) );
@@ -265,10 +282,10 @@ int main(int argc, char* argv[])
 			smgr->drawAll();
 
 			videoDriver->endScene();
-			
+
 			// update information about current frame-rate
 			s32 fps = videoDriver->getFPS();
-			if ( fps != oldFPS )
+			if ( fps != oldFPS )	// we only update when it changes as calling setWindowCaption can be really slow (too lazy to make a gui right now...)
 			{
 				oldFPS = fps;
 				core::stringw str(L"FPS: ");
@@ -287,11 +304,12 @@ int main(int argc, char* argv[])
 	device->closeDevice();
 	device->drop();
 	device = NULL;
-	
+
+	// only useful when you profile Irrlicht internals
 	core::stringw output;
 	getProfiler().printAll(output);
 	printf("%s", core::stringc(output).c_str());
-	
+
 
 	return 0;
 }
