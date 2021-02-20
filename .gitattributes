@@ -1,0 +1,2 @@
+# Handle all files as binary as I never want any automatic text conversions (rather crlf on Linux than damn conversions)
+* -text
