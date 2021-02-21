@@ -208,7 +208,7 @@ bool SGUITTGlyph::renderSpans(FT_Library &library, FT_Face &face, float outline)
     // Need an outline for this to work.
     if (face->glyph->format == FT_GLYPH_FORMAT_OUTLINE)
     {
-		// Render the basic glyph to a span list. (we don't need those for now as we use bitmaps for non-outlined glyhps currently)
+		// Render the basic glyph to a span list. (we don't need those for now as we use bitmaps for non-outlined glyphs currently)
 		// RenderSpans(library, &face->glyph->outline, &PixelSpans);
 
 		// Next the outline.
