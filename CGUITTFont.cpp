@@ -903,7 +903,8 @@ core::dimension2d<u32> CGUITTFont::getDimension(const wchar_t* text) const
 	s32 test2 = getHeightFromCharacter(L'j') + 1;
 	s32 test3 = getHeightFromCharacter(L'_') + 1;
 	s32 max_font_height = core::max_(test1, core::max_(test2, test3));
-	s32 lineHeight = FontMetrics.ascender / 64; // same we use in drawing
+	s32 lineHeight = core::max_(FontMetrics.ascender,FontMetrics.height) / 64;
+	lineHeight = core::max_(lineHeight, max_font_height);
 
 	core::dimension2d<u32> text_dimension(0, max_font_height);
 	core::dimension2d<u32> line(0, lineHeight);
