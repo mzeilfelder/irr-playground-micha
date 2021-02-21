@@ -182,7 +182,7 @@ namespace gui
 					return *this;
 				}
 
-				video::IImage* Surface;	// Temporary holder, drop after glyph is page
+				video::IImage* Surface;	// Temporary holder, drop after glyph is paged
 				irr::core::recti PageRect;
 			};
 
@@ -371,11 +371,11 @@ namespace gui
 			{
 				// Set up our loading flags.
 				LoadFlags = FT_LOAD_DEFAULT | FT_LOAD_RENDER;
-				if (!useHinting()) 
+				if (!getHinting()) 
 					LoadFlags |= FT_LOAD_NO_HINTING;
-				if (!useAutoHinting()) 
+				if (!getAutoHinting()) 
 					LoadFlags |= FT_LOAD_NO_AUTOHINT;
-				if (useMonochrome()) 
+				if (getMonochrome()) 
 					LoadFlags |= FT_LOAD_MONOCHROME | FT_LOAD_TARGET_MONO | FT_RENDER_MODE_MONO;
 				else 
 					LoadFlags |= FT_LOAD_TARGET_NORMAL;
