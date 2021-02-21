@@ -357,6 +357,11 @@ bool CGUITTGlyphPage::createPageTexture(const irr::video::ECOLOR_FORMAT colorFor
 
 	bool flgmip = Driver->getTextureCreationFlag(video::ETCF_CREATE_MIP_MAPS);
 	Driver->setTextureCreationFlag(video::ETCF_CREATE_MIP_MAPS, false);
+	
+#if (IRRLICHT_VERSION_MAJOR > 1) || (IRRLICHT_VERSION_MAJOR == 1 && IRRLICHT_VERSION_MINOR >= 9)
+	bool allowMemCpy = Driver->getTextureCreationFlag(video::ETCF_ALLOW_MEMORY_COPY);
+	Driver->setTextureCreationFlag(video::ETCF_ALLOW_MEMORY_COPY, true);
+#endif
 
 	// Set the texture color format.
 	Texture = Driver->addTexture(textureSize, Name, colorFormat);
@@ -364,6 +369,9 @@ bool CGUITTGlyphPage::createPageTexture(const irr::video::ECOLOR_FORMAT colorFor
 		Texture->grab();
 
 	// Restore texture creation flags.
+#if (IRRLICHT_VERSION_MAJOR > 1) || (IRRLICHT_VERSION_MAJOR == 1 && IRRLICHT_VERSION_MINOR >= 9)				
+	Driver->setTextureCreationFlag(video::ETCF_ALLOW_MEMORY_COPY, allowMemCpy);
+#endif					
 	Driver->setTextureCreationFlag(video::ETCF_CREATE_MIP_MAPS, flgmip);
 
 	return Texture ? true : false;
