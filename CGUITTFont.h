@@ -48,10 +48,11 @@
 	- Add support for outlines (lot of code got changed for that, I guess original code now barely recognizable)
 	- Ensure Texture is grab()'ed. It's dangerous to remove it from driver otherwise (which might have cleared it's cache already)
 	- Rename "use" functions to "get" so we have setters and getters
+	- LineHeight only calculated once after load now
+	- Using LineHeight not just for getDimension, but also for draw calls.
 
 	TODO:
 	- Hinting should be one enum with explanation (have to figure it out first, results are strange currently when I enable it)
-	- max_font_height shouldn't have to be calculated each time. Set test-characters when font-size can change. And update each time getHeightFromCharacter is called.
 */
 
 #ifndef __C_GUI_TTFONT_H_INCLUDED__
