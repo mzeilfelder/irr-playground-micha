@@ -14,7 +14,10 @@ endif
 # general compiler settings
 CPPFLAGS = -I../../include -I/usr/X11R6/include
 ifdef FREETYPE
-CPPFLAGS += $(shell freetype-config --cflags)
+#Older debian versions
+#CPPFLAGS += $(shell freetype-config --cflags)
+#Newer debian versions
+CPPFLAGS += $(shell pkg-config freetype2 --cflags)
 endif
 CXXFLAGS = -Wall -pipe -fno-exceptions -fno-rtti -fstrict-aliasing
 ifndef NDEBUG
@@ -46,7 +49,10 @@ endif
 LDFLAGS += -lGL
 #LDFLAGS += -lSDL
 ifdef FREETYPE
-	LDFLAGS += -lfreetype
+	#Older debian versions
+	#LDFLAGS += -lfreetype
+	#Newer debian versions
+	LDFLAGS += $(shell pkg-config freetype2 --libs)
 endif
 all_linux clean_linux: SYSTEM=Linux
 all_win32: LDFLAGS = -L../../lib/Win32-gcc -lIrrlicht -lopengl32 -lm
