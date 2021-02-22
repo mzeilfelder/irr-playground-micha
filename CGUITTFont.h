@@ -48,7 +48,7 @@
 	- Add support for outlines (lot of code got changed for that, I guess original code now barely recognizable)
 	- Ensure Texture is grab()'ed. It's dangerous to remove it from driver otherwise (which might have cleared it's cache already)
 	- Rename "use" functions to "get" so we have setters and getters
-	
+
 	TODO:
 	- Hinting should be one enum with explanation (have to figure it out first, results are strange currently when I enable it)
 	- max_font_height shouldn't have to be calculated each time. Set test-characters when font-size can change. And update each time getHeightFromCharacter is called.
@@ -166,7 +166,7 @@ namespace gui
 
 				PagedGlyphTextures& operator=(const PagedGlyphTextures& other)
 				{
-					if ( this != &other )  
+					if ( this != &other )
 					{
 						PageRect = other.PageRect;
 						if ( Surface != other.Surface )
@@ -188,11 +188,11 @@ namespace gui
 
 
 		public:
-			CGUITTGlyphPage(video::IVideoDriver* driver, const io::path& textureName) 
-				: Texture(0), Driver(driver), Name(textureName) 
+			CGUITTGlyphPage(video::IVideoDriver* driver, const io::path& textureName)
+				: Texture(0), Driver(driver), Name(textureName)
 			{
 			}
-			
+
 			~CGUITTGlyphPage()
 			{
 				if (Texture)
@@ -262,7 +262,7 @@ namespace gui
 
 			//! Destructor
 			virtual ~CGUITTFont();
-		
+
 
 			//! Draws some text and clips it to the specified rectangle if wanted.
 			virtual void draw(const core::stringw& text, const core::rect<s32>& position,
@@ -289,10 +289,10 @@ namespace gui
 
 			//! Returns the distance between letters
 			virtual s32 getKerningHeight() const;
-		
+
 			//! Define which characters should not be drawn by the font.
 			/** This is a speed optimization. For example spaces don't draw anything in most fonts.
-			So making them invisible save the render-time for those. Instead an empty space with 
+			So making them invisible save the render-time for those. Instead an empty space with
 			their width is added to the output. */
 			virtual void setInvisibleCharacters(const wchar_t *s);
 
@@ -342,11 +342,11 @@ namespace gui
 
 			void setOutlineColor(video::SColor color) { OutlineColor = color; }
 			video::SColor getOutlineColor() const { return OutlineColor; }
-			
+
 			//! This function is for debugging mostly. If the page doesn't exist it returns zero.
 			//! \param page_index Simply return the texture handle of a given page index.
 			video::ITexture* getPageTextureByIndex(u32 page_index) const;
-			
+
 			//! Return the number of texture pages used internally
 			irr::u32 getNumGlyphPages() const { return GlyphPages.size(); }
 
@@ -363,7 +363,7 @@ namespace gui
 
 		private:
 			CGUITTFont(irr::video::IVideoDriver* driver, irr::io::IFileSystem* fileSystem);
-		
+
 			bool load(const io::path& filename, u32 size, bool antialias, bool transparency, float outline);
 			void reset_images();
 			void update_glyph_pages() const;
@@ -371,13 +371,13 @@ namespace gui
 			{
 				// Set up our loading flags.
 				LoadFlags = FT_LOAD_DEFAULT | FT_LOAD_RENDER;
-				if (!getHinting()) 
+				if (!getHinting())
 					LoadFlags |= FT_LOAD_NO_HINTING;
-				if (!getAutoHinting()) 
+				if (!getAutoHinting())
 					LoadFlags |= FT_LOAD_NO_AUTOHINT;
-				if (getMonochrome()) 
+				if (getMonochrome())
 					LoadFlags |= FT_LOAD_MONOCHROME | FT_LOAD_TARGET_MONO | FT_RENDER_MODE_MONO;
-				else 
+				else
 					LoadFlags |= FT_LOAD_TARGET_NORMAL;
 			}
 			u32 getWidthFromCharacter(wchar_t c) const;
@@ -385,12 +385,12 @@ namespace gui
 			u32 getGlyphIndexByChar(wchar_t c) const;
 			core::vector2di getKerning(const wchar_t thisLetter, const wchar_t previousLetter) const;
 			core::dimension2d<u32> getDimensionUntilEndOfLine(const wchar_t* p) const;
-			
+
 			// Manages the FreeType library.
 			static FT_Library c_library;
 			static core::map<io::path, SGUITTFace*> c_faces;
 			static bool c_libraryLoaded;
-		
+
 
 			bool UseMonochrome;
 			bool UseTransparency;
@@ -399,9 +399,10 @@ namespace gui
 			float Outline;
 			video::SColor OutlineColor;
 			u32 Size;
+			u32 LineHeight;	// in pixels and different from size
 			u32 BatchLoadSize;
 			core::dimension2du MaxPageTextureSize;
-			
+
 			irr::video::IVideoDriver* Driver;
 			irr::io::IFileSystem* FileSystem;
 			irr::ILogger* Logger;

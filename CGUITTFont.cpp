@@ -357,7 +357,7 @@ bool CGUITTGlyphPage::createPageTexture(const irr::video::ECOLOR_FORMAT colorFor
 
 	bool flgmip = Driver->getTextureCreationFlag(video::ETCF_CREATE_MIP_MAPS);
 	Driver->setTextureCreationFlag(video::ETCF_CREATE_MIP_MAPS, false);
-	
+
 #if (IRRLICHT_VERSION_MAJOR > 1) || (IRRLICHT_VERSION_MAJOR == 1 && IRRLICHT_VERSION_MINOR >= 9)
 	bool allowMemCpy = Driver->getTextureCreationFlag(video::ETCF_ALLOW_MEMORY_COPY);
 	Driver->setTextureCreationFlag(video::ETCF_ALLOW_MEMORY_COPY, true);
@@ -369,9 +369,9 @@ bool CGUITTGlyphPage::createPageTexture(const irr::video::ECOLOR_FORMAT colorFor
 		Texture->grab();
 
 	// Restore texture creation flags.
-#if (IRRLICHT_VERSION_MAJOR > 1) || (IRRLICHT_VERSION_MAJOR == 1 && IRRLICHT_VERSION_MINOR >= 9)				
+#if (IRRLICHT_VERSION_MAJOR > 1) || (IRRLICHT_VERSION_MAJOR == 1 && IRRLICHT_VERSION_MINOR >= 9)
 	Driver->setTextureCreationFlag(video::ETCF_ALLOW_MEMORY_COPY, allowMemCpy);
-#endif					
+#endif
 	Driver->setTextureCreationFlag(video::ETCF_CREATE_MIP_MAPS, flgmip);
 
 	return Texture ? true : false;
@@ -475,6 +475,7 @@ CGUITTFont* CGUITTFont::createTTFont(irr::video::IVideoDriver* driver, irr::io::
 CGUITTFont::CGUITTFont(irr::video::IVideoDriver* driver, irr::io::IFileSystem* fileSystem)
 : UseMonochrome(false), UseTransparency(true), UseHinting(false), UseAutoHinting(false)
 , Outline(0.f), OutlineColor(255, 255, 255, 255)
+, Size(0), LineHeight(0)
 , BatchLoadSize(1), Driver(driver), FileSystem(fileSystem), Logger(0), GlobalKerningWidth(0), GlobalKerningHeight(0)
 {
 	#ifdef _DEBUG
@@ -568,7 +569,7 @@ bool CGUITTFont::load(const io::path& filename, u32 size, bool antialias, bool t
 	if ( !TTface )
 	{
 		// memory corruption?
-		if (Logger) 
+		if (Logger)
 			Logger->log(L"CGUITTFont", L"Got a face but TTface is suddenly 0.", irr::ELL_INFORMATION);
 		return false;
 	}
@@ -590,6 +591,18 @@ bool CGUITTFont::load(const io::path& filename, u32 size, bool antialias, bool t
 	BatchLoadSize = 127;
 	getGlyphIndexByChar((wchar_t)0);
 	BatchLoadSize = old_size;
+
+	// Get the maximum line height.  Unfortunately, we have to do this hack as
+	// Irrlicht will draw things wrong.  In FreeType, the font size is the
+	// maximum size for a single glyph, but that glyph may hang "under" the
+	// draw line, increasing the total font height to beyond the set size.
+	// Irrlicht does not understand this concept when drawing fonts.  Also, I
+	// add +1 to give it a 1 pixel blank border.  This makes things like
+	// tooltips look nicer.
+	LineHeight = core::max_(FontMetrics.ascender,FontMetrics.height) / 64;
+	LineHeight = core::max_(LineHeight, getHeightFromCharacter(L'g') + 1);
+	LineHeight = core::max_(LineHeight, getHeightFromCharacter(L'j') + 1);
+	LineHeight = core::max_(LineHeight, getHeightFromCharacter(L'_') + 1);
 
 	return true;
 }
@@ -806,7 +819,7 @@ void CGUITTFont::draw(const core::stringw& text, const core::rect<s32>& position
 			if (lineBreak)
 			{
 				previousChar = 0;
-				offset.Y += FontMetrics.ascender / 64;
+				offset.Y += LineHeight;
 				offset.X = position.UpperLeftCorner.X;
 
 				if (hcenter)
@@ -892,22 +905,8 @@ core::dimension2d<u32> CGUITTFont::getCharDimension(const wchar_t ch) const
 
 core::dimension2d<u32> CGUITTFont::getDimension(const wchar_t* text) const
 {
-	// Get the maximum font height.  Unfortunately, we have to do this hack as
-	// Irrlicht will draw things wrong.  In FreeType, the font size is the
-	// maximum size for a single glyph, but that glyph may hang "under" the
-	// draw line, increasing the total font height to beyond the set size.
-	// Irrlicht does not understand this concept when drawing fonts.  Also, I
-	// add +1 to give it a 1 pixel blank border.  This makes things like
-	// tooltips look nicer.
-	s32 test1 = getHeightFromCharacter(L'g') + 1;
-	s32 test2 = getHeightFromCharacter(L'j') + 1;
-	s32 test3 = getHeightFromCharacter(L'_') + 1;
-	s32 max_font_height = core::max_(test1, core::max_(test2, test3));
-	s32 lineHeight = core::max_(FontMetrics.ascender,FontMetrics.height) / 64;
-	lineHeight = core::max_(lineHeight, max_font_height);
-
-	core::dimension2d<u32> text_dimension(0, max_font_height);
-	core::dimension2d<u32> line(0, lineHeight);
+	core::dimension2d<u32> text_dimension(0, LineHeight);
+	core::dimension2d<u32> line(0, LineHeight);
 
 	wchar_t previousChar = 0;
 	for(const wchar_t* iter = text; *iter; ++iter)
