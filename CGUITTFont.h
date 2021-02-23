@@ -400,7 +400,8 @@ namespace gui
 			float Outline;
 			video::SColor OutlineColor;
 			u32 Size;
-			u32 LineHeight;	// in pixels and different from size
+			u32 MaxFontHeight; // in pixels from samling a few characters
+			u32 LineHeight;	// in pixels and different from Size and MaxFontHeight
 			u32 BatchLoadSize;
 			core::dimension2du MaxPageTextureSize;
 

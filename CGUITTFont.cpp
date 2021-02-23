@@ -475,7 +475,7 @@ CGUITTFont* CGUITTFont::createTTFont(irr::video::IVideoDriver* driver, irr::io::
 CGUITTFont::CGUITTFont(irr::video::IVideoDriver* driver, irr::io::IFileSystem* fileSystem)
 : UseMonochrome(false), UseTransparency(true), UseHinting(false), UseAutoHinting(false)
 , Outline(0.f), OutlineColor(255, 255, 255, 255)
-, Size(0), LineHeight(0)
+, Size(0), MaxFontHeight(0), LineHeight(0)
 , BatchLoadSize(1), Driver(driver), FileSystem(fileSystem), Logger(0), GlobalKerningWidth(0), GlobalKerningHeight(0)
 {
 	#ifdef _DEBUG
@@ -599,10 +599,11 @@ bool CGUITTFont::load(const io::path& filename, u32 size, bool antialias, bool t
 	// Irrlicht does not understand this concept when drawing fonts.  Also, I
 	// add +1 to give it a 1 pixel blank border.  This makes things like
 	// tooltips look nicer.
-	LineHeight = core::max_(FontMetrics.ascender,FontMetrics.height) / 64;
-	LineHeight = core::max_(LineHeight, getHeightFromCharacter(L'g') + 1);
-	LineHeight = core::max_(LineHeight, getHeightFromCharacter(L'j') + 1);
-	LineHeight = core::max_(LineHeight, getHeightFromCharacter(L'_') + 1);
+	MaxFontHeight = getHeightFromCharacter(L'g') + 1;
+	MaxFontHeight = core::max_(MaxFontHeight, getHeightFromCharacter(L'j') + 1);
+	MaxFontHeight = core::max_(MaxFontHeight, getHeightFromCharacter(L'_') + 1);
+	LineHeight = core::max_(FontMetrics.ascender, FontMetrics.height) / 64;
+	LineHeight = core::max_(LineHeight, MaxFontHeight);
 
 	return true;
 }
@@ -905,7 +906,7 @@ core::dimension2d<u32> CGUITTFont::getCharDimension(const wchar_t ch) const
 
 core::dimension2d<u32> CGUITTFont::getDimension(const wchar_t* text) const
 {
-	core::dimension2d<u32> text_dimension(0, LineHeight);
+	core::dimension2d<u32> text_dimension(0, MaxFontHeight);
 	core::dimension2d<u32> line(0, LineHeight);
 
 	wchar_t previousChar = 0;
