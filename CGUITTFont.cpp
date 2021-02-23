@@ -926,12 +926,6 @@ core::dimension2d<u32> CGUITTFont::getDimension(const wchar_t* text) const
 			lineBreak = true;
 		}
 
-		// Kerning.
-		core::vector2di k = getKerning(*iter, previousChar);
-		line.Width += k.X;
-		previousChar = *iter;
-
-		// Check for linebreak.
 		if (lineBreak)
 		{
 			previousChar = 0;
@@ -939,9 +933,15 @@ core::dimension2d<u32> CGUITTFont::getDimension(const wchar_t* text) const
 			if (text_dimension.Width < line.Width)
 				text_dimension.Width = line.Width;
 			line.Width = 0;
-			continue;
 		}
-		line.Width += getWidthFromCharacter(*iter);
+		else
+		{
+			// Kerning.
+			core::vector2di k = getKerning(*iter, previousChar);
+			line.Width += k.X;
+			line.Width += getWidthFromCharacter(*iter);
+			previousChar = *iter;
+		}
 	}
 	if (text_dimension.Width < line.Width)
 		text_dimension.Width = line.Width;
