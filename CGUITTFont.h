@@ -35,21 +35,22 @@
 	- Remove ustring (otherwise I risk converting strings twice in my project as they are UCS-2 or UCS-4 already)
 	- Remove const-ref in places where it makes no sense
 	- Remove additional create functions and keep just one. Pass only the parameters actually needed to it.
-	- Removing allocater as I get memory-leaks and don't understand what the allocater was meant for.
+	- Removing allocator as I get memory-leaks and don't understand what the allocater was meant for.
 	- Glyph_Pages no longer mutable (doesn't seem to need that)
 	- remove textscenenodes. Probably shouldn't be in this class and make understanding it harder.
 	- remove createTextureFromChar (it also had a memory leak probably as it wasn't dropping pageholder)
 	- remove Glyphs.set_free_when_destroyed(false). That function prevents clearing the array - it's not about pointers. Rather fix SGUITTGlyph (which didn't care about rule of three).
 	- don't drop the driver (not grabbed - but I changed that stuff a lot so might not have been there originally)
 	- remove a few memory re-allocations in drawing
-	- CGUITTGlyphPage::updateTexture replaced dirtyflag by check for glpyhs to handle
+	- CGUITTGlyphPage::updateTexture replaced dirtyflag by check for glyphs to handle
 	- CGUITTGlyphPage::updateTexture works with ::texture->getSize() instead of getOriginalSize. Same result in this case, but more correct.
 	- Irrlichtify code (variable naming etc)
 	- Add support for outlines (lot of code got changed for that, I guess original code now barely recognizable)
 	- Ensure Texture is grab()'ed. It's dangerous to remove it from driver otherwise (which might have cleared it's cache already)
 	- Rename "use" functions to "get" so we have setters and getters
-	- LineHeight only calculated once after load now
+	- LineHeight and maximal character height now only calculated once after load
 	- Using LineHeight not just for getDimension, but also for draw calls.
+	- Remove unused function CGUITTFont::getDimensionUntilEndOfLine
 
 	TODO:
 	- Hinting should be one enum with explanation (have to figure it out first, results are strange currently when I enable it)
@@ -59,7 +60,7 @@
 #define __C_GUI_TTFONT_H_INCLUDED__
 
 #include <ft2build.h>
-#include FT_FREETYPE_H	// official way to include freetype.h correct according to freetype documenation
+#include FT_FREETYPE_H	// official way to include freetype.h correct according to freetype documentation
 #include FT_STROKER_H
 #include FT_BITMAP_H
 #include <irrlicht.h>
@@ -256,7 +257,7 @@ namespace gui
 			//! \param antialias set the use_monochrome (opposite to antialias) flag
 			//! \param transparency Control if alpha-value of font-color is used or ignored.
 			//! \param invisibleChars Set characters which don't need drawing (speed optimization)
-			//! \param logger Irrlicht logging, for printing out additinal warnings/errors
+			//! \param logger Irrlicht logging, for printing out additional warnings/errors
 			//! \param outline Render an outline with a different color (default white) behind the text
 			//! \return Returns a pointer to a CGUITTFont.  Will return 0 if the font failed to load.
 			static CGUITTFont* createTTFont(irr::video::IVideoDriver* driver, irr::io::IFileSystem* fileSystem, const io::path& filename, u32 size, bool antialias = true, bool transparency = true, float outline = 0.f, irr::ILogger* logger = 0);
@@ -385,7 +386,6 @@ namespace gui
 			u32 getHeightFromCharacter(wchar_t c) const;
 			u32 getGlyphIndexByChar(wchar_t c) const;
 			core::vector2di getKerning(const wchar_t thisLetter, const wchar_t previousLetter) const;
-			core::dimension2d<u32> getDimensionUntilEndOfLine(const wchar_t* p) const;
 
 			// Manages the FreeType library.
 			static FT_Library c_library;
@@ -400,7 +400,7 @@ namespace gui
 			float Outline;
 			video::SColor OutlineColor;
 			u32 Size;
-			u32 MaxFontHeight; // in pixels from samling a few characters
+			u32 MaxFontHeight; // in pixels from sampling a few characters
 			u32 LineHeight;	// in pixels and different from Size and MaxFontHeight
 			u32 BatchLoadSize;
 			core::dimension2du MaxPageTextureSize;

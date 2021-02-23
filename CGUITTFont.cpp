@@ -1129,14 +1129,5 @@ video::ITexture* CGUITTFont::getPageTextureByIndex(u32 page_index) const
 	return 0;
 }
 
-core::dimension2d<u32> CGUITTFont::getDimensionUntilEndOfLine(const wchar_t* p) const
-{
-	core::stringw s;
-	for (const wchar_t* temp = p; temp && *temp != '\0' && *temp != L'\r' && *temp != L'\n'; ++temp )
-		s.append(*temp);
-
-	return getDimension(s.c_str());
-}
-
 } // end namespace gui
 } // end namespace irr
