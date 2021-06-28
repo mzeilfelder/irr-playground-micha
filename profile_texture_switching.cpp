@@ -4,7 +4,6 @@
 // Test speed of switching textures
 
 #include <irrlicht.h>
-#include <iostream>
 
 using namespace irr;
 using namespace core;
