@@ -4,6 +4,7 @@
 	<Project>
 		<Option title="Playground" />
 		<Option pch_mode="0" />
+		<Option default_target="Linux" />
 		<Option compiler="gcc" />
 		<Build>
 			<Target title="Linux">
@@ -12,8 +13,8 @@
 				<Option type="1" />
 				<Option compiler="gcc" />
 				<Compiler>
-					<Add option="-std=c++11" />
 					<Add option="-Wall" />
+					<Add option="-std=c++11" />
 					<Add option="-g" />
 					<Add option="-fno-exceptions" />
 					<Add option="-fno-rtti" />
@@ -24,6 +25,7 @@
 					<Add library="Xxf86vm" />
 					<Add library="GL" />
 					<Add library="X11" />
+					<Add library="Xi" />
 					<Add directory="../../lib/Linux" />
 				</Linker>
 			</Target>
