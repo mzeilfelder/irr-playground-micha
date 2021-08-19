@@ -136,11 +136,28 @@ private:
 	core::array<Instance> Instances;
 };
 
+irr::video::ITexture* addColorTexture(video::IVideoDriver * videoDriver, irr::video::SColor c)
+{
+	irr::video::SColor bgra(c.getBlue(), c.getGreen(), c.getRed(), c.getAlpha());	// ECF_A8R8G8B8 is BGRA in memory
+	irr::video::ITexture* result = 0;
+	irr::core::dimension2du dim(16,16);
+	size_t num = dim.Width*dim.Height;
+	irr::video::SColor* data = new irr::video::SColor[num];
+	for ( size_t i=0; i < num; ++i )
+	{
+		data[i] = bgra;
+	}
+	irr::video::IImage* img = videoDriver->createImageFromData(irr::video::ECF_A8R8G8B8, dim, (void*)data, true, false);
+	result = videoDriver->addTexture(irr::io::path(c.color), img);
+	delete img;
+	delete[] data;
+	return result;
+}
 
 
 int main(int argc, char* argv[])
 {
-	IrrlichtDevice *  device = createDevice(irr::video::EDT_OPENGL, irr::core::dimension2d<irr::u32>(800,600));
+	IrrlichtDevice *  device = createDevice(irr::video::EDT_DIRECT3D9, irr::core::dimension2d<irr::u32>(800,600));
 	if (!device)
 		return 0;
 
@@ -163,7 +180,7 @@ int main(int argc, char* argv[])
 
 	// Amount of 3d objects to create
 	int nodesX = 100;
-	int nodesY = 1;
+	int nodesY = 5;
 	int nodesZ = 100;
 
 	// can also pass them from command-line
@@ -210,6 +227,13 @@ int main(int argc, char* argv[])
 	Colors.push_back( irr::video::SColor(255, 165, 42, 42) );
 	Colors.push_back( irr::video::SColor(255, 255, 215, 0) );
 
+//	videoDriver->setTextureCreationFlag(video::ETCF_SUPPORT_VERTEXT_TEXTURE, true);
+
+	// Some textures - can be used randomly later
+	irr::core::array<irr::video::ITexture*> Textures;
+	for ( irr::u32 i=0;i<Colors.size();++i)
+		Textures.push_back( addColorTexture(videoDriver, Colors[i]) );
+
 #if 0	// using nodes
 	SimpleMeshArray * arrayNode = NULL;
 #else	// using a single array for all meshes
@@ -235,12 +259,15 @@ int main(int argc, char* argv[])
 				irr::f32 posZ = -halfSizeZ + z*extent.Z + gapZ;
 				irr::video::SColor randCol = Colors[ randomizer->rand() % Colors.size() ];
 				//irr::video::SColor randCol = video::SColor(randomizer->rand());
-
 				if ( arrayNode )
 				{
 					SimpleMeshArray::Instance instance;
 					instance.Material.EmissiveColor = randCol;
 					instance.Transform.setTranslation( vector3df(posX, posY, posZ) );
+
+					//for ( irr::u32 t = 0; t < irr::video::MATERIAL_MAX_TEXTURES_USED; ++t )
+					//	instance.Material.setTexture(t, Textures[randomizer->rand() % Textures.size()]);
+
 					arrayNode->addInstance(instance);
 				}
 				else
