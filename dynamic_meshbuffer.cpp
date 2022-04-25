@@ -101,7 +101,6 @@ int main()
 	dyn_meshbufferstests();
 
 	video::IVideoDriver* driver = device->getVideoDriver();
-	IGUIEnvironment* env = device->getGUIEnvironment();
 
 	while(device->run() && driver)
 	{}
