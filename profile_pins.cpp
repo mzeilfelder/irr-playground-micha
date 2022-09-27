@@ -19,10 +19,10 @@ using namespace core;
 // TODO: try with sorting materials
 
 // Show a simple mesh several times.
-// Bassic idea is to test how much faster it can get when knowing exactly what is needed (and also testing which flexibility costs most)
+// Basic idea is to test how much faster it can get when knowing exactly what is needed (and also testing which flexibility costs most)
 // - single material per mesh instance
 // - not animated
-// - no transpareny
+// - no transparency
 // - parent transformations ignored
 class SimpleMeshArray : public scene::ISceneNode
 {
@@ -157,7 +157,7 @@ irr::video::ITexture* addColorTexture(video::IVideoDriver * videoDriver, irr::vi
 
 int main(int argc, char* argv[])
 {
-	IrrlichtDevice *  device = createDevice(irr::video::EDT_DIRECT3D9, irr::core::dimension2d<irr::u32>(800,600));
+	IrrlichtDevice *  device = createDevice(irr::video::EDT_OPENGL, irr::core::dimension2d<irr::u32>(800,600));
 	if (!device)
 		return 0;
 
