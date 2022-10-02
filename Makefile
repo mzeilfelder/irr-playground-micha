@@ -20,6 +20,7 @@ ifdef FREETYPE
 CPPFLAGS += $(shell pkg-config freetype2 --cflags)
 endif
 CXXFLAGS = -Wall -pipe -fno-exceptions -fno-rtti -fstrict-aliasing
+#CXXFLAGS = -Wall -pipe -fno-exceptions -fstrict-aliasing
 ifndef NDEBUG
 CXXFLAGS += -g -D_DEBUG
 else
@@ -54,6 +55,7 @@ ifdef FREETYPE
 	#Newer debian versions
 	LDFLAGS += $(shell pkg-config freetype2 --libs)
 endif
+# LDFLAGS += `pkg-config gtkmm-3.0 --cflags --libs`
 all_linux clean_linux: SYSTEM=Linux
 all_win32: LDFLAGS = -L../../lib/Win32-gcc -lIrrlicht -lopengl32 -lm
 all_win32 clean_win32: SYSTEM=Win32-gcc
