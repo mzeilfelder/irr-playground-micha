@@ -25,7 +25,7 @@
 					<Add library="Xxf86vm" />
 					<Add library="GL" />
 					<Add library="X11" />
-					<Add directory="../../lib/Linux" />
+					<Add directory="..\..\lib\Linux" />
 				</Linker>
 			</Target>
 			<Target title="Windows">
@@ -37,8 +37,12 @@
 					<Add option="-g" />
 				</Compiler>
 				<Linker>
-					<Add directory="../../lib/Win32-gcc" />
+					<Add directory="..\..\lib\Win32-gcc" />
 				</Linker>
+				<ExtraCommands>
+					<Add after='cmd /c copy /Y &quot;$(PROJECT_DIR)..\..\bin\Win32-gcc\Irrlicht.dll&quot; &quot;$(PROJECT_DIR)Irrlicht.dll&quot;' />
+					<Mode after="always" />
+				</ExtraCommands>
 			</Target>
 			<Target title=" Linux64es2_debug">
 				<Option platforms="Unix;" />
@@ -64,7 +68,7 @@
 					<Add library="GLESv2" />
 					<Add library="EGL" />
 					<Add library="GL" />
-					<Add directory="../../lib/Linux" />
+					<Add directory="..\..\lib\Linux" />
 				</Linker>
 			</Target>
 			<Target title="Linux_gtkmm3">
@@ -90,7 +94,7 @@
 		<Compiler>
 			<Add option="-Wall" />
 			<Add option="-g" />
-			<Add directory="../../include" />
+			<Add directory="..\..\include" />
 		</Compiler>
 		<Linker>
 			<Add library="Irrlicht" />
