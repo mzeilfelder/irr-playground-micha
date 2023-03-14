@@ -120,6 +120,20 @@ void PrintCursorState(IrrlichtDevice * device, irr::core::stringw &result)
 	result += stringw(L"position.Y: ");
 	result += stringw(position.Y);
 	result += stringw(L"\n");
+
+#if IRRLICHT_VERSION_MAJOR > 1 || (IRRLICHT_VERSION_MAJOR == 1 && IRRLICHT_VERSION_MINOR >= 9)
+	irr::core::recti refRect;
+	cursor->getReferenceRect(refRect);
+	result += L"ReferenceRect: (";
+	result += stringw(refRect.UpperLeftCorner.X);
+	result += L",";
+	result += stringw(refRect.UpperLeftCorner.Y);
+	result += L"/";
+	result += stringw(refRect.LowerRightCorner.X);
+	result += L",";
+	result += stringw(refRect.LowerRightCorner.Y);
+	result += L")\n";
+#endif
 }
 
 void PrintMouseState(const SEvent& event, irr::core::stringw &result)
@@ -244,6 +258,10 @@ int main()
 	if (device == 0)
 		return 1; // could not create selected driver.
 
+#if 0 // set manual reference rect (should have ui elements for this...)
+	irr::core::recti refRect(500, 500, 800, 800);
+	device->getCursorControl()->setReferenceRect(&refRect);
+#endif
 	device->setResizable(true);
 	video::IVideoDriver* driver = device->getVideoDriver();
 	IGUIEnvironment* env = device->getGUIEnvironment();
