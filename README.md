@@ -2,7 +2,7 @@
 
 Code snippets, tests and experiments around the Irrlicht 3D engine.
 
-If you find anything useful in it feel free to use this code. It's zlib-licensed, but if you need another license I can add that. Or just use it, I won't sue you, it's meant to be used.
+If you find anything useful in it feel free to use this code. It's zlib-licensed, but if you need another license I can usually add that, I don't care, it's just meant to be used without worries. Some files are coded by others, in which case it's mentioned in the sources.
 
 ### USAGE ###
 
