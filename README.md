@@ -6,5 +6,5 @@ If you find anything useful in it feel free to use this code. It's zlib-licensed
 
 ### USAGE ###
 
-Checkout the repository into a folder below irrlicht/examples
+Checkout the repository into a folder below irrlicht/examples  
 Copy any of the source files in the repository and rename it to main.cpp to get it compiling with the project files.
