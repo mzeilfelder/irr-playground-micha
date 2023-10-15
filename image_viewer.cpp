@@ -1,6 +1,6 @@
 // Code is under the zlib license (same as Irrlicht)
 // Written by Michael Zeilfelder
-// 
+//
 // Tiny stupid image viewer
 
 #include <irrlicht.h>
@@ -26,28 +26,25 @@ struct SAppContext
 	void LoadImage(const irr::io::path& filename)
 	{
 		irr::video::ITexture * texture = Device->getVideoDriver()->getTexture(filename);
-		if ( texture )
+		addImageForTexture(texture, irr::core::stringw(filename).c_str());
+	}
+
+	void addImageForTexture(irr::video::ITexture * texture, const wchar_t* text)
+	{
+		if ( !texture )
+			return;
+		bool useAlphaChannel=true;
+		irr::gui::IGUIElement *parent=0;
+		irr::gui::IGUIImage* image = Device->getGUIEnvironment()->addImage(texture, core::position2di(20, 50), useAlphaChannel, parent, -1, text);
+		Images.insert(image, 0);
+		core::recti r= image->getRelativePosition();
+		irr::s32 m = r.getWidth() + 5;
+		for ( u32 i=1; i<Images.size(); ++i )
 		{
-			bool useAlphaChannel=true;
-			irr::gui::IGUIElement *parent=0;
-			irr::gui::IGUIImage* image = Device->getGUIEnvironment()->addImage(texture, core::position2di(20, 50), useAlphaChannel, parent, -1, irr::core::stringw(filename).c_str());
-			Images.insert(image, 0);
-			core::recti r= image->getRelativePosition();
-			irr::s32 m = r.getWidth() + 5;
-			for ( u32 i=1; i<Images.size(); ++i )
-			{
-				Images[i]->move( core::position2d<s32>(m,0) );
-			}
-			const core::dimension2d<u32>& origSize = texture->getOriginalSize();
-			irr::core::stringw caption(filename.c_str());
-			caption += L" ";
-			caption += irr::core::stringw(origSize.Width);
-			caption += L":";
-			caption += irr::core::stringw(origSize.Height);
-			Device->setWindowCaption(caption.c_str());
+			Images[i]->move( core::position2d<s32>(m,0) );
 		}
 	}
-	
+
 	IrrlichtDevice * Device;
 	IGUIButton * ButtonOpenFile;
 	irr::core::array<irr::gui::IGUIImage*> Images;
@@ -104,7 +101,7 @@ int main()
 
 	video::IVideoDriver* driver = device->getVideoDriver();
 	IGUIEnvironment* env = device->getGUIEnvironment();
-	
+
 	SAppContext context;
 	context.Device = device;
 
@@ -112,16 +109,16 @@ int main()
 
 	MyEventReceiver receiver(context);
 	device->setEventReceiver(&receiver);
-	
+
 
 	while(device->run() && driver)
 	{
 		if (device->isWindowActive())
 		{
 			driver->beginScene(true, true, SColor(0,200,200,200));
-	
+
 			env->drawAll();
-		
+
 			driver->endScene();
 		}
 	}
@@ -130,3 +127,4 @@ int main()
 
 	return 0;
 }
+
