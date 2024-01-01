@@ -1,16 +1,16 @@
-﻿// Code is under the zlib license.
+﻿// Code is under the zlib license (same as Irrlicht)
 // Written by Michael Zeilfelder
-//
-// Test geometry creator.
-// Only torus so far - but might add more later
 
+// Test geometry creator
+
+#include <irrlicht.h>
+ 
+using namespace irr;
+using namespace core;
+ 
 #ifdef _MSC_VER
 #pragma comment(lib, "Irrlicht.lib")
 #endif
-
-#include <irrlicht.h>
-
-using namespace irr;
 
 namespace
 {
@@ -26,13 +26,13 @@ namespace
 	const video::SColor SCOL_WHITE     = video::SColor(255, 255, 255, 255);
 };
 
-void createCaroTexture(video::IVideoDriver * driver)
+irr::video::ITexture* addCaroTexture(video::IVideoDriver * driver)
 {
 	const u32 width = 256;
 	const u32 height = 256;
 	video::IImage * imageA8R8G8B8 = driver->createImage (video::ECF_A8R8G8B8, core::dimension2d<u32>(width, height));
 	if ( !imageA8R8G8B8 )
-		return;
+		return 0;
 	const u32 pitch = imageA8R8G8B8->getPitch();
 
 	// Some nice square-pattern with 9 typical colors
@@ -70,117 +70,147 @@ void createCaroTexture(video::IVideoDriver * driver)
 			}
 		}
 	}
-	driver->addTexture (io::path("CARO_A8R8G8B8"), imageA8R8G8B8);
+
+	video::ITexture* result = driver->addTexture (io::path("CARO_A8R8G8B8"), imageA8R8G8B8);
 
 	imageA8R8G8B8->drop();
+
+	return result;
 }
 
-
-class MyEventReceiver : public IEventReceiver
+irr::video::ITexture* addRadialTexture(irr::video::IVideoDriver* driver, const core::dimension2du& dim)
 {
-public:
-	// This is the one method that we have to implement
-	virtual bool OnEvent(const SEvent& event)
-	{
-		// Remember whether each key is down or up
-		if (event.EventType == irr::EET_KEY_INPUT_EVENT)
-			KeyIsDown[event.KeyInput.Key] = event.KeyInput.PressedDown;
+	irr::video::ITexture* result = 0;
+	vector2df center(dim.Width*0.5f, dim.Height*0.5f);
+	f32 radius = core::min_(center.X, center.Y);
+	radius += 2;	// avoiding black gap at last line/row
+	const u32 bytesPerPixel = 4;
+	u8* data = new u8[dim.Width * dim.Height * bytesPerPixel];
+	const irr::u32 pitch = dim.Width * bytesPerPixel;
 
-		/*
-		Always return false by default. If you return true you tell the engine
-		that you handled this event completely and the Irrlicht should not
-		process it any further. So for example if you return true for all 
-		EET_KEY_INPUT_EVENT events then Irrlicht would not pass on key-events
-		to it's GUI system.
-		*/
-		return false;
+	u32 stepsOutwards = 6;
+	u32 stepsCircular = 12;
+
+	for (u32 y = 0; y < dim.Height; ++y)
+	{
+		const u32 lineStart = y * pitch;
+		for (u32 x = 0; x < dim.Width; ++x)
+		{
+			u32 idx = lineStart + x*bytesPerPixel;
+
+			vector2df offset((f32)x-center.X, (f32)y-center.Y);
+			f32 offsetLen = offset.getLength();
+			if ( offsetLen > radius )
+			{
+				data[idx] = 0;
+				data[idx+1] = 0;
+				data[idx+2] = 0;
+				data[idx+3] = 255;
+			}
+			else
+			{
+				int circleStep = (int)(offset.getAngle()*(float)stepsCircular/360.f);
+				int outwardStep = (int)(offsetLen*(float)stepsOutwards/radius);
+				data[idx] = 25+circleStep*230/stepsCircular;	// blue
+				data[idx+1] = (data[idx]+127)%255;	// green
+				data[idx+2] = 25+outwardStep*230/stepsOutwards;	// red
+				data[idx+3] = 255;	// alpha
+			}
+		}
 	}
 
-	// This is used to check whether a key is being held down
-	virtual bool IsKeyDown(EKEY_CODE keyCode) const
+	video::IImage* img = driver->createImageFromData(irr::video::ECF_A8R8G8B8, dim, data);
+	if (img)
 	{
-		return KeyIsDown[keyCode];
+		result = driver->addTexture("radialCheckerboard", img);
+		img->drop();
 	}
-	
-	MyEventReceiver()
-	{
-		for (u32 i=0; i<KEY_KEY_CODES_COUNT; ++i)
-			KeyIsDown[i] = false;
-	}
+	delete[] data;
 
-private:
-	// We use this array to store the current state of each key
-	bool KeyIsDown[KEY_KEY_CODES_COUNT];
-};
-
+	return result;
+}
+ 
 
 int main()
 {
-	// ask user for driver
-	video::E_DRIVER_TYPE driverType= video::EDT_OPENGL;
+	IrrlichtDevice *  Device = createDevice(irr::video::EDT_OPENGL, irr::core::dimension2d<irr::u32>(1024,768));
+	//IrrlichtDevice *  Device = createDevice(irr::video::EDT_DIRECT3D9, irr::core::dimension2d<irr::u32>(1024,768));
+	if (!Device)
+		return false;
+   
+	scene::ISceneManager* smgr = Device->getSceneManager();
+	video::IVideoDriver * videoDriver = Device->getVideoDriver ();
+	const scene::IGeometryCreator* geom = smgr->getGeometryCreator();
 
-	MyEventReceiver receiver;
-	IrrlichtDevice* device = createDevice(driverType,
-			core::dimension2d<u32>(640, 480), 16, false, false, false, &receiver);
-	if (device == 0)
-		return 1; 
+	core::dimension2du dimRadial(1024, 1024);
+	video::ITexture* texCaro = addCaroTexture(videoDriver);
+	video::ITexture* texRadial = addRadialTexture(videoDriver, dimRadial);
+	video::ITexture* texChecker = videoDriver->getTexture("my_media/checker_map_4k.png");
+   
+	u32 tessellation = 89;
+	scene::IMesh* coneMesh = geom->createConeMesh(50.f, 200.f, tessellation, video::SColor(255, 255, 255, 255), video::SColor(255, 255, 255, 255), 0.f);
+	coneMesh->getMeshBuffer(0)->getMaterial().Lighting = false;
+	coneMesh->getMeshBuffer(0)->getMaterial().UseMipMaps = false;
+	coneMesh->getMeshBuffer(0)->getMaterial().GouraudShading = false;
+	coneMesh->getMeshBuffer(0)->getMaterial().setTexture(0, texRadial);
+	//coneMesh->getMeshBuffer(0)->getMaterial().setTexture(0, texChecker);
+	coneMesh->getMeshBuffer(0)->getMaterial().TextureLayer[0].AnisotropicFilter = 16;
+	coneMesh->getMeshBuffer(0)->getMaterial().TextureLayer[0].TrilinearFilter = true;
+	smgr->addMeshSceneNode(coneMesh);
+	coneMesh->drop();
 
-	video::IVideoDriver* driver = device->getVideoDriver();
-	scene::ISceneManager* smgr = device->getSceneManager();
+	scene::IMesh* cylinderMesh = geom->createCylinderMesh(50.f, 200.f, tessellation, video::SColor(0xffffffff), true, 0.f, 0);
+	cylinderMesh->getMeshBuffer(0)->getMaterial().Lighting = false;
+	cylinderMesh->getMeshBuffer(0)->getMaterial().setTexture(0, texChecker);
+	smgr->addMeshSceneNode(cylinderMesh, 0, -1, core::vector3df(200, 0, 0));
+	cylinderMesh->drop();
 
-	createCaroTexture(driver);
+	scene::IMesh* arrowMesh = geom->createArrowMesh(tessellation, tessellation, 200.f,
+			160.f, 30.f, 50.f, video::SColor(0xFFFFFFFF), video::SColor(0xFFFFFFFF));
+	arrowMesh->getMeshBuffer(0)->getMaterial().Lighting = false;
+	arrowMesh->getMeshBuffer(0)->getMaterial().setTexture(0, texChecker);
+	arrowMesh->getMeshBuffer(1)->getMaterial().Lighting = false;
+	arrowMesh->getMeshBuffer(1)->getMaterial().setTexture(0, texChecker);
+	smgr->addMeshSceneNode(arrowMesh, 0, -1, core::vector3df(-200, 0, 0));
+	arrowMesh->drop();
 
 	scene::IMesh* torusMesh = smgr->getGeometryCreator()->createTorusMesh(30, 10, 32, 16, 135.f, 350.f, 3);
-	scene::ISceneNode * torusNode = smgr->addMeshSceneNode(torusMesh);
+	scene::ISceneNode * torusNode = smgr->addMeshSceneNode(torusMesh, 0, -1, core::vector3df(400, 0, 0));
 	torusMesh->drop();
 	if (torusNode)
 	{
-		torusNode->setPosition(core::vector3df(0,0,30));
-		torusNode->getMaterial(0).setTexture(0, driver->getTexture("CARO_A8R8G8B8"));
+		torusNode->getMaterial(0).setTexture(0, texCaro);
 		torusNode->setMaterialFlag(video::EMF_LIGHTING, false);
 		torusNode->setDebugDataVisible(scene::EDS_NORMALS);
 	}
 
-	scene::ICameraSceneNode* cam = smgr->addCameraSceneNodeFPS();
-	device->getCursorControl()->setVisible(false);
+	irr::scene::ICameraSceneNode * camera = smgr->addCameraSceneNodeFPS(0, 20.f, 0.1f );
+	camera->updateAbsolutePosition();
+	camera->setTarget(irr::core::vector3df(0,0,0));
+	camera->updateAbsolutePosition();
+	camera->setPosition(irr::core::vector3df(0, -150, -300));
+	camera->updateAbsolutePosition();
 
-	u32 then = device->getTimer()->getTime();
-	const f32 MOVEMENT_SPEED = 5.f;
-
-	while(device->run())
+	while ( Device->run() )
 	{
-		cam->setInputReceiverEnabled(device->isWindowActive());
+		if ( Device->isWindowActive() )
+		{
+			videoDriver->beginScene(true, true, video::SColor(255, 200, 200, 200));
 
-		// Work out a frame delta time.
-		const u32 now = device->getTimer()->getTime();
-		const f32 frameDeltaTime = (f32)(now - then) / 1000.f; // Time in seconds
-		then = now;
+			smgr->drawAll();
 
-		/* Check if keys W, S, A or D are being held down, and move the
-		sphere node around respectively. */
-		core::vector3df nodePosition = torusNode->getPosition();
+			videoDriver->draw2DImage(texRadial, recti(0,0,256,256), recti(dimRadial), 0, 0, true);
+			videoDriver->draw2DImage(texChecker, recti(768,0, 1024, 256), recti(texChecker->getOriginalSize()));
 
-		if(receiver.IsKeyDown(irr::KEY_KEY_W))
-			nodePosition.Y += MOVEMENT_SPEED * frameDeltaTime;
-		else if(receiver.IsKeyDown(irr::KEY_KEY_S))
-			nodePosition.Y -= MOVEMENT_SPEED * frameDeltaTime;
+			videoDriver->endScene();
+		}
 
-		if(receiver.IsKeyDown(irr::KEY_KEY_A))
-			nodePosition.X -= MOVEMENT_SPEED * frameDeltaTime;
-		else if(receiver.IsKeyDown(irr::KEY_KEY_D))
-			nodePosition.X += MOVEMENT_SPEED * frameDeltaTime;
-
-		torusNode->setPosition(nodePosition);
-
-		driver->beginScene(video::ECBF_COLOR | video::ECBF_DEPTH, video::SColor(255,113,113,133));
-
-		smgr->drawAll(); // draw the 3d scene
-		device->getGUIEnvironment()->drawAll(); // draw the gui environment (the logo)
-
-		driver->endScene();
+		Device->sleep(0);
 	}
 
-	device->drop();
-	
+	Device->closeDevice();
+	Device->drop();
+	Device = NULL;
+
 	return 0;
 }
