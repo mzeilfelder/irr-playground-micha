@@ -2,6 +2,7 @@
 // Written by Michael Zeilfelder
 // 
 // Add scene-node in between which prevents that the parent-node's scaling is added to the child.
+// NOTE: Since Irrlicht 1.9 ISceneNode has a flag to ignore parent transformations
 
 #include <irrlicht.h>
  
