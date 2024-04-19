@@ -579,7 +579,7 @@ bool CGUITTFont::load(const io::path& filename, u32 size, bool antialias, bool t
 	FontMetrics = TTface->size->metrics;
 
 	// Allocate our glyphs.
-	Glyphs.clear();
+	Glyphs.set_used(0);
 	Glyphs.reallocate(TTface->num_glyphs);
 	for (FT_Long i = 0; i < TTface->num_glyphs; ++i)
 	{
