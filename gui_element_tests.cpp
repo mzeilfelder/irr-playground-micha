@@ -64,9 +64,22 @@ void SetTabStopsForAllElements(SAppContext & context)
 
 void AddTestGuiElements(IGUIEnvironment* env, IGUIElement * parent, SAppContext & context)
 {
-	context.mGuiElements.push_back( env->addToolBar (parent, /*s32 id=*/-1) );
-	
-	s32 top = 40;
+    IGUIContextMenu * contextMenu =	env->addMenu(parent);
+    contextMenu->addItem(L"File", -1, false, true);
+    contextMenu->getSubMenu (0)->addItem(L"One", -1, false, true);
+    contextMenu->getSubMenu (0)->addItem(L"Two", -1, true, true);
+	contextMenu->addItem(L"Options", -1, true, true);
+	contextMenu->getSubMenu (1)->addItem(L"One", -1, false, true);
+    contextMenu->getSubMenu (1)->addItem(L"Two", -1, true, true);
+	contextMenu->addItem(L"Help", -1, true, true);
+	contextMenu->getSubMenu (2)->addItem(L"One", -1, false, true);
+    contextMenu->getSubMenu (2)->addItem(L"Two", -1, true, true);
+	context.mGuiElements.push_back(contextMenu);	
+
+	irr::gui::IGUIToolBar* toolbar = env->addToolBar (parent, /*s32 id=*/-1);
+	context.mGuiElements.push_back(toolbar);
+
+	s32 top = toolbar->getRelativePosition().LowerRightCorner.Y + 5;
 	s32 default_height = 15;
 	s32 default_width = 150;
 	s32 default_gap = 20;
@@ -193,18 +206,6 @@ void AddTestGuiElements(IGUIEnvironment* env, IGUIElement * parent, SAppContext 
         treeNode->setExpanded(true);
     }
     context.mGuiElements.push_back(tree);	
-
-    IGUIContextMenu * contextMenu =	env->addMenu(parent);
-    contextMenu->addItem(L"File", -1, false, true);
-    contextMenu->getSubMenu (0)->addItem(L"One", -1, false, true);
-    contextMenu->getSubMenu (0)->addItem(L"Two", -1, true, true);
-	contextMenu->addItem(L"Options", -1, true, true);
-	contextMenu->getSubMenu (1)->addItem(L"One", -1, false, true);
-    contextMenu->getSubMenu (1)->addItem(L"Two", -1, true, true);
-	contextMenu->addItem(L"Help", -1, true, true);
-	contextMenu->getSubMenu (2)->addItem(L"One", -1, false, true);
-    contextMenu->getSubMenu (2)->addItem(L"Two", -1, true, true);
-	context.mGuiElements.push_back(contextMenu);	
 }
 
 void AddControlElements(IGUIEnvironment* env, IGUIElement * parent, core::position2di leftTop, s32 width)
@@ -448,8 +449,8 @@ int main()
 	SAppContext context;
 	context.device = device;
 	
-//	context.mGuiParent = env->addStaticText (L"", core::rect<s32>(10, 10, 500, 450), true, false, 0, -1,false);
-	context.mGuiParent = env->addWindow(irr::core::recti(0,0,500,450), false, L"sometext");
+//	context.mGuiParent = env->addStaticText (L"", core::rect<s32>(10, 10, 500, 470), true, false, 0, -1,false);
+	context.mGuiParent = env->addWindow(irr::core::recti(0,0,500,470), false, L"sometext");
 
 	AddTestGuiElements(env, context.mGuiParent, context);
 	SetTabStopsForAllElements(context);
