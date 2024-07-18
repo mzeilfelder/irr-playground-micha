@@ -19,7 +19,7 @@ using namespace gui;
 
 enum 
 {
-	E_RIGHT_CLICK_MENUES = 1,
+	E_RIGHT_CLICK_MENUS = 1,
 	E_LEFT_CLICK_AREA,
 	E_LEFT_CLICK_AREA_OPEN,
 };
@@ -31,7 +31,7 @@ struct SAppContext
 	gui::IGUIStaticText* LeftClickArea;
 	gui::IGUIStaticText* LeftClickAreaOpen;
 	gui::IGUIStaticText* StatusBar;
-	gui::IGUIButton * CreateRightClickMenues;
+	gui::IGUIButton * CreateRightClickMenus;
 	gui::IGUIButton * EatCloseEvent;
 };
 
@@ -51,6 +51,9 @@ void FillMenu( gui::IGUIContextMenu* menu )
         submenu->addItem(L"sub2", -1, true, true, false );
 		submenu->addItem(L"disabled", -1, false, false, false);
 		submenu->addItem(L"autochecked", -1, true, false, false, true);
+		submenu->addItem(L"sub3", -1, true, true, false );
+		submenu->addItem(L"sub4", -1, true, true, false );
+		submenu->addItem(L"sub5", -1, true, true, false );
 		submenu->insertItem(3, L"inserted at 3", -1);
 	}
 	IGUIContextMenu* subsubmenu = submenu->getSubMenu(4);
@@ -64,6 +67,27 @@ void FillMenu( gui::IGUIContextMenu* menu )
 	{
 		subsubmenu->addItem(L"subitemC", -1);
 		subsubmenu->addItem(L"subitemD", -1);
+	}
+	subsubmenu = submenu->getSubMenu(8);
+	if ( subsubmenu )
+	{
+		subsubmenu->addItem(L"a", -1);
+		subsubmenu->addItem(L"b", -1);
+		subsubmenu->addItem(L"c", -1);
+	}
+	subsubmenu = submenu->getSubMenu(9);
+	if ( subsubmenu )
+	{
+		subsubmenu->addItem(L"d", -1);
+		subsubmenu->addItem(L"e", -1);
+		subsubmenu->addItem(L"f", -1);
+	}
+	subsubmenu = submenu->getSubMenu(10);
+	if ( subsubmenu )
+	{
+		subsubmenu->addItem(L"g", -1);
+		subsubmenu->addItem(L"h", -1);
+		subsubmenu->addItem(L"i", -1);
 	}
 	
 	submenu = menu->getSubMenu(1);
@@ -95,7 +119,7 @@ public:
 			{
 				if ( 	!Context.LeftClickArea->isPointInside( core::position2d<s32>(event.MouseInput.X, event.MouseInput.Y) )
 				     && !Context.LeftClickAreaOpen->isPointInside( core::position2d<s32>(event.MouseInput.X, event.MouseInput.Y) ) 
-				     && Context.CreateRightClickMenues->isPressed()
+				     && Context.CreateRightClickMenus->isPressed()
 				   )
 				{
 					ShowContextMenu(event.MouseInput.X, event.MouseInput.Y, false);
@@ -171,11 +195,11 @@ int main()
 	
 	// some button below menu to see if mouse-clicks are correctly eaten by the menu
 	core::rect<s32> rectBtn(0, 15, 150, 90);
-	context.CreateRightClickMenues = env->addButton (rectBtn, 0, E_RIGHT_CLICK_MENUES, L"right-click context menu");
-	context.CreateRightClickMenues->setIsPushButton(true);
+	context.CreateRightClickMenus = env->addButton (rectBtn, 0, E_RIGHT_CLICK_MENUS, L"right-click context menu");
+	context.CreateRightClickMenus->setIsPushButton(true);
 
 	rectBtn = core::rect<s32>(0, 100, 150, 120);
-	context.EatCloseEvent = env->addButton (rectBtn, 0, E_RIGHT_CLICK_MENUES, L"eat close event");
+	context.EatCloseEvent = env->addButton (rectBtn, 0, E_RIGHT_CLICK_MENUS, L"eat close event");
 	context.EatCloseEvent->setIsPushButton(true);
 	
 	// menu bar in sub-window
@@ -212,4 +236,3 @@ int main()
 
 	return 0;
 }
-
