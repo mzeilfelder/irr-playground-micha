@@ -1,7 +1,7 @@
 // Code is under the zlib license (same as Irrlicht)
 // Written by Michael Zeilfelder
 // 
-// Eexperimenting with spinboxes (used for hunting bugs)
+// Experimenting with spinboxes (used for hunting bugs)
 
 #include <irrlicht.h>
 
