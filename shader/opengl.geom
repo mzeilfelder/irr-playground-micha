@@ -51,7 +51,7 @@ void drawOffset(int i, float offset)
 	gl_Position =  mProjection * gl_in[i].gl_Position;
 	EmitVertex();
 	
-	gl_Position =  mProjection * gl_in[i].gl_Position + inData[i].normal * offset;
+	gl_Position =  mProjection * (gl_in[i].gl_Position + inData[i].normal * offset);
 	EmitVertex();
 	
 	EndPrimitive();
