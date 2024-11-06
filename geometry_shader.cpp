@@ -167,7 +167,7 @@ int main()
 	node->setMaterialType((video::E_MATERIAL_TYPE)newMaterialType1);
 
 	smgr->addTextSceneNode(gui->getBuiltInFont(),
-			L"Shader & EMT_SOLID",
+			L"Shader & EMT_TRANSPARENT_ALPHA_CHANNEL",
 			video::SColor(255,255,255,255),	node);
 
 	scene::ISceneNodeAnimator* anim = smgr->createRotationAnimator(
@@ -185,7 +185,7 @@ int main()
 	node->getMaterial(0).EmissiveColor = irr::video::SColor(0,50,0,50);
 
 	smgr->addTextSceneNode(gui->getBuiltInFont(),
-			L"Shader & EMT_TRANSPARENT",
+			L"Shader & EMT_TRANSPARENT_ADD_COLOR",
 			video::SColor(255,255,255,255),	node);
 
 	anim = smgr->createRotationAnimator(core::vector3df(0,0.3f,0));
