@@ -82,8 +82,12 @@ void drawBlade(int i, float len, float radius)
 	
 	gl_Position =  mProjection * (gl_in[i].gl_Position - perp * radius);
 	EmitVertex();
-	
+
 	gl_Position =  mProjection * (gl_in[i].gl_Position + normalize(inData[i].normal) * len);	
+	EmitVertex();
+	
+	// With 3 vertices we would have a triangle, but let's give it one more corner to make it look more like a blade
+	gl_Position =  mProjection * (gl_in[i].gl_Position + normalize(inData[i].normal) * 0.7 * len - perp * radius);	
 	EmitVertex();
 	
 	EndPrimitive();
