@@ -52,6 +52,10 @@ public:
 		// So when we have non-changing shader constants it's more performant to set them only once.
 		video::SColorf col(0.0f,1.0f,1.0f,0.0f);
 		services->setVertexShaderConstant(ColorID, reinterpret_cast<f32*>(&col), 4);
+
+		// set texture, for textures you can use both an int and a float setPixelShaderConstant interfaces (You need it only for an OpenGL driver).
+		s32 TextureLayerID = 0;
+		services->setPixelShaderConstant(TextureID, &TextureLayerID, 1);
 	}
 
 	// Called when any SMaterial value changes
@@ -85,10 +89,6 @@ public:
 			getActiveCamera()->getAbsolutePosition();
 		services->setVertexShaderConstant(LightPosID, reinterpret_cast<f32*>(&pos), 3);
 
-		// set texture, for textures you can use both an int and a float setPixelShaderConstant interfaces (You need it only for an OpenGL driver).
-		s32 TextureLayerID = 0;
-		services->setPixelShaderConstant(TextureID, &TextureLayerID, 1);
-
 		// Set material values
 		services->setPixelShaderConstant(EmissiveID, Emissive, 4);
 	}
@@ -119,63 +119,63 @@ int main()
 	scene::ISceneManager* smgr = device->getSceneManager();
 	gui::IGUIEnvironment* gui = device->getGUIEnvironment();
 
-	smgr->getParameters()->setAttribute(scene::DEBUG_NORMAL_LENGTH, 10.f);
-
-
+	const io::path mediaPath = getExampleMediaPath();
 	const io::path shaderPath = "shader/";
 
-	io::path vsFileName = shaderPath + "opengl.vert";
-	io::path gsFileName = shaderPath + "opengl.geom";
-	io::path psFileName = shaderPath + "opengl.frag";
+	io::path vsFileName = shaderPath + "ogl_gs.vert";
+	io::path psFileName = shaderPath + "ogl_gs.frag";
 
 	// create materials
 	video::IGPUProgrammingServices* gpu = driver->getGPUProgrammingServices();
-	s32 newMaterialType1 = 0;
-	s32 newMaterialType2 = 0;
-	if (gpu)
-	{
-		MyShaderCallBack* mcSolid = new MyShaderCallBack();
-		MyShaderCallBack* mcTransparentAdd = new MyShaderCallBack();
+	if ( !gpu )
+		return 1; // can't do shaders without this
 
-		scene::E_PRIMITIVE_TYPE inType = scene::EPT_TRIANGLES;
-		scene::E_PRIMITIVE_TYPE outType = scene::EPT_TRIANGLE_STRIP;
-		u32 verticesOut = 0;	// sets it to the max - we set real number in shader
 
-		newMaterialType1 = gpu->addHighLevelShaderMaterialFromFiles(
-			vsFileName, "vertexMain", video::EVST_VS_1_1,
-			psFileName, "pixelMain", video::EPST_PS_1_1,
-			gsFileName, "main", video::EGST_GS_4_0, inType, outType, verticesOut,
-			mcSolid, video::EMT_TRANSPARENT_ALPHA_CHANNEL, 0);
+	u32 verticesOut = 0;	// sets it to the max, 0 is allow maximum. Can override in geometry shader with layout out parameter max_vertices 
 
-		newMaterialType2 = gpu->addHighLevelShaderMaterialFromFiles(
-			vsFileName, "vertexMain", video::EVST_VS_1_1,
-			psFileName, "pixelMain", video::EPST_PS_1_1,
-			gsFileName, "main", video::EGST_GS_4_0, inType, outType, verticesOut,
-			mcTransparentAdd, video::EMT_TRANSPARENT_ADD_COLOR, 0);
+	MyShaderCallBack* mc1 = new MyShaderCallBack();
+	// can override in geometry shader with layout in/out
+	scene::E_PRIMITIVE_TYPE inType1 = scene::EPT_TRIANGLES; // EPT_POINTS;
+	scene::E_PRIMITIVE_TYPE outType1 = scene::EPT_TRIANGLE_STRIP;
+	s32 newMaterialType1 = gpu->addHighLevelShaderMaterialFromFiles(
+		vsFileName, "vertexMain", video::EVST_VS_1_1,
+		psFileName, "pixelMain", video::EPST_PS_1_1,
+		shaderPath + "ogl_spikes.geom", "main", video::EGST_GS_4_0, inType1, outType1, verticesOut,
+		mc1, video::EMT_TRANSPARENT_ALPHA_CHANNEL, 0);
+	mc1->drop();
 
-		mcSolid->drop();
-		mcTransparentAdd->drop();
-	}
-
-	const io::path mediaPath = getExampleMediaPath();
+	MyShaderCallBack* mc2 = new MyShaderCallBack();
+	scene::E_PRIMITIVE_TYPE inType2 = scene::EPT_TRIANGLES;
+	scene::E_PRIMITIVE_TYPE outType2 = scene::EPT_TRIANGLE_STRIP;
+	s32 newMaterialType2 = gpu->addHighLevelShaderMaterialFromFiles(
+		vsFileName, "vertexMain", video::EVST_VS_1_1,
+		psFileName, "pixelMain", video::EPST_PS_1_1,
+		shaderPath + "ogl_shells.geom", "main", video::EGST_GS_4_0, inType2, outType2, verticesOut,
+		mc2, video::EMT_TRANSPARENT_ADD_COLOR, 0);	// Not using pixel alpha in shader with that one
+	mc2->drop();
 
 	// create test scene node 1, with the new created material type 1
-	scene::ISceneNode* node = smgr->addCubeSceneNode(50);
+#if 1 // sphere
+	scene::IMeshSceneNode* node = smgr->addSphereSceneNode(25);
+#else	// cube
+	scene::IMeshSceneNode* node = smgr->addCubeSceneNode(50);
+#endif
 	node->setPosition(core::vector3df(0,0,-100));
 	node->setMaterialTexture(0, driver->getTexture(mediaPath + "wall.bmp"));
 	node->setMaterialFlag(video::EMF_LIGHTING, false);
 	node->setMaterialType((video::E_MATERIAL_TYPE)newMaterialType1);
+	node->getMaterial(0).EmissiveColor = video::SColor(100,150,150,150);
+	
+	node->getMesh()->getMeshBuffer(0)->setPrimitiveType(inType1);
 
-	smgr->addTextSceneNode(gui->getBuiltInFont(),
-			L"Shader & EMT_TRANSPARENT_ALPHA_CHANNEL",
-			video::SColor(255,255,255,255),	node);
+	smgr->addTextSceneNode(gui->getBuiltInFont(), L"1", video::SColor(255,200,155,155),	node);
 
 	scene::ISceneNodeAnimator* anim = smgr->createRotationAnimator(
 			core::vector3df(0,0.3f,0));
 	node->addAnimator(anim);
 	anim->drop();
 
-	// create test scene node 2, with the new created material type 2
+#if 1 // create test node 2, with the new created material type 2
 	node = smgr->addCubeSceneNode(50);
 	node->setPosition(core::vector3df(0,-10,100)); 
 	node->setMaterialTexture(0, driver->getTexture(mediaPath + "wall.bmp"));
@@ -184,33 +184,12 @@ int main()
 	node->setMaterialType((video::E_MATERIAL_TYPE)newMaterialType2);
 	node->getMaterial(0).EmissiveColor = irr::video::SColor(0,50,0,50);
 
-	smgr->addTextSceneNode(gui->getBuiltInFont(),
-			L"Shader & EMT_TRANSPARENT_ADD_COLOR",
-			video::SColor(255,255,255,255),	node);
+	smgr->addTextSceneNode(gui->getBuiltInFont(), L"2",	video::SColor(255,200,155,155),	node);
 
 	anim = smgr->createRotationAnimator(core::vector3df(0,0.3f,0));
 	node->addAnimator(anim);
 	anim->drop();
-
-	// add a scene node with no shader for comparison
-	node = smgr->addCubeSceneNode(50);
-	node->setPosition(core::vector3df(0,100,0));
-	node->setMaterialTexture(0, driver->getTexture(mediaPath + "wall.bmp"));
-	node->setMaterialFlag(video::EMF_LIGHTING, false);
-	node->setDebugDataVisible(irr::scene::EDS_NORMALS);
-	smgr->addTextSceneNode(gui->getBuiltInFont(), L"NO SHADER",
-		video::SColor(255,255,255,255), node);
-
-	// add a nice skybox
-	driver->setTextureCreationFlag(video::ETCF_CREATE_MIP_MAPS, false);
-	smgr->addSkyBoxSceneNode(
-		driver->getTexture(mediaPath + "irrlicht2_up.jpg"),
-		driver->getTexture(mediaPath + "irrlicht2_dn.jpg"),
-		driver->getTexture(mediaPath + "irrlicht2_lf.jpg"),
-		driver->getTexture(mediaPath + "irrlicht2_rt.jpg"),
-		driver->getTexture(mediaPath + "irrlicht2_ft.jpg"),
-		driver->getTexture(mediaPath + "irrlicht2_bk.jpg"));
-	driver->setTextureCreationFlag(video::ETCF_CREATE_MIP_MAPS, true);
+#endif
 
 	// add a camera and disable the mouse cursor
 	scene::ICameraSceneNode* cam = smgr->addCameraSceneNodeFPS();
@@ -218,13 +197,16 @@ int main()
 	cam->setTarget(core::vector3df(0,0,0));
 	device->getCursorControl()->setVisible(false);
 
+	// With debug output enabled we want a bit longer normals
+	smgr->getParameters()->setAttribute(scene::DEBUG_NORMAL_LENGTH, 10.f);
+
 	//	draw everything
 	int lastFPS = -1;
 
 	while(device->run())
 		if (device->isWindowActive())
 	{
-		driver->beginScene(video::ECBF_COLOR | video::ECBF_DEPTH, video::SColor(255,0,0,0));
+		driver->beginScene(video::ECBF_COLOR | video::ECBF_DEPTH, video::SColor(255,20,20,20));
 		smgr->drawAll();
 		driver->endScene();
 
@@ -241,6 +223,7 @@ int main()
 		}
 	}
 
+	device->closeDevice();
 	device->drop();
 
 	return 0;

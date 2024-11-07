@@ -47,8 +47,7 @@ void main(void)
 	
 	// Stuff below from old Irrlicht shader example to calculate some nice color
 	// It's not real lighting, just shiny stuff.
-	vec4 lightVector = worldpos - vec4(mLightPos,1.0);
-	lightVector = normalize(lightVector);
+	vec4 lightVector = normalize(worldpos - vec4(mLightPos,1.0));
 	
-	outData.color = (mLightColor * dot(-lightVector, outData.normal)).xyz;
+	outData.color = (mLightColor * clamp(dot(-lightVector, outData.normal), 0.1, 1)).xyz;
 }
