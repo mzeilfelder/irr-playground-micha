@@ -2,6 +2,8 @@
 // Written by Michael Zeilfelder
 // 
 // Shadow scene to reproduce bug reported at https://irrlicht.sourceforge.io/forum/viewtopic.php?p=308069
+// 
+// Might also be a good test-scene to try figure out the CollisionResponseAnimator (as I can't get it working here for whatever reason)
 
 
 #include <irrlicht.h>
@@ -28,6 +30,7 @@ public:
 		KeyMap.push_back(SKeyMap(EKA_ROTATE_LEFT, irr::KEY_KEY_Q));
 		KeyMap.push_back(SKeyMap(EKA_ROTATE_RIGHT, irr::KEY_KEY_E));
 		KeyMap.push_back(SKeyMap(EKA_JUMP_UP, irr::KEY_SPACE));
+		KeyMap.push_back(SKeyMap(EKA_CROUCH, irr::KEY_KEY_C));
 	}
 
 	virtual bool OnEvent(const SEvent &event)
@@ -75,7 +78,7 @@ public:
 		node->setRotation( rot );
 
 		core::vector3df movedir(0,0,-1);
-		movedir.rotateXZBy(rot.Y);
+		movedir.rotateXZBy(-rot.Y);
 		movedir.normalize();
 
 		core::vector3df pos  = node->getPosition();
@@ -97,29 +100,40 @@ public:
 		// and if it's not falling, we tell it to jump.
 		if (CursorKeys[EKA_JUMP_UP])
 		{
-			// TODO: think about it tomorrow
-			//const ISceneNodeAnimatorList& animators = camera->getAnimators();
-			//ISceneNodeAnimatorList::ConstIterator it = animators.begin();
-			//while(it != animators.end())
-			//{
-			//	if(ESNAT_COLLISION_RESPONSE == (*it)->getType())
-			//	{
-			//		ISceneNodeAnimatorCollisionResponse * collisionResponse =
-			//			static_cast<ISceneNodeAnimatorCollisionResponse *>(*it);
+#if 0 // animator not working so far
+			const scene::ISceneNodeAnimatorList& animators = node->getAnimators();
+			scene::ISceneNodeAnimatorList::ConstIterator it = animators.begin();
+			while(it != animators.end())
+			{
+				if(scene::ESNAT_COLLISION_RESPONSE == (*it)->getType())
+				{
+					scene::ISceneNodeAnimatorCollisionResponse * collisionResponse =
+						static_cast<scene::ISceneNodeAnimatorCollisionResponse *>(*it);
 
-			//		if(!collisionResponse->isFalling())
-			//			collisionResponse->jump(JumpSpeed);
-			//	}
+//					if(!collisionResponse->isFalling())
+						collisionResponse->jump(JumpSpeed);
+				}
 
-			//	it++;
-			//}
+				it++;
+			}
+#else
+			pos.Y += timeDiff * MoveSpeed;
+#endif
+		}
+		else
+//		if (CursorKeys[EKA_CROUCH])
+		{
+			pos.Y -= timeDiff * MoveSpeed;
+			if ( pos.Y < 0.f )
+				pos.Y = 0.f;
 		}
 
 		node->setPosition(pos);
 	}
 
 
-	f32 MoveSpeed = 0.5f;
+	f32 JumpSpeed = 0.05f;
+	f32 MoveSpeed = 0.05f;
 	f32 RotateSpeedKeyboard = 0.3f;
 	s32 LastAnimationTime = 0;
 	core::array<SKeyMap> KeyMap;
@@ -145,7 +159,7 @@ int main()
 	scene::ISceneManager* smgr = device->getSceneManager();
 
 	// scene (just a plane for now)
-	scene::IMesh* meshPlane = smgr->getGeometryCreator()->createPlaneMesh(core::dimension2df(100.f, 100.f), core::dimension2du(20, 20));
+	scene::IMesh* meshPlane = smgr->getGeometryCreator()->createPlaneMesh(core::dimension2df(1.f, 1.f), core::dimension2du(200, 200));
 	scene::IMeshSceneNode* nodePlane = smgr->addMeshSceneNode(meshPlane);
 	nodePlane->setMaterialTexture(0, driver->getTexture("../../media/terrain-texture.jpg"));
 	meshPlane->drop(); meshPlane = 0;
@@ -158,23 +172,34 @@ int main()
 	const f32 infinity = 150.f;
 
 	scene::IAnimatedMeshSceneNode* playerNode = smgr->addAnimatedMeshSceneNode(smgr->getMesh("../../media/dwarf.x"),0, 1);
+	//scene::IAnimatedMeshSceneNode* playerNode = smgr->addAnimatedMeshSceneNode(smgr->getMesh("media_others/idlewalk.b3d"),0, 1);
 	if ( playerNode )
 	{
 		playerNode->setPosition(core::vector3df(50,1,50)); // Put its feet on the floor and bit off from center
+		playerNode->setScale(core::vector3df(0.1f, 0.1f, 0.1f));
 		playerNode->setAnimationSpeed(20.f);
 		playerNode->getMaterial(0).Lighting = true;
 
 		scene::IShadowVolumeSceneNode* shadow = playerNode->addShadowVolumeSceneNode(0, -1, zfail, infinity);
 	//	shadow->setDebugDataVisible(scene::EDS_MESH_WIRE_OVERLAY);
 
-		// TODO: not yet working, sinks into floor
-		//scene::ISceneNodeAnimatorCollisionResponse* ani = smgr->createCollisionResponseAnimator(sceneSelector, playerNode, playerNode->getBoundingBox().getExtent());
-		//playerNode->addAnimator(ani);
-		//ani->drop();
+#if 0	// can't get that animator working - have to debug that another time
+		core::vector3df collisionRadius = playerNode->getBoundingBox().getExtent() * 0.5f;
+		collisionRadius *= playerNode->getScale();
+		collisionRadius.X = (collisionRadius.X + collisionRadius.Z)*0.5f;
+		collisionRadius.Z = collisionRadius.X;
+		collisionRadius.set(60,70,60);	// giving up... I don't know why above doesn't work - have to debug that later
+		core::vector3df ellipsoidTranslation = core::vector3df(0,-collisionRadius.Y*0.5f,0);
+		core::vector3df gravity = core::vector3df(0,-10.f,0);
+		f32 slidingValue = 0.000005f;
+		scene::ISceneNodeAnimatorCollisionResponse* ani = smgr->createCollisionResponseAnimator(sceneSelector, playerNode, collisionRadius, gravity, ellipsoidTranslation, slidingValue);
+		playerNode->addAnimator(ani);
+		ani->drop();
+#endif
 	}
 	sceneSelector->drop(); sceneSelector = 0;
 
-	core::vector3df camRelDist(0, 200, 150);
+	core::vector3df camRelDist(0, 20, 15);
 	core::vector3df camRelTarget(0,0,0);
 	scene::ICameraSceneNode* camera = smgr->addCameraSceneNode(0, camRelDist, camRelTarget);
 
@@ -183,6 +208,7 @@ int main()
 	if (spotlight) 
 	{
 		spotlight->getLightData().Type = irr::video::ELT_POINT;
+		spotlight->getLightData().Falloff = 10.1f;
 		spotlight->enableCastShadow(true);
 
 		//scene::IBillboardSceneNode* bbNode = smgr->addBillboardSceneNode(spotlight, core::dimension2d<f32>(50, 50));
@@ -212,7 +238,7 @@ int main()
 		if (device->isWindowActive())
 		{
 			eventReceiver.animateNode(playerNode, device->getTimer()->getRealTime());
-			
+
 			core::vector3df playerPos = playerNode->getPosition();
 			camera->setPosition(playerPos+camRelDist);
 			camera->setTarget(playerPos+camRelTarget);
