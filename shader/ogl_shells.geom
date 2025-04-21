@@ -5,7 +5,7 @@
 layout (triangles) in;
 
 #ifdef DRAW_LINES
-layout (line_strip) out;	 // can also have: ,max_vertices=value to restrict output
+layout (line_strip) out;	 // must also have: ,max_vertices=value to restrict output on some drivers
 #else
 layout (triangle_strip) out;
 #endif

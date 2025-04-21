@@ -2,11 +2,13 @@
 
 #define DRAW_LINES	// switch to line drawing
 
-//layout (points) in;	// has to fit the data - shader written to be a bit flexible
+//layout (points) in;	// has to fit the data - commented out here to keep shader a bit flexible, but that might not work on all gpu's
+
+// max_vertices also only needed by some drivers, basically you have to count how many EmitVertex there can be
 #ifdef DRAW_LINES
-layout (line_strip) out; 
+layout (line_strip, max_vertices=12) out; 
 #else
-layout (triangle_strip) out;
+layout (triangle_strip, max_vertices=12) out;
 #endif
 
 in VertexData
