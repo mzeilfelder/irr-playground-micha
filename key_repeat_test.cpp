@@ -20,12 +20,23 @@ class MyEventReceiver : public IEventReceiver
 		{
 			if( event.KeyInput.PressedDown )
 			{
-				std::cout << "PressedDown:" << event.KeyInput.Key <<  " shift:" <<  event.KeyInput.Shift << std::endl;
+				std::cout << "PressedDown:";
 			}
 			else if( !event.KeyInput.PressedDown )
 			{
-				std::cout << "!PressedDown:" << event.KeyInput.Key << " shift:" <<  event.KeyInput.Shift<< std::endl;
+				std::cout << "Released:";
 			}
+			std::wcout << " " << event.KeyInput.Char;
+			std::cout << " " << event.KeyInput.Key;
+			std::cout << " shift:" << event.KeyInput.Shift;
+			std::cout << " ctrl:" << event.KeyInput.Control;
+
+#if (IRRLICHT_VERSION_MAJOR > 1) || (IRRLICHT_VERSION_MAJOR == 1 && IRRLICHT_VERSION_MINOR >= 9)
+			std::cout << " repeat:" << event.KeyInput.AutoRepeat;
+			std::cout << " extended:" << event.KeyInput.Extended;
+#endif
+
+			std::cout << std::endl;
 		}
 
 		return false;
