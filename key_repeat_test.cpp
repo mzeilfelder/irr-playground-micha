@@ -28,6 +28,9 @@ class MyEventReceiver : public IEventReceiver
 			}
 			std::wcout << " " << event.KeyInput.Char;
 			std::cout << " " << event.KeyInput.Key;
+			std::cout.setf(std::ios::hex, std::ios::basefield);
+			std::cout << "(0x" << event.KeyInput.Key << ")";
+			std::cout.unsetf(std::ios::hex);
 			std::cout << " shift:" << event.KeyInput.Shift;
 			std::cout << " ctrl:" << event.KeyInput.Control;
 
