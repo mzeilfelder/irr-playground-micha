@@ -7,7 +7,6 @@
 
 
 #include <irrlicht.h>
-//#include "driverChoice.h"
 
 using namespace irr;
 
@@ -45,6 +44,14 @@ public:
 					CursorKeys[KeyMap[i].Action] = event.KeyInput.PressedDown;
 					return true;
 				}
+			}
+			break;
+		case EET_MOUSE_INPUT_EVENT:
+			if ( event.MouseInput.Event == EMIE_MOUSE_WHEEL && scrollVector)
+			{
+				f32 len = scrollVector->getLength();
+				len -= event.MouseInput.Wheel;
+				scrollVector->setLength(len);
 			}
 			break;
 
@@ -120,8 +127,8 @@ public:
 			pos.Y += timeDiff * MoveSpeed;
 #endif
 		}
-		else
-//		if (CursorKeys[EKA_CROUCH])
+//		else
+		if (CursorKeys[EKA_CROUCH])
 		{
 			pos.Y -= timeDiff * MoveSpeed;
 			if ( pos.Y < 0.f )
@@ -131,7 +138,7 @@ public:
 		node->setPosition(pos);
 	}
 
-
+	core::vector3df * scrollVector = 0;
 	f32 JumpSpeed = 0.05f;
 	f32 MoveSpeed = 0.05f;
 	f32 RotateSpeedKeyboard = 0.3f;
@@ -143,10 +150,11 @@ public:
 int main()
 {
 	// ask user for driver
+#if 1
 	video::E_DRIVER_TYPE driverType= video::EDT_DIRECT3D9;
-//	video::E_DRIVER_TYPE driverType=driverChoiceConsole();
-	if (driverType==video::EDT_COUNT)
-		return 1;
+#else
+	video::E_DRIVER_TYPE driverType= video::EDT_OPENGL;
+#endif
 
 	IrrlichtDevice *device =createDevice(driverType, core::dimension2d<u32>(800, 600), 16, false, true);
 	if (!device)
@@ -159,9 +167,11 @@ int main()
 	scene::ISceneManager* smgr = device->getSceneManager();
 
 	// scene (just a plane for now)
-	scene::IMesh* meshPlane = smgr->getGeometryCreator()->createPlaneMesh(core::dimension2df(1.f, 1.f), core::dimension2du(200, 200));
+	scene::IMesh* meshPlane = smgr->getGeometryCreator()->createPlaneMesh(core::dimension2df(5.f, 5.f), core::dimension2du(100, 100));
+	meshPlane->getMeshBuffer(0)->setHardwareMappingHint(scene::EHM_NEVER);
 	scene::IMeshSceneNode* nodePlane = smgr->addMeshSceneNode(meshPlane);
 	nodePlane->setMaterialTexture(0, driver->getTexture("../../media/terrain-texture.jpg"));
+	nodePlane->getMaterial(0).Shininess = 0.f;
 	meshPlane->drop(); meshPlane = 0;
 
 
@@ -171,6 +181,8 @@ int main()
 	const bool zfail = true;
 	const f32 infinity = 150.f;
 
+	smgr->addCubeSceneNode(10.f, 0, -1, core::vector3df(50,5,-40));
+
 	scene::IAnimatedMeshSceneNode* playerNode = smgr->addAnimatedMeshSceneNode(smgr->getMesh("../../media/dwarf.x"),0, 1);
 	//scene::IAnimatedMeshSceneNode* playerNode = smgr->addAnimatedMeshSceneNode(smgr->getMesh("media_others/idlewalk.b3d"),0, 1);
 	if ( playerNode )
@@ -178,9 +190,8 @@ int main()
 		playerNode->setPosition(core::vector3df(50,1,50)); // Put its feet on the floor and bit off from center
 		playerNode->setScale(core::vector3df(0.1f, 0.1f, 0.1f));
 		playerNode->setAnimationSpeed(20.f);
-		playerNode->getMaterial(0).Lighting = true;
 
-		scene::IShadowVolumeSceneNode* shadow = playerNode->addShadowVolumeSceneNode(0, -1, zfail, infinity);
+		//scene::IShadowVolumeSceneNode* shadow = playerNode->addShadowVolumeSceneNode(0, -1, zfail, infinity);
 	//	shadow->setDebugDataVisible(scene::EDS_MESH_WIRE_OVERLAY);
 
 #if 0	// can't get that animator working - have to debug that another time
@@ -197,19 +208,34 @@ int main()
 		ani->drop();
 #endif
 	}
+
+	scene::IAnimatedMeshSceneNode* npcNode = smgr->addAnimatedMeshSceneNode(smgr->getMesh("../../media/faerie.md2"));
+	if ( npcNode )
+	{
+		float s = 0.5f;
+		npcNode->setScale(core::vector3df(s, s, s));
+		npcNode->setPosition(core::vector3df(200,npcNode->getBoundingBox().getExtent().Y*0.5f*s,-100));
+
+		scene::IShadowVolumeSceneNode* shadow = npcNode->addShadowVolumeSceneNode(0, -1, zfail, infinity);
+	}
+
 	sceneSelector->drop(); sceneSelector = 0;
 
 	core::vector3df camRelDist(0, 20, 15);
 	core::vector3df camRelTarget(0,0,0);
 	scene::ICameraSceneNode* camera = smgr->addCameraSceneNode(0, camRelDist, camRelTarget);
 
+	eventReceiver.scrollVector = &camRelDist;
+
 	// Add a spotlight
-	scene::ILightSceneNode* spotlight = smgr->addLightSceneNode(0, core::vector3df(0, 0, 0), video::SColorf(1.0f, 1.0f, 1.0f), 21.7f);
+	scene::ILightSceneNode* spotlight = smgr->addLightSceneNode(0, core::vector3df(0, 0, 0), video::SColorf(1.0f, 1.0f, 1.0f), 31.7f);
 	if (spotlight) 
 	{
 		spotlight->getLightData().Type = irr::video::ELT_POINT;
-		spotlight->getLightData().Falloff = 10.1f;
-		spotlight->enableCastShadow(true);
+		spotlight->getLightData().OuterCone = 90.f;
+		spotlight->getLightData().Falloff = 1.f;
+//		spotlight->getLightData().Attenuation.set(0,0.1,0.0);
+//		spotlight->enableCastShadow(true);
 
 		//scene::IBillboardSceneNode* bbNode = smgr->addBillboardSceneNode(spotlight, core::dimension2d<f32>(50, 50));
 		//bbNode->setMaterialFlag(video::EMF_LIGHTING, false);
@@ -217,18 +243,18 @@ int main()
 		//bbNode->setMaterialTexture(0, driver->getTexture("../../media/particlewhite.bmp"));
 	}
 
-	scene::ILightSceneNode* camplight = smgr->addLightSceneNode(0, core::vector3df(-10, 20, -20), video::SColorf(1.0f, 1.0f, 1.0f), 10.7f);
-	if (camplight) 
-	{
-		camplight->getLightData().Type = irr::video::ELT_POINT;
-		camplight->getLightData().DiffuseColor = video::SColorf(1.0f, 0.2f, 0.0f); // (orange)
-		camplight->enableCastShadow(false);
+	//scene::ILightSceneNode* camplight = smgr->addLightSceneNode(0, core::vector3df(-10, 20, -20), video::SColorf(1.0f, 1.0f, 1.0f), 10.7f);
+	//if (camplight) 
+	//{
+	//	camplight->getLightData().Type = irr::video::ELT_POINT;
+	//	camplight->getLightData().DiffuseColor = video::SColorf(1.0f, 0.2f, 0.0f); // (orange)
+	//	camplight->enableCastShadow(false);
 
-		scene::IBillboardSceneNode* bbNode = smgr->addBillboardSceneNode(camplight, core::dimension2d<f32>(50, 50));
-		bbNode->setMaterialFlag(video::EMF_LIGHTING, false);
-		bbNode->setMaterialType(video::EMT_TRANSPARENT_ADD_COLOR);
-		bbNode->setMaterialTexture(0, driver->getTexture("../../media/particlewhite.bmp"));
-	}
+	//	scene::IBillboardSceneNode* bbNode = smgr->addBillboardSceneNode(camplight, core::dimension2d<f32>(50, 50));
+	//	bbNode->setMaterialFlag(video::EMF_LIGHTING, false);
+	//	bbNode->setMaterialType(video::EMT_TRANSPARENT_ADD_COLOR);
+	//	bbNode->setMaterialTexture(0, driver->getTexture("../../media/particlewhite.bmp"));
+	//}
 
 	smgr->setAmbientLight(video::SColor(255, 50, 50, 50));
 //	smgr->setShadowColor(video::SColor(150,0,255,0));
