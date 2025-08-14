@@ -209,8 +209,8 @@ bool FbxSceneLoader::loadScene(const char* filename)
 	fbxsdk::FbxAxisSystem axisSystem(fbxsdk::FbxAxisSystem::eDirectX);
 	axisSystem.DeepConvertScene(fbxScene);
 
-	// T1 works with 1 unit = 1 inch. TODO: check if this is correct for input 
-	// TODO: this should probably be a parameter of the loader
+#if 0 
+	// When you work with specific units like 1 unit = 1 inch.
 	fbxsdk::FbxSystemUnit importUnits(2.54); // fbxsdk::FbxSystemUnit::Inch (can't use static variables with delay-loaded dll)
 	if ( importUnits != fbxScene->GetGlobalSettings().GetOriginalSystemUnit() )
 	{
@@ -223,6 +223,7 @@ bool FbxSceneLoader::loadScene(const char* filename)
 		convOpt.mConvertCameraClipPlanes = true;
 		importUnits.ConvertScene(fbxScene, convOpt);
 	}
+#endif
 
 	const int countGeometry = fbxScene->GetGeometryCount();
 	if (countGeometry < 1 )
