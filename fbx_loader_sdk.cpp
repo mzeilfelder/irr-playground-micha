@@ -636,7 +636,9 @@ public:
 								continue;
 
 							irr::core::matrix4 mat = fbxLoader.getAbsoluteTransformation(i);
-							IMeshSceneNode* node = smgr->addMeshSceneNode(ni.mesh);
+							// Note: Decomposing matrices is not always perfect, we could add a DummyTransformationSceneNode as parent instead
+							//       which works with matrices. Thought in most cases this will work.
+							IMeshSceneNode* node = smgr->addMeshSceneNode(ni.mesh, 0, -1, mat.getTranslation(), mat.getRotationDegrees(), mat.getScale());
 							for ( irr::u32 m=0; m < ni.materials.size(); ++ m)
 							{
 								node->getMaterial(m) = ni.materials[m];
