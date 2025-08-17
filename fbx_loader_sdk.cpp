@@ -351,7 +351,7 @@ void FbxSceneLoader::fbxToIrrMaterial(const fbxsdk::FbxSurfaceMaterial& fbxMater
 		irrMaterial.DiffuseColor.setAlpha( (irr::u32)((irr::f32)irrMaterial.DiffuseColor.getAlpha()*alpha));
 	}
 
-	auto getFbxFileTexture = [this, &fbxMaterial](const char* propName) -> fbxsdk::FbxFileTexture*
+	auto getFbxFileTexture = [&fbxMaterial](const char* propName) -> fbxsdk::FbxFileTexture*
 	{
 		fbxsdk::FbxProperty prop = fbxMaterial.FindProperty(propName);
 		if (prop.IsValid()) 
