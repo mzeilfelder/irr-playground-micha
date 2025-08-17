@@ -128,7 +128,7 @@ s32 CBatchingMesh::addMeshBuffer(IMeshBuffer* buffer, const core::matrix4 &trans
 		return -1;
 
 	u32 i=0;
-	video::SMaterial m = material ? *material : buffer->getMaterial();
+	const video::SMaterial& m = material ? *material : buffer->getMaterial();
 
 	// find destination buffer to use. Needs same material and vertex type
 	bool found=false;
