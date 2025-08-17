@@ -49,7 +49,7 @@ public:
 	//! adds a mesh with the given transformation
 	/** When materials is empty the mesh-materials are used */
 	/** \Return: Returns an array of ID numbers */
-	core::array<s32> addMesh(IMesh* mesh, core::array<video::SMaterial> materials, const core::matrix4 &transform);
+	core::array<s32> addMesh(IMesh* mesh, const core::array<video::SMaterial>& materials, const core::matrix4 &transform);
 
 	//! adds a mesh buffer with the given transformation
 	/** \Return: Returns the ID of this mesh buffer */

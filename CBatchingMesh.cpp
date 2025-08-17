@@ -89,7 +89,7 @@ core::array<s32> CBatchingMesh::addMesh(IMesh* mesh, core::array<video::SMateria
 }
 
 //! adds a mesh with the given transformation
-core::array<s32> CBatchingMesh::addMesh(IMesh* mesh, core::array<video::SMaterial> materials, const core::matrix4 &transform)
+core::array<s32> CBatchingMesh::addMesh(IMesh* mesh, const core::array<video::SMaterial>& materials, const core::matrix4 &transform)
 {
 	core::array<s32> bufferNos;
 
