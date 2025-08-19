@@ -75,7 +75,7 @@ void CBatchingMesh::update()
 
 //! adds a mesh to the buffers with the given offset
 /** \Returns Returns an array of ID numbers */
-core::array<s32> CBatchingMesh::addMesh(IMesh* mesh, core::array<video::SMaterial> materials, core::vector3df pos, core::vector3df rot, core::vector3df scale)
+core::array<s32> CBatchingMesh::addMesh(const IMesh* mesh, const core::array<video::SMaterial>& materials, core::vector3df pos, core::vector3df rot, core::vector3df scale)
 {
 	core::matrix4 m;
 	m.setRotationDegrees(rot);
@@ -89,7 +89,7 @@ core::array<s32> CBatchingMesh::addMesh(IMesh* mesh, core::array<video::SMateria
 }
 
 //! adds a mesh with the given transformation
-core::array<s32> CBatchingMesh::addMesh(IMesh* mesh, const core::array<video::SMaterial>& materials, const core::matrix4 &transform)
+core::array<s32> CBatchingMesh::addMesh(const IMesh* mesh, const core::array<video::SMaterial>& materials, const core::matrix4 &transform)
 {
 	core::array<s32> bufferNos;
 
@@ -107,7 +107,7 @@ core::array<s32> CBatchingMesh::addMesh(IMesh* mesh, const core::array<video::SM
 
 //! adds a mesh buffer with the given transformation
 /** \Return Returns the ID of this mesh buffer */
-s32 CBatchingMesh::addMeshBuffer(IMeshBuffer* buffer, core::vector3df pos, core::vector3df rot, core::vector3df scale, const video::SMaterial * material)
+s32 CBatchingMesh::addMeshBuffer(const IMeshBuffer* buffer, core::vector3df pos, core::vector3df rot, core::vector3df scale, const video::SMaterial * material)
 {
 	core::matrix4 m;
 	m.setRotationDegrees(rot);
@@ -122,7 +122,7 @@ s32 CBatchingMesh::addMeshBuffer(IMeshBuffer* buffer, core::vector3df pos, core:
 
 //! adds a mesh with the given transformation
 /** \Return Returns the ID of this mesh buffer */
-s32 CBatchingMesh::addMeshBuffer(IMeshBuffer* buffer, const core::matrix4 &transform, const video::SMaterial * material)
+s32 CBatchingMesh::addMeshBuffer(const IMeshBuffer* buffer, const core::matrix4 &transform, const video::SMaterial * material)
 {
 	if (!buffer || IsFinal)
 		return -1;
@@ -307,7 +307,7 @@ bool CBatchingMesh::moveMeshBuffer(const s32 id, const core::matrix4 &newMatrix)
 
 
 //! returns the source buffer, if available
-IMeshBuffer* CBatchingMesh::getSourceBuffer(s32 id)
+const IMeshBuffer* CBatchingMesh::getSourceBuffer(s32 id) const
 {
 	if ((u32)id > BufferReferences.size() || IsFinal)
 		return 0;
@@ -316,7 +316,7 @@ IMeshBuffer* CBatchingMesh::getSourceBuffer(s32 id)
 }
 
 //! returns the matrix of the source buffer
-core::matrix4 CBatchingMesh::getSourceBufferMatrix(s32 id)
+core::matrix4 CBatchingMesh::getSourceBufferMatrix(s32 id) const
 {
 	core::matrix4 ret;
 	if ((u32)id > BufferReferences.size() || IsFinal)
@@ -347,13 +347,13 @@ void CBatchingMesh::updateDestFromSourceBuffer(u32 i)
 	IIndexBuffer& destIndexBuffer = destMeshBuffer->getIndexBuffer();
 	if ( BufferReferences[i].SourceBuffer->getIndexType() == video::EIT_16BIT )
 	{
-		irr::u16* indices = BufferReferences[i].SourceBuffer->getIndices();
+		const irr::u16* indices = BufferReferences[i].SourceBuffer->getIndices();
 		for (u32 x=0; x < ic; ++x)
 			destIndexBuffer.setValue(x+fi, indices[x]+fv);
 	}
 	else if ( BufferReferences[i].SourceBuffer->getIndexType() == video::EIT_32BIT )
 	{
-		irr::u32* indices = (irr::u32*)BufferReferences[i].SourceBuffer->getIndices();
+		const irr::u32* indices = (const irr::u32*)BufferReferences[i].SourceBuffer->getIndices();
 		for (u32 x=0; x < ic; ++x)
 			destIndexBuffer.setValue(x+fi, indices[x]+fv);
 	}
@@ -395,7 +395,7 @@ void CBatchingMesh::updateDestFromSourceBuffer(u32 i)
 	}
 }
 
-void CBatchingMesh::addSourceBuffer(IMeshBuffer *source)
+void CBatchingMesh::addSourceBuffer(const IMeshBuffer *source)
 {
 	if ( SourceBuffers.linear_search(source) < 0 )
 	{

@@ -40,8 +40,8 @@ public:
 	//! adds a mesh to the buffers with the given offset
 	/** When materials is empty the mesh-materials are used */
 	/** \Return: Returns an array of ID numbers */
-	core::array<s32> addMesh(IMesh* mesh, 
-		core::array<video::SMaterial> materials,
+	core::array<s32> addMesh(const IMesh* mesh, 
+		const core::array<video::SMaterial>& materials,
 		core::vector3df pos = core::vector3df(0,0,0), 
 		core::vector3df rot = core::vector3df(0,0,0),
 		core::vector3df scale = core::vector3df(1,1,1));
@@ -49,11 +49,11 @@ public:
 	//! adds a mesh with the given transformation
 	/** When materials is empty the mesh-materials are used */
 	/** \Return: Returns an array of ID numbers */
-	core::array<s32> addMesh(IMesh* mesh, const core::array<video::SMaterial>& materials, const core::matrix4 &transform);
+	core::array<s32> addMesh(const IMesh* mesh, const core::array<video::SMaterial>& materials, const core::matrix4 &transform);
 
 	//! adds a mesh buffer with the given transformation
 	/** \Return: Returns the ID of this mesh buffer */
-	s32 addMeshBuffer(IMeshBuffer* buffer,
+	s32 addMeshBuffer(const IMeshBuffer* buffer,
 		core::vector3df pos = core::vector3df(0,0,0), 
 		core::vector3df rot = core::vector3df(0,0,0),
 		core::vector3df scale = core::vector3df(1,1,1),
@@ -61,7 +61,7 @@ public:
 
 	//! adds a mesh with the given transformation
 	/** \Return Returns the ID of this mesh buffer */
-	s32 addMeshBuffer(IMeshBuffer* buffer, const core::matrix4 &transform, const video::SMaterial * material = nullptr);
+	s32 addMeshBuffer(const IMeshBuffer* buffer, const core::matrix4 &transform, const video::SMaterial * material = nullptr);
 
 	//! updates bounding box from internal buffers
 	void recalculateBoundingBox();
@@ -77,10 +77,10 @@ public:
 	bool moveMeshBuffer(const s32 id, const core::matrix4 &newMatrix);
 
 	//! returns the source buffer, if available
-	IMeshBuffer* getSourceBuffer(s32 id);
+	const IMeshBuffer* getSourceBuffer(s32 id) const;
 
 	//! returns the matrix of the source buffer
-	core::matrix4 getSourceBufferMatrix(s32 id);
+	core::matrix4 getSourceBufferMatrix(s32 id) const;
 
 	//! returns the number of source buffers
 	u32 getSourceBufferCount() const;
@@ -123,7 +123,7 @@ public:
 private:
 
 	// add a buffer to the source buffers array if it doesn't already exist
-	void addSourceBuffer(IMeshBuffer* source);
+	void addSourceBuffer(const IMeshBuffer* source);
 
 	// updates the vertices in dest buffer from the source one
 	void updateDestFromSourceBuffer(u32 id);
@@ -134,7 +134,7 @@ private:
 		  : SourceBuffer(0), DestReference(0), FirstVertex(0), VertexCount(0), 
 			FirstIndex(0), IndexCount(0), Initialized(false) { }
 
-		IMeshBuffer* SourceBuffer;
+		const IMeshBuffer* SourceBuffer;
 		u32 DestReference;	// index into DestBuffers (it's not directly in there as buffers can be moved which is easier with a single array for all SBufferReferences)
 		u32 FirstVertex, VertexCount, FirstIndex, IndexCount;
 		core::matrix4 Transform;
@@ -151,7 +151,7 @@ private:
 
 	// This seems to have no use beside making certain all original meshbuffers have a grab() while we work with them
 	// This could directly be done by grabbing SourceBuffer in SBufferReference, not sure why it was implemented like this
-	core::array<IMeshBuffer*>         SourceBuffers;	
+	core::array<const IMeshBuffer*>   SourceBuffers;	
 
 	core::array<SBufferReference>     BufferReferences;
 	core::array<SDestBufferReference> DestBuffers;
