@@ -34,10 +34,32 @@ struct SAppContext
 		if ( !texture )
 			return;
 		bool useAlphaChannel=true;
-		irr::gui::IGUIElement *parent=0;
-		irr::gui::IGUIImage* image = Device->getGUIEnvironment()->addImage(texture, core::position2di(20, 50), useAlphaChannel, parent, -1, text);
+		IGUIElement *parent=0;
+		IGUIImage* image = Device->getGUIEnvironment()->addImage(texture, core::position2di(10, 40), useAlphaChannel, parent, -1, text);
 		Images.insert(image, 0);
-		core::recti r= image->getRelativePosition();
+		core::recti r = image->getRelativePosition();
+
+		// do some downscaling if images don't fit (too lazy to code atm)
+		core::recti rootRect = Device->getGUIEnvironment()->getRootGUIElement()->getRelativePosition();
+		core::vector2di maxSize(core::max_(rootRect.getWidth() - 20, 20), core::max_(rootRect.getHeight() - 50, 20));
+		core::vector2df downscale(1.f, 1.f);
+		if ( r.getWidth() > maxSize.X )
+		{
+			downscale.X = (f32)maxSize.X / r.getWidth();
+		}
+		if ( r.getHeight() > maxSize.Y )
+		{
+			downscale.Y = (f32)maxSize.Y / r.getHeight();
+		}
+		f32 ds = core::min_(downscale.X, downscale.Y);
+		if (ds < 1)
+		{
+			r.LowerRightCorner.X = r.UpperLeftCorner.X + (s32)(r.getWidth()*ds);
+			r.LowerRightCorner.Y = r.UpperLeftCorner.Y + (s32)(r.getHeight()*ds);
+			image->setRelativePosition(r);
+			image->setScaleImage(true);
+		}
+
 		irr::s32 m = r.getWidth() + 5;
 		for ( u32 i=1; i<Images.size(); ++i )
 		{
@@ -45,6 +67,21 @@ struct SAppContext
 		}
 	}
 
+	// Useful for debugging
+	void loadAndRemoveAllTextures(IFileList& fileList)
+	{
+		for ( u32 i = 0; i < fileList.getFileCount(); ++i )
+		{
+			if ( fileList.isDirectory(i) )
+				continue;
+			irr::video::ITexture * texture = Device->getVideoDriver()->getTexture(fileList.getFileName(i));
+			if ( texture )
+			{
+				Device->getVideoDriver()->removeTexture(texture);
+			}
+		}
+	}
+	
 	IrrlichtDevice * Device;
 	IGUIButton * ButtonOpenFile;
 	irr::core::array<irr::gui::IGUIImage*> Images;
@@ -77,6 +114,23 @@ public:
 					Context.LoadImage( dialog->getFileName() );
 				}
 				break;
+				case EGET_DIRECTORY_SELECTED:
+				{
+					// load all images and remove each again directly after loading (just load tests, no display)
+					IFileSystem* fs = Context.Device->getFileSystem();
+					path oldWorkingDir = fs->getWorkingDirectory();
+					IGUIFileOpenDialog* dialog = (IGUIFileOpenDialog*)event.GUIEvent.Caller;
+					path selectedDir = dialog->getDirectoryName();
+					fs->changeWorkingDirectoryTo(selectedDir);
+					IFileList* fileList = fs->createFileList();
+					fs->changeWorkingDirectoryTo(oldWorkingDir);
+					if (fileList)
+					{
+						Context.loadAndRemoveAllTextures(*fileList);
+						fileList->drop();
+					}
+				}
+				break;
 				default:
 					break;
 			}
@@ -105,7 +159,7 @@ int main()
 	SAppContext context;
 	context.Device = device;
 
-	context.ButtonOpenFile = env->addButton(core::rect<s32>(20, 20, 120, 40), 0, -1, L"file open");
+	context.ButtonOpenFile = env->addButton(core::rect<s32>(10, 10, 120, 30), 0, -1, L"file open");
 
 	MyEventReceiver receiver(context);
 	device->setEventReceiver(&receiver);
@@ -127,4 +181,3 @@ int main()
 
 	return 0;
 }
-
