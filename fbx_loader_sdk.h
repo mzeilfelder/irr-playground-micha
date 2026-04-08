@@ -8,7 +8,7 @@
 
 
 // Using CBatchingMesh to put whole scene into a single mesh
-// #define USE_BATCHING_MESH
+#define USE_BATCHING_MESH
 
 #include <irrlicht.h>
 
