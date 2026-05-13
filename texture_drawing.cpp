@@ -108,7 +108,7 @@ struct SAppContext
 
 	bool isMouseInsideDrawable(irr::s32 x, irr::s32 y)
 	{
-		return Image && Image->getAbsolutePosition().isPointInside(core::vector2di(x,y));
+		return Image && Device->getGUIEnvironment()->getHovered() == Image;
 	}
 
 	IrrlichtDevice * Device;
