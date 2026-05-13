@@ -40,7 +40,7 @@ struct SDrawableTexture
 				// copy each line, too lazy to code that now
 			}
 			texture->unlock();
-			// texture->regenerateMipMapLevels(); // you may need that if you have a texture with mip data
+			texture->regenerateMipMapLevels(); // you may need that if you have a texture with mip data
 			hasImageChanged  = false;
 		}
 	}
@@ -85,22 +85,25 @@ private:
 
 struct SAppContext
 {
-	SAppContext() : Device(0), ButtonOpenFile(0), Image(0)
+	SAppContext() : Device(0), ButtonOpenFile(0), ButtonScene(0), Image(0), CubeNode(0)
 	{}
 
 	void LoadImage(const irr::io::path& filename)
 	{
 		irr::video::ITexture * texture = Device->getVideoDriver()->getTexture(filename);
-		addImageForTexture(texture, irr::core::stringw(filename).c_str());
-		DrawableTex.setTexture(Device->getVideoDriver(), texture);
+		addTexture(texture, irr::core::stringw(filename).c_str());
 	}
 
-	void addImageForTexture(irr::video::ITexture * texture, const wchar_t* text)
+	// Add texture and do stuff with it - create an image - make it drawble - add it to cube
+	void addTexture(irr::video::ITexture * texture, const wchar_t* text)
 	{
 		if ( !texture )
 			return;
 		if ( Image )
 			Image->remove();
+		DrawableTex.setTexture(Device->getVideoDriver(), texture);
+		if ( CubeNode )
+			CubeNode->setMaterialTexture(0, texture);
 		bool useAlphaChannel=true;
 		IGUIElement *parent=0;
 		Image = Device->getGUIEnvironment()->addImage(texture, core::position2di(10, 40), useAlphaChannel, parent, -1, text);
@@ -113,8 +116,11 @@ struct SAppContext
 
 	IrrlichtDevice * Device;
 	IGUIButton * ButtonOpenFile;
+	IGUIButton * ButtonScene;
 	irr::gui::IGUIImage* Image;
 	SDrawableTexture DrawableTex;
+
+	scene::ISceneNode* CubeNode;
 };
 
 
@@ -202,16 +208,30 @@ int main()
 
 	video::IVideoDriver* driver = device->getVideoDriver();
 	IGUIEnvironment* env = device->getGUIEnvironment();
+	ISceneManager* smgr = device->getSceneManager();
 
 	SAppContext context;
 	context.Device = device;
 
+	smgr->addCameraSceneNode(0, vector3df(0,0,0), vector3df(0,0,30));
+	context.CubeNode = smgr->addCubeSceneNode();
+	if (context.CubeNode)
+	{
+		context.CubeNode->setMaterialFlag(video::EMF_LIGHTING, false);
+		scene::ISceneNodeAnimator* anim = smgr->createFlyCircleAnimator(vector3df(0,0,30), 20.0f);
+		if (anim)
+		{
+			context.CubeNode->addAnimator(anim);
+			anim->drop();
+		}
+	}
+
 	ITexture* defaultTexture = driver->addTexture(dimension2du( 512, 512), path("dummy"));
-	context.addImageForTexture(defaultTexture, L"default");
-	context.DrawableTex.setTexture(driver, defaultTexture);
+	context.addTexture(defaultTexture, L"default");
 
 	context.ButtonOpenFile = env->addButton(core::rect<s32>(10, 10, 120, 30), 0, -1, L"file open");
-
+	context.ButtonScene = env->addButton(core::rect<s32>(150, 10, 260, 30), 0, -1, L"show cube");
+	context.ButtonScene->setIsPushButton(true);
 	MyEventReceiver receiver(context);
 	device->setEventReceiver(&receiver);
 
@@ -225,6 +245,8 @@ int main()
 			driver->beginScene(true, true, SColor(0,200,200,200));
 
 			env->drawAll();
+			if ( context.ButtonScene->isPressed() )
+				smgr->drawAll();
 
 			driver->endScene();
 		}
