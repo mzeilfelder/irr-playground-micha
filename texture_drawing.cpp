@@ -206,6 +206,10 @@ int main()
 	SAppContext context;
 	context.Device = device;
 
+	ITexture* defaultTexture = driver->addTexture(dimension2du( 512, 512), path("dummy"));
+	context.addImageForTexture(defaultTexture, L"default");
+	context.DrawableTex.setTexture(driver, defaultTexture);
+
 	context.ButtonOpenFile = env->addButton(core::rect<s32>(10, 10, 120, 30), 0, -1, L"file open");
 
 	MyEventReceiver receiver(context);
