@@ -17,6 +17,10 @@ using namespace gui;
 #pragma comment(lib, "Irrlicht.lib")
 #endif
 
+#if IRRLICHT_VERSION_MAJOR > 1 || (IRRLICHT_VERSION_MAJOR == 1 && IRRLICHT_VERSION_MINOR > 8 )
+#define HAS_IRRLICHT_1_9
+#endif
+
 struct SDrawableTexture
 {
 	SDrawableTexture() : hasImageChanged(false), editableImage(0), texture(0) {}
@@ -29,7 +33,11 @@ struct SDrawableTexture
 	{
 		if ( editableImage && texture && hasImageChanged )
 		{
+#ifdef HAS_IRRLICHT_1_9
 			void* imgData = editableImage->getData();
+#else
+			void* imgData = editableImage->lock();
+#endif
 			void* texData = texture->lock(irr::video::ETLM_READ_WRITE);
 			if ( editableImage->getPitch() == texture->getPitch() )
 			{
@@ -39,6 +47,9 @@ struct SDrawableTexture
 			{
 				// copy each line, too lazy to code that now
 			}
+#ifndef HAS_IRRLICHT_1_9
+			editableImage->unlock();
+#endif
 			texture->unlock();
 			texture->regenerateMipMapLevels(); // you may need that if you have a texture with mip data
 			hasImageChanged  = false;
