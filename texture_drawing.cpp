@@ -92,7 +92,10 @@ struct SDrawableTexture
 	irr::video::ITexture* texture;
 
 private:
-	SDrawableTexture(const SDrawableTexture& other); // no implementation, just don't copy those for now
+	// no copy-constructor implementation, just don't copy those for now
+	// If you need it you have 2 options: Either don't grab()/drop() in here and use weak-pointers 
+	// or (better) write a copy-constructor which does the correct grab()/drop() stuff.
+	SDrawableTexture(const SDrawableTexture& other); 
 };
 
 struct SAppContext
