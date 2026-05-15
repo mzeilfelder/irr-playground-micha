@@ -17,8 +17,9 @@ using namespace gui;
 #pragma comment(lib, "Irrlicht.lib")
 #endif
 
-#if IRRLICHT_VERSION_MAJOR > 1 || (IRRLICHT_VERSION_MAJOR == 1 && IRRLICHT_VERSION_MINOR > 8 )
-#define HAS_IRRLICHT_1_9
+// Helper define to compile with Irrlicht versions before 1.9
+#if IRRLICHT_VERSION_MAJOR < 1 || (IRRLICHT_VERSION_MAJOR == 1 && IRRLICHT_VERSION_MINOR <= 8 )
+#define PRE_IRRLICHT_1_9
 #endif
 
 struct SDrawableTexture
@@ -33,10 +34,10 @@ struct SDrawableTexture
 	{
 		if ( editableImage && texture && hasImageChanged )
 		{
-#ifdef HAS_IRRLICHT_1_9
-			void* imgData = editableImage->getData();
-#else
+#ifdef PRE_IRRLICHT_1_9
 			void* imgData = editableImage->lock();
+#else
+			void* imgData = editableImage->getData();
 #endif
 			void* texData = texture->lock(irr::video::ETLM_READ_WRITE);
 			if ( editableImage->getPitch() == texture->getPitch() )
@@ -47,7 +48,7 @@ struct SDrawableTexture
 			{
 				// copy each line, too lazy to code that now
 			}
-#ifndef HAS_IRRLICHT_1_9
+#ifdef PRE_IRRLICHT_1_9
 			editableImage->unlock();
 #endif
 			texture->unlock();
