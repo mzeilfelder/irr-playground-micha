@@ -17,6 +17,11 @@ using namespace gui;
 #pragma comment(lib, "Irrlicht.lib")
 #endif
 
+// Helper define to compile with Irrlicht versions before 1.9
+#if IRRLICHT_VERSION_MAJOR < 1 || (IRRLICHT_VERSION_MAJOR == 1 && IRRLICHT_VERSION_MINOR <= 8 )
+#define PRE_IRRLICHT_1_9
+#endif
+
 struct SDrawableTexture
 {
 	SDrawableTexture() : hasImageChanged(false), editableImage(0), texture(0) {}
@@ -29,7 +34,11 @@ struct SDrawableTexture
 	{
 		if ( editableImage && texture && hasImageChanged )
 		{
+#ifdef PRE_IRRLICHT_1_9
+			void* imgData = editableImage->lock();
+#else
 			void* imgData = editableImage->getData();
+#endif
 			void* texData = texture->lock(irr::video::ETLM_READ_WRITE);
 			if ( editableImage->getPitch() == texture->getPitch() )
 			{
@@ -39,6 +48,9 @@ struct SDrawableTexture
 			{
 				// copy each line, too lazy to code that now
 			}
+#ifdef PRE_IRRLICHT_1_9
+			editableImage->unlock();
+#endif
 			texture->unlock();
 			texture->regenerateMipMapLevels(); // you may need that if you have a texture with mip data
 			hasImageChanged  = false;
@@ -80,7 +92,10 @@ struct SDrawableTexture
 	irr::video::ITexture* texture;
 
 private:
-	SDrawableTexture(const SDrawableTexture& other); // no implementation, just don't copy those for now
+	// no copy-constructor implementation, just don't copy those for now
+	// If you need it you have 2 options: Either don't grab()/drop() in here and use weak-pointers 
+	// or (better) write a copy-constructor which does the correct grab()/drop() stuff.
+	SDrawableTexture(const SDrawableTexture& other); 
 };
 
 struct SAppContext
