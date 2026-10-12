@@ -28,6 +28,7 @@ enum
 	GUI_ID_BUTTON_SAVE,
 	GUI_ID_BUTTON_LOAD,
 	GUI_ID_BUTTON_CREATE_ELEMENTS,
+	GUI_ID_LB_EVENTS,
 	GUI_ID_FIRST_SIZE_CONTROL,
 	GUI_ID_LAST_SIZE_CONTROL = GUI_ID_FIRST_SIZE_CONTROL+EGDS_COUNT-1,
 	GUI_ID_BUTTON_ADD_WINDOW,
@@ -123,7 +124,7 @@ void AddTestGuiElements(IGUIEnvironment* env, IGUIElement * parent, SAppContext 
 	context.mGuiElements.push_back(editboxnotext);
 	
 	rect.UpperLeftCorner.Y = rect.LowerRightCorner.Y + default_gap;
-	rect.LowerRightCorner.Y = rect.UpperLeftCorner.Y + default_height*3;	
+	rect.LowerRightCorner.Y = rect.UpperLeftCorner.Y + default_height*8;	
 	IGUIListBox * lb = env->addListBox (rect, parent, /*s32 id=*/-1, /*bool drawBackground=*/true);
 	for ( int i = 0; i < 100; ++i)
 	{
@@ -326,6 +327,9 @@ public:
 	{
 		if (event.EventType == EET_GUI_EVENT)
 		{
+			if ( Context.mGuiElements.linear_search(event.GUIEvent.Caller) > 0 )
+				logGuiEvent(event.GUIEvent);
+
 			s32 id = event.GUIEvent.Caller->getID();
 			switch(event.GUIEvent.EventType)
 			{
@@ -431,6 +435,49 @@ public:
 		return false;
 	}
 
+	void logGuiEvent(const SEvent::SGUIEvent& guiEvent)
+	{
+		irr::gui::IGUIListBox* lbEvent = static_cast<irr::gui::IGUIListBox*>(Context.device->getGUIEnvironment()->getRootGUIElement()->getElementFromId(GUI_ID_LB_EVENTS));
+		if (!lbEvent )
+			return;
+
+		switch ( guiEvent.EventType )
+		{
+			case EGET_ELEMENT_FOCUS_LOST: 	lbEvent->insertItem(0, L"EGET_ELEMENT_FOCUS_LOST");	break;
+			case EGET_ELEMENT_FOCUSED:		lbEvent->insertItem(0, L"EGET_ELEMENT_FOCUSED");	break;
+			case EGET_ELEMENT_HOVERED:		lbEvent->insertItem(0, L"EGET_ELEMENT_HOVERED");	break;
+			case EGET_ELEMENT_LEFT:			lbEvent->insertItem(0, L"EGET_ELEMENT_LEFT");		break;
+			case EGET_ELEMENT_CLOSED:		lbEvent->insertItem(0, L"EGET_ELEMENT_CLOSED");		break;
+			case EGET_BUTTON_CLICKED:		lbEvent->insertItem(0, L"EGET_BUTTON_CLICKED");		break;
+			case EGET_SCROLL_BAR_CHANGED:	lbEvent->insertItem(0, L"EGET_SCROLL_BAR_CHANGED");	break;
+			case EGET_CHECKBOX_CHANGED:		lbEvent->insertItem(0, L"EGET_CHECKBOX_CHANGED");	break;
+			case EGET_LISTBOX_CHANGED:		lbEvent->insertItem(0, L"EGET_LISTBOX_CHANGED");	break;
+			case EGET_LISTBOX_SELECTED_AGAIN:	lbEvent->insertItem(0, L"EGET_LISTBOX_SELECTED_AGAIN");	break;
+			case EGET_FILE_SELECTED:		lbEvent->insertItem(0, L"EGET_FILE_SELECTED");		break;
+			case EGET_DIRECTORY_SELECTED:	lbEvent->insertItem(0, L"EGET_DIRECTORY_SELECTED");	break;
+			case EGET_FILE_CHOOSE_DIALOG_CANCELLED:	lbEvent->insertItem(0, L"EGET_FILE_CHOOSE_DIALOG_CANCELLED");	break;
+			case EGET_MESSAGEBOX_YES:		lbEvent->insertItem(0, L"EGET_MESSAGEBOX_YES");		break;
+			case EGET_MESSAGEBOX_NO:		lbEvent->insertItem(0, L"EGET_MESSAGEBOX_NO");		break;
+			case EGET_MESSAGEBOX_OK:		lbEvent->insertItem(0, L"EGET_MESSAGEBOX_OK");		break;
+			case EGET_MESSAGEBOX_CANCEL:	lbEvent->insertItem(0, L"EGET_MESSAGEBOX_CANCEL");	break;
+			case EGET_EDITBOX_ENTER:		lbEvent->insertItem(0, L"EGET_EDITBOX_ENTER");		break;
+			case EGET_EDITBOX_CHANGED:		lbEvent->insertItem(0, L"EGET_EDITBOX_CHANGED");	break;
+			case EGET_EDITBOX_MARKING_CHANGED:	lbEvent->insertItem(0, L"EGET_EDITBOX_MARKING_CHANGED");	break;
+			case EGET_TAB_CHANGED:			lbEvent->insertItem(0, L"EGET_TAB_CHANGED");		break;
+			case EGET_MENU_ITEM_SELECTED:	lbEvent->insertItem(0, L"EGET_MENU_ITEM_SELECTED");	break;
+			case EGET_COMBO_BOX_CHANGED:	lbEvent->insertItem(0, L"EGET_COMBO_BOX_CHANGED");	break;
+			case EGET_SPINBOX_CHANGED:		lbEvent->insertItem(0, L"EGET_SPINBOX_CHANGED");	break;
+			case EGET_TABLE_CHANGED:		lbEvent->insertItem(0, L"EGET_TABLE_CHANGED");		break;
+			case EGET_TABLE_HEADER_CHANGED:	lbEvent->insertItem(0, L"EGET_TABLE_HEADER_CHANGED");	break;
+			case EGET_TABLE_SELECTED_AGAIN:	lbEvent->insertItem(0, L"EGET_TABLE_SELECTED_AGAIN");	break;
+			case EGET_TREEVIEW_NODE_DESELECT:lbEvent->insertItem(0, L"EGET_TREEVIEW_NODE_DESELECT");break;
+			case EGET_TREEVIEW_NODE_SELECT:	lbEvent->insertItem(0, L"EGET_TREEVIEW_NODE_SELECT");	break;
+			case EGET_TREEVIEW_NODE_EXPAND:	lbEvent->insertItem(0, L"EGET_TREEVIEW_NODE_EXPAND");	break;
+			case EGET_TREEVIEW_NODE_COLLAPSE:lbEvent->insertItem(0, L"EGET_TREEVIEW_NODE_COLLAPSE");break;
+			case EGET_COUNT:				lbEvent->insertItem(0, L"EGET_COUNT");				break;
+		}
+	}
+
 private:
 	SAppContext & Context;
 };
@@ -461,6 +508,9 @@ int main()
 	AddWindowControls(env, 0,  position2di(windowSize.Width - 460, 10), 100);
 	AddSkinSizeControls(env, 0, position2di(windowSize.Width - 350, 10), 200);
 	AddControlElements(env, 0, position2di(windowSize.Width - 140, 10), 130);
+
+	env->addListBox(rect<s32>(0, 480, 500, 600), 0, GUI_ID_LB_EVENTS, /*bool drawBackground=*/true);
+
 	
 	while(device->run() && driver)
 	{

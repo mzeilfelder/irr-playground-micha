@@ -1,4 +1,4 @@
-// Advance this some day... bascially structs which make it a bit easier to test glsl code on cpu
+// Advance this some day... basically structs which make it a bit easier to test glsl code on cpu
 // Add as necessary
 // Can't do it all obviously (no sizzling, no dfdx etc), but at least basic vector stuff should be possible
 // Or maybe look around - pretty sure someone did that already (there was one math lib I think which does all this which many engines use...)
