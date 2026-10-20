@@ -443,38 +443,38 @@ public:
 
 		switch ( guiEvent.EventType )
 		{
-			case EGET_ELEMENT_FOCUS_LOST: 	lbEvent->insertItem(0, L"EGET_ELEMENT_FOCUS_LOST");	break;
-			case EGET_ELEMENT_FOCUSED:		lbEvent->insertItem(0, L"EGET_ELEMENT_FOCUSED");	break;
-			case EGET_ELEMENT_HOVERED:		lbEvent->insertItem(0, L"EGET_ELEMENT_HOVERED");	break;
-			case EGET_ELEMENT_LEFT:			lbEvent->insertItem(0, L"EGET_ELEMENT_LEFT");		break;
-			case EGET_ELEMENT_CLOSED:		lbEvent->insertItem(0, L"EGET_ELEMENT_CLOSED");		break;
-			case EGET_BUTTON_CLICKED:		lbEvent->insertItem(0, L"EGET_BUTTON_CLICKED");		break;
-			case EGET_SCROLL_BAR_CHANGED:	lbEvent->insertItem(0, L"EGET_SCROLL_BAR_CHANGED");	break;
-			case EGET_CHECKBOX_CHANGED:		lbEvent->insertItem(0, L"EGET_CHECKBOX_CHANGED");	break;
-			case EGET_LISTBOX_CHANGED:		lbEvent->insertItem(0, L"EGET_LISTBOX_CHANGED");	break;
-			case EGET_LISTBOX_SELECTED_AGAIN:	lbEvent->insertItem(0, L"EGET_LISTBOX_SELECTED_AGAIN");	break;
-			case EGET_FILE_SELECTED:		lbEvent->insertItem(0, L"EGET_FILE_SELECTED");		break;
-			case EGET_DIRECTORY_SELECTED:	lbEvent->insertItem(0, L"EGET_DIRECTORY_SELECTED");	break;
-			case EGET_FILE_CHOOSE_DIALOG_CANCELLED:	lbEvent->insertItem(0, L"EGET_FILE_CHOOSE_DIALOG_CANCELLED");	break;
-			case EGET_MESSAGEBOX_YES:		lbEvent->insertItem(0, L"EGET_MESSAGEBOX_YES");		break;
-			case EGET_MESSAGEBOX_NO:		lbEvent->insertItem(0, L"EGET_MESSAGEBOX_NO");		break;
-			case EGET_MESSAGEBOX_OK:		lbEvent->insertItem(0, L"EGET_MESSAGEBOX_OK");		break;
-			case EGET_MESSAGEBOX_CANCEL:	lbEvent->insertItem(0, L"EGET_MESSAGEBOX_CANCEL");	break;
-			case EGET_EDITBOX_ENTER:		lbEvent->insertItem(0, L"EGET_EDITBOX_ENTER");		break;
-			case EGET_EDITBOX_CHANGED:		lbEvent->insertItem(0, L"EGET_EDITBOX_CHANGED");	break;
-			case EGET_EDITBOX_MARKING_CHANGED:	lbEvent->insertItem(0, L"EGET_EDITBOX_MARKING_CHANGED");	break;
-			case EGET_TAB_CHANGED:			lbEvent->insertItem(0, L"EGET_TAB_CHANGED");		break;
-			case EGET_MENU_ITEM_SELECTED:	lbEvent->insertItem(0, L"EGET_MENU_ITEM_SELECTED");	break;
-			case EGET_COMBO_BOX_CHANGED:	lbEvent->insertItem(0, L"EGET_COMBO_BOX_CHANGED");	break;
-			case EGET_SPINBOX_CHANGED:		lbEvent->insertItem(0, L"EGET_SPINBOX_CHANGED");	break;
-			case EGET_TABLE_CHANGED:		lbEvent->insertItem(0, L"EGET_TABLE_CHANGED");		break;
-			case EGET_TABLE_HEADER_CHANGED:	lbEvent->insertItem(0, L"EGET_TABLE_HEADER_CHANGED");	break;
-			case EGET_TABLE_SELECTED_AGAIN:	lbEvent->insertItem(0, L"EGET_TABLE_SELECTED_AGAIN");	break;
-			case EGET_TREEVIEW_NODE_DESELECT:lbEvent->insertItem(0, L"EGET_TREEVIEW_NODE_DESELECT");break;
-			case EGET_TREEVIEW_NODE_SELECT:	lbEvent->insertItem(0, L"EGET_TREEVIEW_NODE_SELECT");	break;
-			case EGET_TREEVIEW_NODE_EXPAND:	lbEvent->insertItem(0, L"EGET_TREEVIEW_NODE_EXPAND");	break;
-			case EGET_TREEVIEW_NODE_COLLAPSE:lbEvent->insertItem(0, L"EGET_TREEVIEW_NODE_COLLAPSE");break;
-			case EGET_COUNT:				lbEvent->insertItem(0, L"EGET_COUNT");				break;
+			case EGET_ELEMENT_FOCUS_LOST: 	lbEvent->insertItem(0, L"EGET_ELEMENT_FOCUS_LOST", -1);	break;
+			case EGET_ELEMENT_FOCUSED:		lbEvent->insertItem(0, L"EGET_ELEMENT_FOCUSED", -1);	break;
+			case EGET_ELEMENT_HOVERED:		lbEvent->insertItem(0, L"EGET_ELEMENT_HOVERED", -1);	break;
+			case EGET_ELEMENT_LEFT:			lbEvent->insertItem(0, L"EGET_ELEMENT_LEFT", -1);		break;
+			case EGET_ELEMENT_CLOSED:		lbEvent->insertItem(0, L"EGET_ELEMENT_CLOSED", -1);		break;
+			case EGET_BUTTON_CLICKED:		lbEvent->insertItem(0, L"EGET_BUTTON_CLICKED", -1);		break;
+			case EGET_SCROLL_BAR_CHANGED:	lbEvent->insertItem(0, L"EGET_SCROLL_BAR_CHANGED", -1);	break;
+			case EGET_CHECKBOX_CHANGED:		lbEvent->insertItem(0, L"EGET_CHECKBOX_CHANGED", -1);	break;
+			case EGET_LISTBOX_CHANGED:		lbEvent->insertItem(0, L"EGET_LISTBOX_CHANGED", -1);	break;
+			case EGET_LISTBOX_SELECTED_AGAIN:	lbEvent->insertItem(0, L"EGET_LISTBOX_SELECTED_AGAIN", -1);	break;
+			case EGET_FILE_SELECTED:		lbEvent->insertItem(0, L"EGET_FILE_SELECTED", -1);		break;
+			case EGET_DIRECTORY_SELECTED:	lbEvent->insertItem(0, L"EGET_DIRECTORY_SELECTED", -1);	break;
+			case EGET_FILE_CHOOSE_DIALOG_CANCELLED:	lbEvent->insertItem(0, L"EGET_FILE_CHOOSE_DIALOG_CANCELLED", -1);	break;
+			case EGET_MESSAGEBOX_YES:		lbEvent->insertItem(0, L"EGET_MESSAGEBOX_YES", -1);		break;
+			case EGET_MESSAGEBOX_NO:		lbEvent->insertItem(0, L"EGET_MESSAGEBOX_NO", -1);		break;
+			case EGET_MESSAGEBOX_OK:		lbEvent->insertItem(0, L"EGET_MESSAGEBOX_OK", -1);		break;
+			case EGET_MESSAGEBOX_CANCEL:	lbEvent->insertItem(0, L"EGET_MESSAGEBOX_CANCEL", -1);	break;
+			case EGET_EDITBOX_ENTER:		lbEvent->insertItem(0, L"EGET_EDITBOX_ENTER", -1);		break;
+			case EGET_EDITBOX_CHANGED:		lbEvent->insertItem(0, L"EGET_EDITBOX_CHANGED", -1);	break;
+			case EGET_EDITBOX_MARKING_CHANGED:	lbEvent->insertItem(0, L"EGET_EDITBOX_MARKING_CHANGED", -1);	break;
+			case EGET_TAB_CHANGED:			lbEvent->insertItem(0, L"EGET_TAB_CHANGED", -1);		break;
+			case EGET_MENU_ITEM_SELECTED:	lbEvent->insertItem(0, L"EGET_MENU_ITEM_SELECTED", -1);	break;
+			case EGET_COMBO_BOX_CHANGED:	lbEvent->insertItem(0, L"EGET_COMBO_BOX_CHANGED", -1);	break;
+			case EGET_SPINBOX_CHANGED:		lbEvent->insertItem(0, L"EGET_SPINBOX_CHANGED", -1);	break;
+			case EGET_TABLE_CHANGED:		lbEvent->insertItem(0, L"EGET_TABLE_CHANGED", -1);		break;
+			case EGET_TABLE_HEADER_CHANGED:	lbEvent->insertItem(0, L"EGET_TABLE_HEADER_CHANGED", -1);	break;
+			case EGET_TABLE_SELECTED_AGAIN:	lbEvent->insertItem(0, L"EGET_TABLE_SELECTED_AGAIN", -1);	break;
+			case EGET_TREEVIEW_NODE_DESELECT:lbEvent->insertItem(0, L"EGET_TREEVIEW_NODE_DESELECT", -1);break;
+			case EGET_TREEVIEW_NODE_SELECT:	lbEvent->insertItem(0, L"EGET_TREEVIEW_NODE_SELECT", -1);	break;
+			case EGET_TREEVIEW_NODE_EXPAND:	lbEvent->insertItem(0, L"EGET_TREEVIEW_NODE_EXPAND", -1);	break;
+			case EGET_TREEVIEW_NODE_COLLAPSE:lbEvent->insertItem(0, L"EGET_TREEVIEW_NODE_COLLAPSE", -1);break;
+			case EGET_COUNT:				lbEvent->insertItem(0, L"EGET_COUNT", -1);				break;
 		}
 	}
 
