@@ -520,6 +520,7 @@ public:
 	the null terminator. */
 	u32 size() const
 	{
+		IRR_DEBUG_BREAK_IF(used==0) // should be impossible
 		return used-1;
 	}
 
@@ -673,13 +674,17 @@ public:
 	/** \param character: Character to append. */
 	string<T,TAlloc>& append(T character)
 	{
-		if (used + 1 > getAllocated())
-			reallocate(used + 1);
+		const u32 newUsed = used + 1;
+		if ( newUsed < used ) // avoid u32 overflow
+			return *this;
+			
+		if (newUsed > getAllocated())
+			reallocate(newUsed);
 
-		++used;
+		array[newUsed-2] = character;
+		array[newUsed-1] = 0;
 
-		array[used-2] = character;
-		array[used-1] = 0;
+		used = newUsed;
 
 		return *this;
 	}
@@ -704,7 +709,7 @@ public:
 			return *this;
 
 		const u32 newUsed = used + len;
-		if ( newUsed < used ) // avoid overflow
+		if ( newUsed < used ) // avoid u32 overflow
 			return *this;
 
 		if (newUsed > getAllocated())
@@ -713,9 +718,9 @@ public:
 		const u32 start = used-1;
 		for (u32 l=0; l<len; ++l)
 			array[l+start] = *(other+l);
+		array[newUsed-1] = 0;
 
 		used = newUsed;
-		array[used-1] = 0;
 
 		return *this;
 	}
@@ -725,19 +730,23 @@ public:
 	/** \param other: String to append. */
 	string<T,TAlloc>& append(const string<T,TAlloc>& other)
 	{
-		if (other.size() == 0)
+		const u32 otherSize = other.size();
+		if (otherSize == 0)
 			return *this;
 
-		--used; // null terminator will be overwritten
-		const u32 len = other.size()+1;
+		const irr::u32 newUsed = used + otherSize; // at least 2
+		if ( newUsed < used ) // avoid u32 overflow
+			return *this;
 
-		if (used + len > getAllocated())
-			reallocate(used + len);
+		if (newUsed > getAllocated())
+			reallocate(newUsed);
 
-		for (u32 l=0; l<len; ++l)
-			array[used+l] = other[l];
+		const u32 start = used-1;
+		for (u32 l=0; l<otherSize; ++l)
+			array[start+l] = other[l];
+		array[newUsed-1] = 0;
 
-		used += len;
+		used = newUsed;
 
 		return *this;
 	}
@@ -748,27 +757,29 @@ public:
 	\param length: How much characters of the other string to add to this one. */
 	string<T,TAlloc>& append(const string<T,TAlloc>& other, u32 length)
 	{
-		if (other.size() == 0)
+		const u32 otherSize = other.size();
+		if (otherSize == 0 || length == 0)
 			return *this;
 
-		if (other.size() < length)
+		if (otherSize < length)
 		{
 			append(other);
 			return *this;
 		}
 
-		if (used + length > getAllocated())
-			reallocate(used + length);
+		const irr::u32 newUsed = used + length;
+		if ( newUsed < used ) // avoid u32 overflow
+			return *this;
 
-		--used;
+		if (newUsed > getAllocated())
+			reallocate(newUsed);
 
-		for (u32 l=0; l<length; ++l)
-			array[l+used] = other[l];
-		used += length;
-
-		// ensure proper termination
-		array[used]=0;
-		++used;
+		const u32 start = used-1;
+		for (u32 l=0; l<length; ++l)	
+			array[l+start] = other[l];
+		array[newUsed-1] = 0;
+		
+		used = newUsed;
 
 		return *this;
 	}
@@ -782,6 +793,9 @@ public:
 		if ( pos < used )
 		{
 			const u32 end = used+n-1;
+			if (end < used) // avoid u32 overflow or n==0
+				return *this;
+
 			reserve(end);
 
 			// move stuff behind insert point
@@ -1104,7 +1118,7 @@ public:
 	\param replaceWith The string replacing the old one. */
 	string<T,TAlloc>& replace(const string<T,TAlloc>& toReplace, const string<T,TAlloc>& replaceWith)
 	{
-		if (toReplace.size() == 0)
+		if (empty() || toReplace.empty())
 			return *this;
 
 		const T* other = toReplace.c_str();
@@ -1230,12 +1244,12 @@ public:
 	}
 
 
-	//! Removes a string from the string.
+	//! Removes all instances of given string from the original string.
 	/** \param toRemove: String to remove. */
 	string<T,TAlloc>& remove(const string<T,TAlloc>& toRemove)
 	{
 		u32 size = toRemove.size();
-		if ( size == 0 )
+		if ( size == 0 || empty() )
 			return *this;
 		u32 pos = 0;
 		u32 found = 0;
@@ -1267,7 +1281,7 @@ public:
 	/** \param characters: Characters to remove. */
 	string<T,TAlloc>& removeChars(const string<T,TAlloc> & characters)
 	{
-		if (characters.size() == 0)
+		if (empty() || characters.empty())
 			return *this;
 
 		u32 pos = 0;
@@ -1324,7 +1338,7 @@ public:
 	*/
 	string<T,TAlloc>& eraseTrailingFloatZeros(char decimalPoint='.')
 	{
-		s32 i=findLastCharNotInList("0", 1);
+		s32 i=findLastCharNotInList("0", 1); // find character before the 0's
 		if ( i > 0 && (u32)i < used-2 )	// non 0 must be found and not last char (also used is at least 2 when i > 0)
 		{
 			u32 eraseStart=i+1;
@@ -1355,7 +1369,7 @@ public:
 	\param index: Index of element to be erased. */
 	string<T,TAlloc>& erase(u32 index)
 	{
-		IRR_DEBUG_BREAK_IF(index>=used) // access violation
+		IRR_DEBUG_BREAK_IF(index>=size()) // access violation
 
 		for (u32 i=index+1; i<used; ++i)
 			array[i-1] = array[i];
