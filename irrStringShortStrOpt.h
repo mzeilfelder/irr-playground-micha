@@ -1,5 +1,6 @@
 // Experiment with adding short string optimization to irrlicht string class
-// It mostly worked, but only from c++11 on
+// Not yet as optimized as I had hoped for because we have troubles using a union with c++98
+// Problem with union:
 // c++98 is failing when the template type T has a non trivial special member function.
 // Meaning - fails whenever a struct with constructor is used (like irr::io::xmlChar)
 // That would be the same behavior as in std::string, but for Irrlicht it's currently bad.
@@ -8,11 +9,12 @@
 // (it's something std::string cleverly doesn't even try to do).
 // We could maybe add a to_string function for numbers in Irrlicht some day,
 // but for now I don't want to mess up the interface too much. 
-// There's 2 other options. 
+// There were 2 other options:
 // a) Just bite the bullet and give up on the union for the short string buffer and the "allocated" variable
-//    Would means each string grows another 4 bytes. Which we could probably life with.
+//    So each  string grows another 4 bytes. I decided to go with that.
 // b) Use raw memory and work with casts. Thought I have to check undefined c++ behavior for that once more,
-//    as I remember something about casting stuff inside unions being risky. But would probably be fine.
+//    as I remember something about casting stuff inside unions being risky. And might be a bit more risky
+//    to get it work with all compilers. So I've decided against it for now.
 
 // Copyright (C) 2002-2012 Nikolaus Gebhardt
 // This file is part of the "Irrlicht Engine" and the "irrXML" project.
@@ -113,7 +115,7 @@ public:
 
 	//! Default constructor
 	string()
-	: array(storage.shortString), used(1)
+	: array(shortString()), used(1)
 	{
 		array[0] = 0;
 	}
@@ -121,7 +123,7 @@ public:
 
 	//! Constructor
 	string(const string<T,TAlloc>& other)
-	: array(storage.shortString), used(0)
+	: array(shortString()), used(0)
 	{
 		*this = other;
 	}
@@ -129,7 +131,7 @@ public:
 	//! Constructor from other string types
 	template <class B, class A>
 	string(const string<B, A>& other)
-	: array(storage.shortString), used(0)
+	: array(shortString()), used(0)
 	{
 		*this = other;
 	}
@@ -137,7 +139,7 @@ public:
 
 	//! Constructs a string from a float
 	explicit string(const double number)
-	: array(storage.shortString), used(0)
+	: array(shortString()), used(0)
 	{
 		c8 tmpbuf[255];
 		snprintf_irr(tmpbuf, 255, "%0.6f", number);
@@ -147,7 +149,7 @@ public:
 
 	//! Constructs a string from an int
 	explicit string(int number)
-	: array(storage.shortString), used(0)
+	: array(shortString()), used(0)
 	{
 		// store if negative and make positive
 
@@ -195,7 +197,7 @@ public:
 
 	//! Constructs a string from an unsigned int
 	explicit string(unsigned int number)
-	: array(storage.shortString), used(0)
+	: array(shortString()), used(0)
 	{
 		// temporary buffer for 16 numbers
 
@@ -226,7 +228,7 @@ public:
 
 	//! Constructs a string from a long
 	explicit string(long number)
-	: array(storage.shortString), used(0)
+	: array(shortString()), used(0)
 	{
 		// store if negative and make positive
 
@@ -274,7 +276,7 @@ public:
 
 	//! Constructs a string from an unsigned long
 	explicit string(unsigned long number)
-	: array(storage.shortString), used(0)
+	: array(shortString()), used(0)
 	{
 		// temporary buffer for 16 numbers
 
@@ -306,7 +308,7 @@ public:
 	//! Constructor for copying a string from a pointer with a given length
 	template <class B>
 	string(const B* const c, u32 length)
-	: array(storage.shortString), used(0)
+	: array(shortString()), used(0)
 	{
 		if (!c)
 		{
@@ -318,7 +320,7 @@ public:
 		used = length+1;
 		if ( used > SHORT_STR_SIZE )
 		{
-			storage.allocated = used;
+			storage.dynamicAllocated = used;
 			array = allocator.allocate(used); // new T[used];
 		}
 
@@ -332,7 +334,7 @@ public:
 	//! Constructor for Unicode and ASCII strings
 	template <class B>
 	string(const B* const c)
-	: array(storage.shortString), used(0)
+	: array(shortString()), used(0)
 	{
 		*this = c;
 	}
@@ -341,7 +343,7 @@ public:
 	//! Destructor
 	~string()
 	{
-		if ( array != storage.shortString )
+		if ( array != shortString() )
 			allocator.deallocate(array); // delete [] array;
 	}
 
@@ -355,10 +357,10 @@ public:
 		used = other.size()+1;
 		if ( used > getAllocated())
 		{
-			if ( array != storage.shortString )
+			if ( array != shortString() )
 				allocator.deallocate(array); // delete [] array;
 
-			storage.allocated = used;
+			storage.dynamicAllocated = used;
 			array = allocator.allocate(used); //new T[used];
 		}
 
@@ -415,9 +417,9 @@ public:
 			array[l] = (T)c[l];
 
 		if ( mem_size > SHORT_STR_SIZE )
-			storage.allocated = mem_size;
+			storage.dynamicAllocated = mem_size;
 
-		if (oldArray != array && oldArray != storage.shortString)
+		if (oldArray != array && oldArray != shortString())
 			allocator.deallocate(oldArray); // delete [] oldArray;
 
 		return *this;
@@ -1477,7 +1479,7 @@ private:
 	//\param new_size Amount of characters _including_ null terminator
 	void reallocate(u32 new_size)
 	{
-		if ( new_size <= SHORT_STR_SIZE && array == storage.shortString )	// short string before and after
+		if ( new_size <= SHORT_STR_SIZE && array == shortString() )	// short string before and after
 			return;
 
 		T* old_array = array;
@@ -1488,7 +1490,7 @@ private:
 		}
 		else
 		{
-			array = storage.shortString;
+			array = shortString();
 			if ( new_size < SHORT_STR_SIZE )
 			{
 				new_size = SHORT_STR_SIZE;
@@ -1508,29 +1510,36 @@ private:
 		array[used-1] = 0;
 
 		if ( new_size > SHORT_STR_SIZE )
-			storage.allocated = new_size;
+			storage.dynamicAllocated = new_size;
 
-		if ( old_array != storage.shortString )
+		if ( old_array != shortString() )
 			allocator.deallocate(old_array); // delete [] old_array;
 	}
 
 	// return amount of available memory in characters _including_ null terminator
 	u32 getAllocated() const
 	{
-		if ( array == storage.shortString )
+		if ( array == shortString() )
 			return SHORT_STR_SIZE;
 
-		return storage.allocated;
+		return storage.dynamicAllocated;
 	}
+
+	T* shortString() { return storage.shortString; }
+	const T* shortString() const { return storage.shortString; }
 
 	//--- member variables
 	static const u32 SHORT_STR_SIZE = 16 / sizeof(T); // size of buffer in characters for short string optimization
 	T* array;
-	union Storage
+	// TODO: With c++ 98 we can't easily use union instead of struct for Storage
+	// We have to either give up on allowing struct char types with constructor (like xmlChar) or have to start using raw memory instead of T for the array and cast around
+	// So for now we just going to live with 4 byte extra per string :-(
+	// But usually you would only need one or the other (if you compile with c++11 you could already replace struct by union)
+	struct Storage
 	{
-		Storage() {}	// This allows compiling T types which have one non-trivial constructor from c++11 on. Thought doesn't work with c++98
-		u32 allocated;	// characters (not bytes) of allocated dynamic memory including null terminator
-		T shortString[SHORT_STR_SIZE]; // TODO: With c++ 98 we either have to give up on the union or use a raw memory and then work with casting around
+		Storage() : dynamicAllocated(0) {}	// With union have a constructor allows compiling T char types which have one non-trivial constructor from c++11 on. Doesn't work with c++98
+		u32 dynamicAllocated;	// characters (not bytes) of allocated dynamic memory including null terminator
+		T shortString[SHORT_STR_SIZE]; 
 	} storage;
 	u32 used;		// characters including null terminator
 	TAlloc allocator;
